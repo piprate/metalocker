@@ -1,0 +1,35 @@
+{
+  "@context": "https://piprate.org/context/piprate.jsonld",
+  "asset": "did:piprate:BKsCwWhKKZyjNk98ew6SQxvaviSryYVBNJnu7xwsEuLy",
+  "generatedAtTime": "2019-04-15T23:13:39.37968Z",
+  "graph": [
+    {
+      "generatedAtTime": "2018-03-15T11:09:59.42873475Z",
+      "id": "did:piprate:NDQP6r7e5VgfwEKHBrgS9sDSUb4gK8KjBYzTaneAAMP",
+      "type": "Entity",
+      "wasGeneratedBy": {
+        "algorithm": "Import",
+        "type": "Activity",
+        "wasAssociatedWith": "did:piprate:7ep2P1LqcQshFaJuai3B1d"
+      }
+    }
+  ],
+  "id": "DuqiBzZPUW6JjpHkaj4oUJwSCBwiWg7355g1sQS1N6XH",
+  "proof": {
+    "creator": "did:piprate:GmNuLkqi3NY9h5PbeLqHBq",
+    "proofValue": "2MvRJzVyf8zRvE88RZMTMm4kYZjgRubtWVQ324S1SUjMhyaoi6uN9WLRm6dENFwSCiST1ou6Xk8axCYDrdmhWYf1",
+    "type": "Ed25519Signature2018"
+  },
+  "resource": {
+    "contentType": "Directory",
+    "fingerprint": "7QMw65yHNJYfQqG8BLQH6sdDNYr4H4xNa9aNCkqRi3TE",
+    "fingerprintAlgorithm": "fingerprints:sha256",
+    "id": "did:piprate:3YstWnXDG1TXoRcGviJBqvg3gcmhXJ7xve9Y9sb3VVAt"
+  },
+  "type": [
+    "Impression",
+    "Entity",
+    "Bundle"
+  ],
+  "wasAttributedTo": "did:piprate:7ep2P1LqcQshFaJuai3B1d"
+}

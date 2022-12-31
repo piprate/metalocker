@@ -1,0 +1,46 @@
+[
+  {
+    "@id": "http://crvy.org/EbLGU3gyQTqroScvQz92epsv4jksRQk7ZAhYSuPAs6je",
+    "@type": [
+      "http://www.w3.org/ns/prov#Entity"
+    ],
+    "http://crvy.org/schema/v1#wasAccessibleTo": [
+      {
+        "@id": "did:piprate:EbP4aYNeTHL6q385GuVpRV"
+      }
+    ],
+    "http://www.w3.org/ns/prov#generatedAtTime": [
+      {
+        "@type": "http://www.w3.org/2001/XMLSchema#dateTime",
+        "@value": "1970-01-02T03:46:40Z"
+      }
+    ],
+    "http://www.w3.org/ns/prov#wasAttributedTo": [
+      {
+        "@id": "did:piprate:Th7MpTaRZVRYnPiabds81Y"
+      }
+    ],
+    "http://www.w3.org/ns/prov#wasQuotedFrom": [
+      {
+        "@id": "http://crvy.org/4HLqYJLzfj2UeuPuuwYmVjFV9EzYpf7Vdom7ziuPTkPB"
+      }
+    ],
+    "https://w3id.org/security#proof": [
+      {
+        "@type": [
+          "https://w3id.org/security#Ed25519Signature2018"
+        ],
+        "http://purl.org/dc/terms/creator": [
+          {
+            "@id": "did:piprate:Th7MpTaRZVRYnPiabds81Y"
+          }
+        ],
+        "https://w3id.org/security#proofValue": [
+          {
+            "@value": "5jyobBRtijLZTMhByQZniLsbtR4kgkphZjR4Jrqaw8vGMtz7sVd4Fss5LcRxEFydv9SpQvgmQUShY9Rj8vFn5pZv"
+          }
+        ]
+      }
+    ]
+  }
+]

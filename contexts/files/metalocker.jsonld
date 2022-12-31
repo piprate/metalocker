@@ -1,0 +1,34 @@
+{
+  "@context": [
+    "https://piprate.org/context/piprate.jsonld",
+    {
+      "id": "@id",
+      "type": "@type",
+      "graph": "@graph",
+
+      "dc": "http://purl.org/dc/terms/",
+      "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+      "schema": "http://schema.org/",
+      "xmlenc": "http://www.w3.org/2001/04/xmlenc#",
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "prov": "http://www.w3.org/ns/prov#",
+      "metalocker": "http://metalocker.tech/schema/v1#",
+
+      "File": "metalocker:File",
+      "Directory": "metalocker:Directory",
+
+      "name": "schema:name",
+      "description": "schema:description",
+      "fileFormat": "schema:fileFormat",
+      "contentSize": "schema:contentSize",
+
+      "path": "metalocker:path",
+
+      "files": {
+        "@id": "metalocker:files",
+        "@type": "@id",
+        "@container": "@list"
+      }
+    }
+  ]
+}

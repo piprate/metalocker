@@ -1,0 +1,14 @@
+{
+  "@context": "https://piprate.org/context/piprate.jsonld",
+  "generatedAtTime": "1970-01-02T03:46:40Z",
+  "id": "EbLGU3gyQTqroScvQz92epsv4jksRQk7ZAhYSuPAs6je",
+  "proof": {
+    "creator": "did:piprate:Th7MpTaRZVRYnPiabds81Y",
+    "proofValue": "5jyobBRtijLZTMhByQZniLsbtR4kgkphZjR4Jrqaw8vGMtz7sVd4Fss5LcRxEFydv9SpQvgmQUShY9Rj8vFn5pZv",
+    "type": "Ed25519Signature2018"
+  },
+  "type": "Entity",
+  "wasAccessibleTo": "did:piprate:EbP4aYNeTHL6q385GuVpRV",
+  "wasAttributedTo": "did:piprate:Th7MpTaRZVRYnPiabds81Y",
+  "wasQuotedFrom": "4HLqYJLzfj2UeuPuuwYmVjFV9EzYpf7Vdom7ziuPTkPB"
+}

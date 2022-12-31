@@ -1,0 +1,85 @@
+{
+  "datasetType": "graph",
+  "expire": "1970-01-01T00:16:40Z",
+  "id": "Gm8tPkhqFzDoXNLTaCEfcHxdSKUmaWwRnQfy8V38NUab",
+  "impression": {
+    "@context": "https://piprate.org/context/piprate.jsonld",
+    "asset": "did:piprate:3y2LHUXU84QqiGJ8u35r3XLLvGxJF7ZGYdL4DeqPZZSj",
+    "generatedAtTime": "1970-01-01T00:16:40Z",
+    "graph": [
+      {
+        "generatedAtTime": "1970-01-02T03:46:40Z",
+        "id": "did:piprate:A4Uap6ycAc4Y8iXeX5cdxD4oQTsfqjfVPH8g9Cw2bFSp",
+        "type": "Entity",
+        "wasGeneratedBy": {
+          "algorithm": "DocumentGeneration",
+          "qualifiedUsage": [
+            {
+              "entity": {
+                "asInBundle": "8yAcx6qDg4VgZiDnyLeDpN5Hh1n1hz5ubayqNmxTShww",
+                "id": "_:file-meta",
+                "type": "Entity"
+              },
+              "hadRole": {
+                "label": "file_meta",
+                "type": "Role"
+              },
+              "type": "Usage"
+            },
+            {
+              "entity": "new-deal-impression-id",
+              "hadRole": {
+                "label": "deal",
+                "type": "Role"
+              },
+              "type": "Usage"
+            }
+          ],
+          "type": "Activity",
+          "used": [
+            "_:file-meta",
+            "_:deal"
+          ],
+          "wasAssociatedWith": "did:piprate:GmNuLkqi3NY9h5PbeLqHBq"
+        }
+      },
+      {
+        "id": "did:piprate:GmNuLkqi3NY9h5PbeLqHBq",
+        "type": "Agent"
+      }
+    ],
+    "id": "J9sajDgiN563qGwS3bmioJs1VrDws4AEUBzD7cPRtMFV",
+    "proof": {
+      "creator": "did:piprate:GmNuLkqi3NY9h5PbeLqHBq",
+      "proofValue": "YkjguzKmcJf59LymjD3emQBh1HhYVq3YMGV4k2XKqeMJvBbP1BxBLALi6pMoSaPdBDRqqJowDj4jgQGxR3Vf41e",
+      "type": "Ed25519Signature2018"
+    },
+    "resource": {
+      "contentType": "Document",
+      "fingerprint": "uJ38EeTlHdqj4JpCce9YYmFZuMKwETHzYTsme32xQ5U=",
+      "fingerprintAlgorithm": "fingerprints:sha256",
+      "id": "did:piprate:A4Uap6ycAc4Y8iXeX5cdxD4oQTsfqjfVPH8g9Cw2bFSp"
+    },
+    "revisionNumber": 2,
+    "specializationOf": "3bBVm8p2m2UynJyNivHubYLr5A2ZE1p3t9wnUkbDnutx",
+    "type": [
+      "Impression",
+      "Entity",
+      "Bundle"
+    ],
+    "wasAttributedTo": "did:piprate:GmNuLkqi3NY9h5PbeLqHBq",
+    "wasRevisionOf": "3bBVm8p2m2UynJyNivHubYLr5A2ZE1p3t9wnUkbDnutx"
+  },
+  "storage": [
+    {
+      "asset": "did:piprate:A4Uap6ycAc4Y8iXeX5cdxD4oQTsfqjfVPH8g9Cw2bFSp",
+      "id": "did:piprate:A4Uap6ycAc4Y8iXeX5cdxD4oQTsfqjfVPH8g9Cw2bFSp",
+      "method": "memory",
+      "mimeType": "application/json",
+      "size": 509,
+      "type": "Resource",
+      "vault": "Z2kcCarCE47SDjtWD5ruyijsQyWMF5B1jjk6HHWngoe"
+    }
+  ],
+  "type": "Lease"
+}

@@ -1,0 +1,169 @@
+{
+  "@context": {
+    "prov": "http://www.w3.org/ns/prov#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "label": {
+      "@id": "rdfs:label"
+    },
+    "Activity": "prov:Activity",
+    "Agent": "prov:Agent",
+    "Bundle": "prov:Bundle",
+    "Association": "prov:Association",
+    "Entity": "prov:Entity",
+    "Generation": "prov:Generation",
+    "Organization": "prov:Organization",
+    "Person": "prov:Person",
+    "Plan": "prov:Plan",
+    "Role": "prov:Role",
+    "Usage": "prov:Usage",
+    "actedOnBehalfOf": {
+      "@type": "@id",
+      "@id": "prov:actedOnBehalfOf"
+    },
+    "alternateOf": {
+      "@type": "@id",
+      "@id": "prov:alternateOf"
+    },
+    "atLocation": {
+      "@id": "prov:atLocation"
+    },
+    "atTime": {
+      "@id": "prov:atTime",
+      "@type": "xsd:dateTime"
+    },
+    "startedAtTime": {
+      "@id": "prov:startedAtTime",
+      "@type": "xsd:dateTime"
+    },
+    "endedAtTime": {
+      "@id": "prov:endedAtTime",
+      "@type": "xsd:dateTime"
+    },
+    "entity": {
+      "@id": "prov:entity",
+      "@type": "@id"
+    },
+    "activity": {
+      "@id": "prov:activity",
+      "@type": "@id"
+    },
+    "agent": {
+      "@id": "prov:agent",
+      "@type": "@id"
+    },
+    "asInBundle": {
+      "@id": "prov:asInBundle",
+      "@type": "@id"
+    },
+    "influencer": {
+      "@id": "prov:influencer",
+      "@type": "@id"
+    },
+    "hadActivity": {
+      "@id": "prov:hadActivity",
+      "@type": "@id"
+    },
+    "hadRole": {
+      "@type": "@id",
+      "@id": "prov:hadRole"
+    },
+    "hadUsage": {
+      "@id": "prov:hadUsage",
+      "@type": "@id"
+    },
+    "hadGeneration": {
+      "@id": "prov:hadGeneration",
+      "@type": "@id"
+    },
+    "hadPlan": {
+      "@id": "prov:hadPlan",
+      "@type": "@id"
+    },
+    "generatedAtTime": {
+      "@type": "xsd:dateTime",
+      "@id": "prov:generatedAtTime"
+    },
+    "mentionOf": {
+      "@type": "@id",
+      "@id": "prov:mentionOf"
+    },
+    "qualifiedAssociation": {
+      "@reverse": "prov:qualifiedAssociation",
+      "@type": "@id"
+    },
+    "qualifiedAttribution": {
+      "@reverse": "prov:qualifiedAttribution",
+      "@type": "@id"
+    },
+    "qualifiedCommunication": {
+      "@reverse": "prov:qualifiedCommunication",
+      "@type": "@id"
+    },
+    "qualifiedDelegation": {
+      "@reverse": "prov:qualifiedDelegation",
+      "@type": "@id"
+    },
+    "qualifiedDerivation": {
+      "@reverse": "prov:qualifiedDerivation",
+      "@type": "@id"
+    },
+    "qualifiedEnd": {
+      "@reverse": "prov:qualifiedEnd",
+      "@type": "@id"
+    },
+    "qualifiedGeneration": {
+      "@type": "@id",
+      "@id": "prov:qualifiedGeneration"
+    },
+    "qualifiedInfluence": {
+      "@reverse": "prov:qualifiedInfluence",
+      "@type": "@id"
+    },
+    "qualifiedInvalidation": {
+      "@reverse": "prov:qualifiedInvalidation",
+      "@type": "@id"
+    },
+    "qualifiedStart": {
+      "@reverse": "prov:qualifiedStart",
+      "@type": "@id"
+    },
+    "qualifiedUsage": {
+      "@type": "@id",
+      "@id": "prov:qualifiedUsage"
+    },
+    "specializationOf": {
+      "@type": "@id",
+      "@id": "prov:specializationOf"
+    },
+    "used": {
+      "@type": "@id",
+      "@id": "prov:used"
+    },
+    "value": "prov:value",
+    "wasAssociatedWith": {
+      "@type": "@id",
+      "@id": "prov:wasAssociatedWith"
+    },
+    "wasAttributedTo": {
+      "@type": "@id",
+      "@id": "prov:wasAttributedTo"
+    },
+    "wasDerivedFrom": {
+      "@type": "@id",
+      "@id": "prov:wasDerivedFrom"
+    },
+    "wasGeneratedBy": {
+      "@type": "@id",
+      "@id": "prov:wasGeneratedBy"
+    },
+    "wasQuotedFrom": {
+      "@type": "@id",
+      "@id": "prov:wasQuotedFrom"
+    },
+    "wasRevisionOf": {
+      "@type": "@id",
+      "@id": "prov:wasRevisionOf"
+    }
+  }
+}

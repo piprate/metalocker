@@ -1,0 +1,15 @@
+{
+  "id": "did:piprate:3y2LHUXU84QqiGJ8u35r3XLLvGxJF7ZGYdL4DeqPZZSj",
+  "type": "Document",
+  "name": "Draft Contract",
+  "deal": "did:piprate:zwvQ844koEpYBox6dW7Dw3MBEyAFsxAPWh5uckNG14H7",
+  "file": {
+    "contentSize": 13,
+    "fileFormat": "text/plain; charset=utf-8",
+    "fingerprint": "EFyHgh8HjAvP3r1QygUdiBWSwqMX6o1XSGpnTTrDRFnJ",
+    "fingerprintAlgorithm": "fingerprints:sha256",
+    "id": "did:piprate:CEjcCZiwDgx2ydvihMh6EuXDH7NH9PYMyAns7bqux9wp",
+    "name": "file1.txt",
+    "type": "File"
+  }
+}

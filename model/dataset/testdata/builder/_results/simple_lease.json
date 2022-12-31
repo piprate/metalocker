@@ -1,0 +1,40 @@
+{
+  "datasetType": "graph",
+  "expire": "1970-01-01T00:16:40Z",
+  "id": "Gm8tPkhqFzDoXNLTaCEfcHxdSKUmaWwRnQfy8V38NUab",
+  "impression": {
+    "@context": "https://piprate.org/context/piprate.jsonld",
+    "asset": "did:piprate:FdywEGiR5nubMFZgbfneUdAx5V858eaiRcBGRGVpj3Y6",
+    "generatedAtTime": "1970-01-01T00:16:40Z",
+    "id": "FUWbvfpTZbeG8W9w9dCd8R2RxXsx53EyYrGZJe7Qrqi6",
+    "proof": {
+      "creator": "did:piprate:GmNuLkqi3NY9h5PbeLqHBq",
+      "proofValue": "62R8ogF69UcgPyv11ABbcGW7G3zbbNdMtpoYYz5MkDLbMFGfdY6t4TAREdjNU5QHFT6TCeKB6eHSmJJME9jb6nPA",
+      "type": "Ed25519Signature2018"
+    },
+    "resource": {
+      "contentType": "File",
+      "fingerprint": "3zNymhmMHiZqCD9Nvrg8rI9QZ05cCb7h01KOtCMEH9c=",
+      "fingerprintAlgorithm": "fingerprints:sha256",
+      "id": "did:piprate:7PDaLZGd459vFXwhKRv8btMppNjKtq7vKkUodF48csAD"
+    },
+    "type": [
+      "Impression",
+      "Entity",
+      "Bundle"
+    ],
+    "wasAttributedTo": "did:piprate:GmNuLkqi3NY9h5PbeLqHBq"
+  },
+  "storage": [
+    {
+      "asset": "did:piprate:7PDaLZGd459vFXwhKRv8btMppNjKtq7vKkUodF48csAD",
+      "id": "did:piprate:7PDaLZGd459vFXwhKRv8btMppNjKtq7vKkUodF48csAD",
+      "method": "memory",
+      "mimeType": "application/json",
+      "size": 301,
+      "type": "Resource",
+      "vault": "Z2kcCarCE47SDjtWD5ruyijsQyWMF5B1jjk6HHWngoe"
+    }
+  ],
+  "type": "Lease"
+}

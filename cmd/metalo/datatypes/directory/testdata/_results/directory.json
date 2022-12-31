@@ -1,0 +1,43 @@
+{
+  "files": [
+    {
+      "fileFormat": "text/plain",
+      "fingerprint": "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
+      "fingerprintAlgorithm": "fingerprints:sha256",
+      "id": "did:piprate:674wjTvPisYXNHNj1MbmqTKcekqttPwVuGoDDgpAbQUn",
+      "name": "another_empty_file.txt",
+      "path": ".",
+      "type": "File"
+    },
+    {
+      "contentSize": 6,
+      "fileFormat": "text/plain; charset=utf-8",
+      "fingerprint": "2ckkCTtUHV92gBzY19DHR5n9UsIh9RgWuAHrszhbAyk=",
+      "fingerprintAlgorithm": "fingerprints:sha256",
+      "id": "did:piprate:85LM8giLGhiT31ZK4ugWkdLWzVTAFpxibWXN1v1jzZ7D",
+      "name": "file3.txt",
+      "path": "dir1",
+      "type": "File"
+    },
+    {
+      "contentSize": 13,
+      "fileFormat": "text/plain; charset=utf-8",
+      "fingerprint": "xP20vnDo1soN221BU5YDQRjgiQoVjOlIx6O4NVf+4Ns=",
+      "fingerprintAlgorithm": "fingerprints:sha256",
+      "id": "did:piprate:GGKW4B2zLbpxPJXE8TcD1okHFg4ymHvYbDfbHY2BthYc",
+      "name": "file1.txt",
+      "path": ".",
+      "type": "File"
+    },
+    {
+      "fileFormat": "text/plain",
+      "fingerprint": "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
+      "fingerprintAlgorithm": "fingerprints:sha256",
+      "id": "did:piprate:674wjTvPisYXNHNj1MbmqTKcekqttPwVuGoDDgpAbQUn",
+      "name": "file2.csv",
+      "path": ".",
+      "type": "File"
+    }
+  ],
+  "type": "Directory"
+}

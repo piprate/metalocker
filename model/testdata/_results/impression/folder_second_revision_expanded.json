@@ -1,0 +1,149 @@
+[
+  {
+    "@graph": [
+      {
+        "@id": "did:piprate:3YstWnXDG1TXoRcGviJBqvg3gcmhXJ7xve9Y9sb3VVAt",
+        "@type": [
+          "http://www.w3.org/ns/prov#Entity"
+        ],
+        "http://www.w3.org/ns/prov#generatedAtTime": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#dateTime",
+            "@value": "2019-04-09T14:02:00.464345Z"
+          }
+        ],
+        "http://www.w3.org/ns/prov#wasGeneratedBy": [
+          {
+            "@type": [
+              "http://www.w3.org/ns/prov#Activity"
+            ],
+            "http://crvy.org/schema/v1#algorithm": [
+              {
+                "@id": "http://crvy.org/Geocoding"
+              }
+            ],
+            "http://www.w3.org/ns/prov#qualifiedUsage": [
+              {
+                "@type": [
+                  "http://www.w3.org/ns/prov#Usage"
+                ],
+                "http://www.w3.org/ns/prov#entity": [
+                  {
+                    "@id": "http://crvy.org/3vRFFRBiZRzLNucG5AK6mEsv9xU1WB5awXme644owEaw"
+                  }
+                ],
+                "http://www.w3.org/ns/prov#hadRole": [
+                  {
+                    "@type": [
+                      "http://www.w3.org/ns/prov#Role"
+                    ],
+                    "http://www.w3.org/2000/01/rdf-schema#label": [
+                      {
+                        "@value": "source"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "http://www.w3.org/ns/prov#used": [
+              {
+                "@id": "http://crvy.org/3vRFFRBiZRzLNucG5AK6mEsv9xU1WB5awXme644owEaw"
+              }
+            ],
+            "http://www.w3.org/ns/prov#wasAssociatedWith": [
+              {
+                "@id": "did:piprate:GMavEk4K2CDHSmixB3UTuCaL1cqfqEjvSU6vygdrz7ih"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "@id": "did:piprate:GMavEk4K2CDHSmixB3UTuCaL1cqfqEjvSU6vygdrz7ih",
+        "@type": [
+          "http://www.w3.org/ns/prov#Agent"
+        ]
+      }
+    ],
+    "@id": "http://crvy.org/3vRFFRBiZRzLNucG5AK6mEsv9xU1WB5awXme644owEaw",
+    "@type": [
+      "http://crvy.org/schema/v1#Impression",
+      "http://www.w3.org/ns/prov#Entity",
+      "http://www.w3.org/ns/prov#Bundle"
+    ],
+    "http://crvy.org/schema/v1#asset": [
+      {
+        "@id": "did:piprate:BKsCwWhKKZyjNk98ew6SQxvaviSryYVBNJnu7xwsEuLy"
+      }
+    ],
+    "http://crvy.org/schema/v1#resource": [
+      {
+        "@id": "did:piprate:3YstWnXDG1TXoRcGviJBqvg3gcmhXJ7xve9Y9sb3VVAt",
+        "http://crvy.org/schema/v1#contentType": [
+          {
+            "@value": "Directory"
+          }
+        ],
+        "http://crvy.org/schema/v1#fingerprint": [
+          {
+            "@value": "7QMw65yHNJYfQqG8BLQH6sdDNYr4H4xNa9aNCkqRi3TE"
+          }
+        ],
+        "http://crvy.org/schema/v1#fingerprintAlgorithm": [
+          {
+            "@id": "http://crvy.org/schema/fingerprints/v1#sha256"
+          }
+        ]
+      }
+    ],
+    "http://crvy.org/schema/v1#revisionMessage": [
+      {
+        "@value": "First update"
+      }
+    ],
+    "http://crvy.org/schema/v1#revisionNumber": [
+      {
+        "@value": 2
+      }
+    ],
+    "http://www.w3.org/ns/prov#generatedAtTime": [
+      {
+        "@type": "http://www.w3.org/2001/XMLSchema#dateTime",
+        "@value": "2019-04-15T23:13:39.37968Z"
+      }
+    ],
+    "http://www.w3.org/ns/prov#specializationOf": [
+      {
+        "@id": "http://crvy.org/5wq3SfyNQX8uEBK6MqGqirUba7FV5xNENhLfv7WgYuz5xx"
+      }
+    ],
+    "http://www.w3.org/ns/prov#wasAttributedTo": [
+      {
+        "@id": "did:piprate:7ep2P1LqcQshFaJuai3B1d"
+      }
+    ],
+    "http://www.w3.org/ns/prov#wasRevisionOf": [
+      {
+        "@id": "http://crvy.org/5wq3SfyNQX8uEBK6MqGqirUba7FV5xNENhLfv7WgYuz5"
+      }
+    ],
+    "https://w3id.org/security#proof": [
+      {
+        "@type": [
+          "https://w3id.org/security#Ed25519Signature2018"
+        ],
+        "http://purl.org/dc/terms/creator": [
+          {
+            "@id": "did:piprate:7ep2P1LqcQshFaJuai3B1d"
+          }
+        ],
+        "https://w3id.org/security#proofValue": [
+          {
+            "@value": "4gf1gFujddnW5ohmpYio81rkT1qHcioL1ttcAxHnnfUD61vTzeq96yZWMVCZYCWqMRsECe6VkLdgPkLUkiXGiQzD"
+          }
+        ]
+      }
+    ]
+  }
+]

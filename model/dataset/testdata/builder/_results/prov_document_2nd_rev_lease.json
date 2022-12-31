@@ -1,0 +1,119 @@
+{
+  "datasetType": "graph",
+  "expire": "1970-01-01T00:16:40Z",
+  "id": "Gm8tPkhqFzDoXNLTaCEfcHxdSKUmaWwRnQfy8V38NUab",
+  "impression": {
+    "@context": "https://piprate.org/context/piprate.jsonld",
+    "asset": "did:piprate:3y2LHUXU84QqiGJ8u35r3XLLvGxJF7ZGYdL4DeqPZZSj",
+    "generatedAtTime": "1970-01-01T00:16:40Z",
+    "graph": [
+      {
+        "generatedAtTime": "1970-01-02T03:46:40Z",
+        "id": "did:piprate:A4Uap6ycAc4Y8iXeX5cdxD4oQTsfqjfVPH8g9Cw2bFSp",
+        "type": "Entity",
+        "wasGeneratedBy": {
+          "algorithm": "DocumentGeneration",
+          "qualifiedUsage": [
+            {
+              "entity": {
+                "generatedAtTime": "1970-01-02T03:46:40Z",
+                "id": "_:file-meta",
+                "type": "Entity",
+                "wasGeneratedBy": {
+                  "algorithm": "FileExtraction",
+                  "qualifiedUsage": [
+                    {
+                      "entity": "did:piprate:GGKW4B2zLbpxPJXE8TcD1okHFg4ymHvYbDfbHY2BthYc",
+                      "hadRole": {
+                        "label": "file",
+                        "type": "Role"
+                      },
+                      "type": "Usage"
+                    }
+                  ],
+                  "type": "Activity",
+                  "used": "did:piprate:GGKW4B2zLbpxPJXE8TcD1okHFg4ymHvYbDfbHY2BthYc"
+                }
+              },
+              "hadRole": {
+                "label": "file_meta",
+                "type": "Role"
+              },
+              "type": "Usage"
+            },
+            {
+              "entity": "new-deal-impression-id",
+              "hadRole": {
+                "label": "deal",
+                "type": "Role"
+              },
+              "type": "Usage"
+            }
+          ],
+          "type": "Activity",
+          "used": [
+            "_:file-meta",
+            "_:deal"
+          ],
+          "wasAssociatedWith": "did:piprate:GmNuLkqi3NY9h5PbeLqHBq"
+        }
+      },
+      {
+        "generatedAtTime": "1970-01-02T03:46:40Z",
+        "id": "did:piprate:GGKW4B2zLbpxPJXE8TcD1okHFg4ymHvYbDfbHY2BthYc",
+        "type": "Entity",
+        "wasGeneratedBy": {
+          "algorithm": "Capture",
+          "type": "Activity",
+          "wasAssociatedWith": "did:piprate:GmNuLkqi3NY9h5PbeLqHBq"
+        }
+      },
+      {
+        "id": "did:piprate:GmNuLkqi3NY9h5PbeLqHBq",
+        "type": "Agent"
+      }
+    ],
+    "id": "FkTqYAHzGhMmGdTsGKYfmSJHBpTiJ3Ncrg3ZepXhEtcN",
+    "proof": {
+      "creator": "did:piprate:GmNuLkqi3NY9h5PbeLqHBq",
+      "proofValue": "4uaD5QZYpGARuKDEB4ct1K4F7qwu2uhfqteun7mdAp1R2w7qNub1hjk42xm8mAgGKDNDqjP6CcJGGQY9BKorgfFY",
+      "type": "Ed25519Signature2018"
+    },
+    "resource": {
+      "contentType": "Document",
+      "fingerprint": "uJ38EeTlHdqj4JpCce9YYmFZuMKwETHzYTsme32xQ5U=",
+      "fingerprintAlgorithm": "fingerprints:sha256",
+      "id": "did:piprate:A4Uap6ycAc4Y8iXeX5cdxD4oQTsfqjfVPH8g9Cw2bFSp"
+    },
+    "revisionNumber": 2,
+    "specializationOf": "3bBVm8p2m2UynJyNivHubYLr5A2ZE1p3t9wnUkbDnutx",
+    "type": [
+      "Impression",
+      "Entity",
+      "Bundle"
+    ],
+    "wasAttributedTo": "did:piprate:GmNuLkqi3NY9h5PbeLqHBq",
+    "wasRevisionOf": "3bBVm8p2m2UynJyNivHubYLr5A2ZE1p3t9wnUkbDnutx"
+  },
+  "storage": [
+    {
+      "asset": "did:piprate:A4Uap6ycAc4Y8iXeX5cdxD4oQTsfqjfVPH8g9Cw2bFSp",
+      "id": "did:piprate:A4Uap6ycAc4Y8iXeX5cdxD4oQTsfqjfVPH8g9Cw2bFSp",
+      "method": "memory",
+      "mimeType": "application/json",
+      "size": 509,
+      "type": "Resource",
+      "vault": "Z2kcCarCE47SDjtWD5ruyijsQyWMF5B1jjk6HHWngoe"
+    },
+    {
+      "asset": "did:piprate:GGKW4B2zLbpxPJXE8TcD1okHFg4ymHvYbDfbHY2BthYc",
+      "id": "did:piprate:GGKW4B2zLbpxPJXE8TcD1okHFg4ymHvYbDfbHY2BthYc",
+      "method": "memory",
+      "mimeType": "text/plain; charset=utf-8",
+      "size": 13,
+      "type": "Resource",
+      "vault": "Z2kcCarCE47SDjtWD5ruyijsQyWMF5B1jjk6HHWngoe"
+    }
+  ],
+  "type": "Lease"
+}

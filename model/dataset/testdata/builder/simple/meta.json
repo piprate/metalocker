@@ -1,0 +1,9 @@
+{
+  "id": "did:piprate:FdywEGiR5nubMFZgbfneUdAx5V858eaiRcBGRGVpj3Y6",
+  "type": "File",
+  "name": "aerial-imagery-photoshop.jpg",
+  "contentSize": 1986697,
+  "fileFormat": "image/jpeg",
+  "fingerprint": "GLNc1EkSMeV7EwkMfZ56L5sWiM81WpjzmmQQZG4HN8nk",
+  "fingerprintAlgorithm": "fingerprints:sha256"
+}

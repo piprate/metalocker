@@ -1,0 +1,9 @@
+{
+  "contentSize": 13,
+  "fileFormat": "text/plain; charset=utf-8",
+  "fingerprint": "EFyHgh8HjAvP3r1QygUdiBWSwqMX6o1XSGpnTTrDRFnJ",
+  "fingerprintAlgorithm": "fingerprints:sha256",
+  "id": "did:piprate:CEjcCZiwDgx2ydvihMh6EuXDH7NH9PYMyAns7bqux9wp",
+  "name": "file1.txt",
+  "type": "File"
+}

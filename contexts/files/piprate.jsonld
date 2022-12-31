@@ -1,0 +1,65 @@
+{
+  "@context": [
+    "https://w3id.org/security/v2",
+    "https://piprate.org/context/prov.jsonld",
+    {
+      "id": "@id",
+      "type": "@type",
+      "graph": "@graph",
+
+      "dc": "http://purl.org/dc/terms/",
+      "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+      "schema": "http://schema.org/",
+      "xmlenc": "http://www.w3.org/2001/04/xmlenc#",
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "prov": "http://www.w3.org/ns/prov#",
+      "crvy": "http://crvy.org/schema/v1#",
+      "fingerprints": "http://crvy.org/schema/fingerprints/v1#",
+
+      "Impression": "crvy:Impression",
+      "Asset": "crvy:Asset",
+      "ValueAsset": "crvy:ValueAsset",
+      "comment": "rdfs:comment",
+      "asset": {
+        "@type": "@id",
+        "@id": "crvy:asset"
+      },
+      "contentType": "crvy:contentType",
+      "isSerial": {
+        "@id": "crvy:isSerial",
+        "@type": "xsd:boolean"
+      },
+      "isIdentity": {
+        "@id": "crvy:isIdentity",
+        "@type": "xsd:boolean"
+      },
+      "isDigital": {
+        "@id": "crvy:isDigital",
+        "@type": "xsd:boolean"
+      },
+      "resource": "crvy:resource",
+      "provenance": "crvy:provenance",
+      "wasAccessibleTo": {
+        "@id": "crvy:wasAccessibleTo",
+        "@type": "@id"
+      },
+      "algorithm": {
+        "@id": "crvy:algorithm",
+        "@type": "@id"
+      },
+      "name": "schema:name",
+      "fingerprint": "crvy:fingerprint",
+      "fingerprintAlgorithm": {
+        "@id": "crvy:fingerprintAlgorithm",
+        "@type": "@id"
+      },
+      "instanceOf": {
+        "@id": "crvy:instanceOf",
+        "@type": "@id"
+      },
+      "revisionNumber": "crvy:revisionNumber",
+      "revisionMessage": "crvy:revisionMessage",
+      "sha256": "xmlenc:sha256"
+    }
+  ]
+}
