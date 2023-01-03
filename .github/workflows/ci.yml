@@ -8,9 +8,6 @@ on:
     branches:
       - main
 
-env:
-  CODECOV_TOKEN: 9640dcb9-e7ac-4292-94a0-47cc03dca390
-
 jobs:
   lint:
     runs-on: ubuntu-latest
