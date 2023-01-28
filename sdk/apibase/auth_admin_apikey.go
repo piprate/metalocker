@@ -18,22 +18,22 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/knadh/koanf"
 	"github.com/piprate/metalocker/sdk/cmdbase"
 	"github.com/piprate/restgate"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 )
 
 type (
 	adminKeyStruct struct {
-		Key    any `mapstructure:"apiKey" json:"apiKey"`
-		Secret any `mapstructure:"apiSecret" json:"apiSecret"`
+		Key    any `koanf:"apiKey" json:"apiKey"`
+		Secret any `koanf:"apiSecret" json:"apiSecret"`
 	}
 )
 
-func NewAdminAuthenticationHandler(viperCfg *viper.Viper, name string, resolver cmdbase.ParameterResolver) (gin.HandlerFunc, error) {
+func NewAdminAuthenticationHandler(cfg *koanf.Koanf, name string, resolver cmdbase.ParameterResolver) (gin.HandlerFunc, error) {
 	var adminKey adminKeyStruct
-	if err := viperCfg.UnmarshalKey(name, &adminKey); err != nil {
+	if err := cfg.Unmarshal(name, &adminKey); err != nil {
 		log.Err(err).Msg("Failed to read admin API key")
 		return nil, ErrBadConfiguration
 	}

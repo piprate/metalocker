@@ -17,41 +17,37 @@ package cmdbase
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/file"
 	"github.com/piprate/metalocker/utils/hv"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 )
 
 const (
-	EPTypeViper = "ViperParam"
-	EPTypeVault = "VaultParam"
+	EPTypeSideConfig = "SideConfigParam"
+	EPTypeVault      = "VaultParam"
 )
 
 type ParameterResolver interface {
 	ResolveString(param any) (string, error)
 }
 
-type ExternalParameter struct {
-	Type  string `json:"type"`
-	Viper string `json:"viper"`
-	Path  string `json:"path"`
-	Key   string `json:"key"`
-}
-
 type SecureParameterResolver struct {
-	sideVipers map[string]*viper.Viper
-	hcv        *hv.HCVaultClient
+	sideConfigs map[string]*koanf.Koanf
+	hcv         *hv.HCVaultClient
 }
 
-func NewSecureParameterResolver(hcv *hv.HCVaultClient, sideVipers map[string]*viper.Viper) *SecureParameterResolver {
-	if sideVipers == nil {
-		sideVipers = make(map[string]*viper.Viper)
+func NewSecureParameterResolver(hcv *hv.HCVaultClient, sideConfigs map[string]*koanf.Koanf) *SecureParameterResolver {
+	if sideConfigs == nil {
+		sideConfigs = make(map[string]*koanf.Koanf)
 	}
 
 	return &SecureParameterResolver{
-		sideVipers: sideVipers,
-		hcv:        hcv,
+		sideConfigs: sideConfigs,
+		hcv:         hcv,
 	}
 }
 
@@ -62,8 +58,8 @@ func (spr *SecureParameterResolver) Close() error {
 	return nil
 }
 
-func (spr *SecureParameterResolver) AddSideViper(name string, v *viper.Viper) {
-	spr.sideVipers[name] = v
+func (spr *SecureParameterResolver) AddSideConfig(name string, cfg *koanf.Koanf) {
+	spr.sideConfigs[name] = cfg
 }
 
 func (spr *SecureParameterResolver) ResolveString(param any) (string, error) {
@@ -75,20 +71,20 @@ func (spr *SecureParameterResolver) ResolveString(param any) (string, error) {
 		return val, nil
 	case map[string]any:
 		switch val["type"] {
-		case EPTypeViper:
-			viperName, found := val["viper"]
+		case EPTypeSideConfig:
+			cfgName, found := val["cfg"]
 			if !found {
-				return "", fmt.Errorf("viper name not found")
+				return "", fmt.Errorf("side config name not found")
 			}
-			v, found := spr.sideVipers[viperName.(string)]
+			cfg, found := spr.sideConfigs[cfgName.(string)]
 			if !found {
-				return "", fmt.Errorf("unknown side viper file: '%s'", viperName)
+				return "", fmt.Errorf("unknown side config file: '%s'", cfgName)
 			}
 			key, found := val["key"]
 			if !found {
 				return "", fmt.Errorf("key name not found")
 			}
-			return v.GetString(key.(string)), nil
+			return cfg.String(key.(string)), nil
 		case EPTypeVault:
 			if spr.hcv == nil {
 				return "", errors.New("no HashiCorp Vault not provided")
@@ -115,14 +111,14 @@ func (spr *SecureParameterResolver) ResolveString(param any) (string, error) {
 	}
 }
 
-func ConfigureParameterResolver(viperCfg *viper.Viper, secretsPath string) (*SecureParameterResolver, error) {
+func ConfigureParameterResolver(cfg *koanf.Koanf, secretsPath string) (*SecureParameterResolver, error) {
 
 	// initialise HashiCorp Vault client
 
 	var hcv *hv.HCVaultClient
 	var err error
 
-	vaultMode := viperCfg.GetString("vaultMode")
+	vaultMode := cfg.String("vaultMode")
 
 	if vaultMode != "" {
 		hcv, err = hv.NewHCVaultClient(vaultMode)
@@ -134,19 +130,22 @@ func ConfigureParameterResolver(viperCfg *viper.Viper, secretsPath string) (*Sec
 
 	// load secrets from local file, if provided
 
-	sideVipers := make(map[string]*viper.Viper)
+	sideConfigs := make(map[string]*koanf.Koanf)
 
-	if secretsConfigName := viperCfg.GetString("secretsConfig"); secretsConfigName != "" {
-		secretsViper := viper.New()
-		secretsViper.SetConfigName(secretsConfigName)
-		secretsViper.AddConfigPath(secretsPath)
-		err = secretsViper.ReadInConfig()
+	if secretsConfigName := cfg.String("secretsConfig"); secretsConfigName != "" {
+		sideCfg := koanf.New(".")
+		err = sideCfg.Load(
+			file.Provider(
+				filepath.Join(secretsPath, fmt.Sprintf("%s.yaml", secretsConfigName)),
+			),
+			yaml.Parser(),
+		)
 		if err != nil {
 			panic(fmt.Errorf("fatal error when reading secrets config file: %w", err))
 		}
 
-		sideVipers["secrets"] = secretsViper
+		sideConfigs["secrets"] = sideCfg
 	}
 
-	return NewSecureParameterResolver(hcv, sideVipers), nil
+	return NewSecureParameterResolver(hcv, sideConfigs), nil
 }
