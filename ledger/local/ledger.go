@@ -923,7 +923,7 @@ func generateNewBlock(bl *BoltLedger, seed string) error {
 }
 
 func CreateLedgerConnector(params ledger.Parameters, ns notification.Service, resolver cmdbase.ParameterResolver) (model.Ledger, error) {
-	dbFilepath, ok := params["dbfile"].(string)
+	dbFilepath, ok := params["dbFile"].(string)
 	if !ok {
 		return nil, errors.New("parameter not found: dbfile. Can't start ledger connector")
 	}

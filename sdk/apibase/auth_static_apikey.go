@@ -19,12 +19,12 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/knadh/koanf"
 	"github.com/piprate/metalocker/model/account"
 	"github.com/piprate/metalocker/sdk/cmdbase"
 	"github.com/piprate/metalocker/storage"
 	"github.com/piprate/restgate"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 )
 
 type apiKeyStruct struct {
@@ -33,11 +33,11 @@ type apiKeyStruct struct {
 	Secret any `json:"secret"`
 }
 
-func NewStaticAPIKeyAuthenticationHandler(viperCfg *viper.Viper, key string, mainAuthFunc gin.HandlerFunc,
+func NewStaticAPIKeyAuthenticationHandler(cfg *koanf.Koanf, key string, mainAuthFunc gin.HandlerFunc,
 	resolver cmdbase.ParameterResolver, identityBackend storage.IdentityBackend) (gin.HandlerFunc, error) {
 
 	var keyDefs []*apiKeyStruct
-	if err := viperCfg.UnmarshalKey(key, &keyDefs); err != nil {
+	if err := cfg.Unmarshal(key, &keyDefs); err != nil {
 		log.Err(err).Msg("Failed to read API keys")
 		return nil, ErrBadConfiguration
 	}

@@ -15,15 +15,19 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/file"
 	"github.com/piprate/metalocker/cmd"
 	"github.com/piprate/metalocker/node"
 	"github.com/piprate/metalocker/utils"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 	"github.com/urfave/cli/v2"
 )
 
@@ -82,6 +86,8 @@ func InitialiseCommand(c *cli.Context) error {
 	return nil
 }
 
+var cfg = koanf.New(".")
+
 func RunServer(c *cli.Context) error {
 
 	// read configuration
@@ -89,11 +95,12 @@ func RunServer(c *cli.Context) error {
 	configName := c.String("config")
 	configDir := utils.AbsPathify(cmd.GetMetaLockerConfigDir())
 
-	viper.SetConfigName(configName)
-	viper.AddConfigPath(configDir)
-	viper.AddConfigPath(".")
-
-	err := viper.ReadInConfig()
+	err := cfg.Load(
+		file.Provider(
+			filepath.Join(configDir, fmt.Sprintf("%s.yaml", configName)),
+		),
+		yaml.Parser(),
+	)
 	if err != nil {
 		return err
 	}
@@ -101,19 +108,19 @@ func RunServer(c *cli.Context) error {
 	// start MetaLocker server
 
 	srv := node.NewMetaLockerServer(configDir)
-	if err = srv.InitServices(viper.GetViper(), c.Bool("debug")); err != nil {
+	if err = srv.InitServices(cfg, c.Bool("debug")); err != nil {
 		return err
 	}
 
-	if err = srv.InitAuthentication(viper.GetViper()); err != nil {
+	if err = srv.InitAuthentication(cfg); err != nil {
 		return err
 	}
 
-	if err = srv.InitStandardRoutes(viper.GetViper()); err != nil {
+	if err = srv.InitStandardRoutes(cfg); err != nil {
 		return err
 	}
 
-	if err = srv.Run(viper.GetViper()); err != nil {
+	if err = srv.Run(cfg); err != nil {
 		return err
 	}
 

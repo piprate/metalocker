@@ -15,22 +15,22 @@
 package examples
 
 import (
-	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/piprate/metalocker/node"
-	"github.com/piprate/metalocker/remote/caller"
-	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
-
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/rawbytes"
 	_ "github.com/piprate/metalocker/index/bolt"
 	_ "github.com/piprate/metalocker/ledger/local"
+	"github.com/piprate/metalocker/node"
+	"github.com/piprate/metalocker/remote/caller"
 	_ "github.com/piprate/metalocker/storage/memory"
 	_ "github.com/piprate/metalocker/vaults/fs"
 	_ "github.com/piprate/metalocker/vaults/memory"
+	"github.com/rs/zerolog/log"
 )
 
 const DemoPort = 32000
@@ -38,8 +38,7 @@ const DemoPort = 32000
 func StartDemoServer(serverDir string, debugMode bool) (*node.MetaLockerServer, string, error) {
 	// start MetaLocker server
 
-	viper.SetConfigName("config")
-	viper.AddConfigPath(serverDir)
+	cfg := koanf.New(".")
 
 	if err := os.WriteFile(filepath.Join(serverDir, "token.rsa"), []byte(`-----BEGIN RSA PRIVATE KEY-----
 MIICXQIBAAKBgQDPggCi6LD06XmaSQs4oI5Hk9wyuDzr7eoqIZ5FfHsyeWd7DWJ2
@@ -68,33 +67,31 @@ fAX1YBBXUb3XGJNZlQIDAQAB
 		return nil, "", err
 	}
 
-	cfg, _, err := node.GenerateConfig(DemoPort, serverDir)
+	metaLockerCfg, _, err := node.GenerateConfig(DemoPort, serverDir)
 	if err != nil {
 		return nil, "", err
 	}
 
-	viper.SetConfigType("yaml")
-
-	if err = viper.ReadConfig(bytes.NewReader(cfg)); err != nil {
+	if err = cfg.Load(rawbytes.Provider(metaLockerCfg), yaml.Parser()); err != nil {
 		return nil, "", err
 	}
 
 	srv := node.NewMetaLockerServer(serverDir)
 
-	if err := srv.InitServices(viper.GetViper(), debugMode); err != nil {
+	if err := srv.InitServices(cfg, debugMode); err != nil {
 		return nil, "", err
 	}
 
-	if err := srv.InitAuthentication(viper.GetViper()); err != nil {
+	if err := srv.InitAuthentication(cfg); err != nil {
 		return nil, "", err
 	}
 
-	if err := srv.InitStandardRoutes(viper.GetViper()); err != nil {
+	if err := srv.InitStandardRoutes(cfg); err != nil {
 		return nil, "", err
 	}
 
 	go func() {
-		if err := srv.Run(viper.GetViper()); err != nil {
+		if err := srv.Run(cfg); err != nil {
 			log.Err(err).Msg("Error starting MetaLocker server")
 		}
 	}()

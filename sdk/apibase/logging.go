@@ -20,13 +20,13 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/knadh/koanf"
 	"github.com/piprate/metalocker/utils/grayzero"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 )
 
-func SetupLogging(viperCfg *viper.Viper, prodMode bool) (io.Closer, error) {
+func SetupLogging(cfg *koanf.Koanf, prodMode bool) (io.Closer, error) {
 	if prodMode {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 		gin.SetMode(gin.ReleaseMode)
@@ -37,17 +37,17 @@ func SetupLogging(viperCfg *viper.Viper, prodMode bool) (io.Closer, error) {
 
 	var logWriter io.WriteCloser
 	var err error
-	if viperCfg.IsSet("logging") {
-		consoleFormat := viperCfg.GetString("logging.consoleFormat")
+	if cfg.Exists("logging") {
+		consoleFormat := cfg.String("logging.consoleFormat")
 		switch consoleFormat {
 		case "pretty":
 			logWriter = grayzero.NopWriteCloser(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.Stamp})
 		case "json":
 			logWriter = grayzero.NopWriteCloser(os.Stdout)
 		}
-		graylogURL := viperCfg.GetString("logging.graylogURL")
+		graylogURL := cfg.String("logging.graylogURL")
 		if graylogURL != "" {
-			serviceName := viperCfg.GetString("logging.serviceName")
+			serviceName := cfg.String("logging.serviceName")
 			if serviceName == "" {
 				serviceName = "metalocker"
 			}
@@ -55,7 +55,7 @@ func SetupLogging(viperCfg *viper.Viper, prodMode bool) (io.Closer, error) {
 				graylogURL,
 				logWriter,
 				serviceName,
-				viperCfg.GetString("logging.instance"),
+				cfg.String("logging.instance"),
 			)
 			if err != nil {
 				return nil, err

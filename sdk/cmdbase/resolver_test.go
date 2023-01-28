@@ -15,9 +15,9 @@
 package cmdbase_test
 
 import (
+	"github.com/knadh/koanf"
 	. "github.com/piprate/metalocker/sdk/cmdbase"
 	"github.com/piprate/metalocker/utils/hv"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -25,7 +25,7 @@ import (
 )
 
 func TestNewSecureParameterResolver_ResolveString(t *testing.T) {
-	rootViper := viper.New()
+	rootCfg := koanf.New(".")
 
 	var hcv *hv.HCVaultClient
 	var err error
@@ -34,46 +34,46 @@ func TestNewSecureParameterResolver_ResolveString(t *testing.T) {
 
 	// test simple string
 
-	rootViper.Set("string", "val")
+	_ = rootCfg.Set("string", "val")
 
-	val, err := res.ResolveString(rootViper.Get("string"))
+	val, err := res.ResolveString(rootCfg.Get("string"))
 	require.NoError(t, err)
 	assert.Equal(t, "val", val)
 
-	// test Viper parameter (first level)
+	// test Side Config parameter (first level)
 
-	rootViper.Set("viper_param.type", "ViperParam")
-	rootViper.Set("viper_param.viper", "test")
-	rootViper.Set("viper_param.key", "field1")
+	_ = rootCfg.Set("side_param.type", EPTypeSideConfig)
+	_ = rootCfg.Set("side_param.cfg", "test")
+	_ = rootCfg.Set("side_param.key", "field1")
 
-	sideViper1 := viper.New()
-	sideViper1.Set("field1", "val1")
+	sideCfg1 := koanf.New(".")
+	_ = sideCfg1.Set("field1", "val1")
 
-	res.AddSideViper("test", sideViper1)
+	res.AddSideConfig("test", sideCfg1)
 
-	val, err = res.ResolveString(rootViper.Get("viper_param"))
+	val, err = res.ResolveString(rootCfg.Get("side_param"))
 	require.NoError(t, err)
 	assert.Equal(t, "val1", val)
 
-	// test Viper parameter (multi-level)
+	// test Side Config parameter (multi-level)
 
-	rootViper.Set("viper_param.type", "ViperParam")
-	rootViper.Set("viper_param.viper", "test")
-	rootViper.Set("viper_param.key", "level1.level2.field2")
+	_ = rootCfg.Set("side_param.type", EPTypeSideConfig)
+	_ = rootCfg.Set("side_param.cfg", "test")
+	_ = rootCfg.Set("side_param.key", "level1.level2.field2")
 
-	sideViper1.Set("level1.level2.field2", "val2")
+	_ = sideCfg1.Set("level1.level2.field2", "val2")
 
-	val, err = res.ResolveString(rootViper.Get("viper_param"))
+	val, err = res.ResolveString(rootCfg.Get("side_param"))
 	require.NoError(t, err)
 	assert.Equal(t, "val2", val)
 
 	// test Vault parameter (Vault is missing)
 
-	rootViper.Set("vault_param.type", "VaultParam")
-	rootViper.Set("vault_param.path", "piprate/metalocker/test")
-	rootViper.Set("vault_param.key", "field3")
+	_ = rootCfg.Set("vault_param.type", "VaultParam")
+	_ = rootCfg.Set("vault_param.path", "piprate/metalocker/test")
+	_ = rootCfg.Set("vault_param.key", "field3")
 
-	_, err = res.ResolveString(rootViper.Get("vault_param"))
+	_, err = res.ResolveString(rootCfg.Get("vault_param"))
 	assert.Error(t, err)
 
 	// test direct value provision (string)
@@ -85,9 +85,9 @@ func TestNewSecureParameterResolver_ResolveString(t *testing.T) {
 	// test direct value provision (map)
 
 	val, err = res.ResolveString(map[string]any{
-		"type":  "ViperParam",
-		"viper": "test",
-		"key":   "field1",
+		"type": EPTypeSideConfig,
+		"cfg":  "test",
+		"key":  "field1",
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "val1", val)

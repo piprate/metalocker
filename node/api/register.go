@@ -22,13 +22,13 @@ import (
 
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/gin-gonic/gin"
+	"github.com/knadh/koanf"
 	"github.com/piprate/metalocker/model"
 	"github.com/piprate/metalocker/model/account"
 	"github.com/piprate/metalocker/sdk/apibase"
 	"github.com/piprate/metalocker/storage"
 	"github.com/piprate/metalocker/utils/jsonw"
 	"github.com/piprate/metalocker/wallet"
-	"github.com/spf13/viper"
 )
 
 type NewAccountForm struct {
@@ -186,15 +186,15 @@ func RegisterHandler(registrationCodes []string, defaultVault string, secondLeve
 	}
 }
 
-func InitRegisterRoute(r *gin.Engine, path string, v *viper.Viper, jwtMW *apibase.GinJWTMiddleware, identityBackend storage.IdentityBackend, ledger model.Ledger) {
+func InitRegisterRoute(r *gin.Engine, path string, cfg *koanf.Koanf, jwtMW *apibase.GinJWTMiddleware, identityBackend storage.IdentityBackend, ledger model.Ledger) {
 	var slrKey []byte
-	slrKeyStr := v.GetString("secondLevelRecoveryKey")
+	slrKeyStr := cfg.String("secondLevelRecoveryKey")
 	if slrKeyStr != "" {
 		slrKey = base58.Decode(slrKeyStr)
 	}
 
 	r.POST(path, RegisterHandler(
-		v.GetStringSlice("registrationCode"),
-		v.GetString("defaultVaultName"),
+		cfg.Strings("registrationCode"),
+		cfg.String("defaultVaultName"),
 		slrKey, nil, nil, nil, jwtMW, identityBackend, ledger))
 }

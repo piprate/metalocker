@@ -26,6 +26,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/knadh/koanf"
 	"github.com/piprate/metalocker/contexts"
 	"github.com/piprate/metalocker/ledger"
 	"github.com/piprate/metalocker/model"
@@ -40,7 +41,6 @@ import (
 	"github.com/piprate/metalocker/utils/security"
 	"github.com/piprate/metalocker/vaults"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 	"github.com/urfave/cli/v2"
 )
 
@@ -82,13 +82,13 @@ func NewMetaLockerServer(configDir string) *MetaLockerServer {
 	return mls
 }
 
-func (mls *MetaLockerServer) InitServices(v *viper.Viper, debugMode bool) error {
+func (mls *MetaLockerServer) InitServices(cfg *koanf.Koanf, debugMode bool) error {
 	mls.Warden = utils.NewGracefulWarden(120)
 
-	prodMode := viper.GetBool("production") && !debugMode
+	prodMode := cfg.Bool("production") && !debugMode
 
 	// set up logging
-	logWriter, err := apibase.SetupLogging(v, prodMode)
+	logWriter, err := apibase.SetupLogging(cfg, prodMode)
 	if err != nil {
 		log.Err(err).Msg("Failed to configure logging")
 		return cli.Exit(err, 1)
@@ -98,22 +98,22 @@ func (mls *MetaLockerServer) InitServices(v *viper.Viper, debugMode bool) error 
 	// preload JSON-LD context into memory
 	_ = contexts.PreloadContextsIntoMemory()
 
-	if v.GetBool("https") {
+	if cfg.Bool("https") {
 		mls.protocol = "https"
 	} else {
 		mls.protocol = "http"
 	}
 
-	mls.host = v.GetString("host")
-	mls.port = v.GetInt("port")
-	mls.baseURI = v.GetString("nodeURI")
+	mls.host = cfg.String("host")
+	mls.port = cfg.Int("port")
+	mls.baseURI = cfg.String("nodeURI")
 
 	log.Info().Strs("args", os.Args).Str("go_version", runtime.Version()).
 		Str("os", runtime.GOOS).Str("arch", runtime.GOARCH).Str("uri", mls.baseURI).
 		Bool("prod_mode", prodMode).
 		Msg("Starting new instance")
 
-	mls.Resolver, err = cmdbase.ConfigureParameterResolver(v, mls.ConfigDir)
+	mls.Resolver, err = cmdbase.ConfigureParameterResolver(cfg, mls.ConfigDir)
 	if err != nil {
 		log.Err(err).Msg("Failed to create parameter resolver")
 		return cli.Exit(err, 1)
@@ -122,7 +122,7 @@ func (mls *MetaLockerServer) InitServices(v *viper.Viper, debugMode bool) error 
 
 	// initialise identity backend
 
-	mls.IdentityBackend, err = InitIdentityBackend(v, mls.Resolver)
+	mls.IdentityBackend, err = InitIdentityBackend(cfg, mls.Resolver)
 	if err != nil {
 		return err
 	}
@@ -134,7 +134,7 @@ func (mls *MetaLockerServer) InitServices(v *viper.Viper, debugMode bool) error 
 
 	// initialise off-chain storage
 
-	mls.OffChainVault, err = InitOffChainStorage(v, mls.Resolver)
+	mls.OffChainVault, err = InitOffChainStorage(cfg, mls.Resolver)
 	if err != nil {
 		return err
 	}
@@ -142,7 +142,7 @@ func (mls *MetaLockerServer) InitServices(v *viper.Viper, debugMode bool) error 
 
 	// initialise ledger connector
 
-	mls.Ledger, err = InitLedger(v, mls.Resolver, mls.NS)
+	mls.Ledger, err = InitLedger(cfg, mls.Resolver, mls.NS)
 	if err != nil {
 		return err
 	}
@@ -150,7 +150,7 @@ func (mls *MetaLockerServer) InitServices(v *viper.Viper, debugMode bool) error 
 
 	// initialise vaults
 
-	mls.BlobManager, err = InitVaults(v, mls.Resolver, mls.Ledger, mls.Warden)
+	mls.BlobManager, err = InitVaults(cfg, mls.Resolver, mls.Ledger, mls.Warden)
 	if err != nil {
 		return err
 	}
@@ -159,15 +159,15 @@ func (mls *MetaLockerServer) InitServices(v *viper.Viper, debugMode bool) error 
 
 	mls.Router = InitRouter(
 		DefaultCORSConfig(
-			v.GetStringSlice("allowedHttpOrigins"),
+			cfg.Strings("allowedHttpOrigins"),
 		),
 	)
 
 	return nil
 }
 
-func (mls *MetaLockerServer) InitAuthentication(v *viper.Viper) error {
-	authMiddleware, publicKeyBytes, err := InitAuthMiddleware(v, "MetaLocker", mls.Resolver, mls.ConfigDir, mls.IdentityBackend)
+func (mls *MetaLockerServer) InitAuthentication(cfg *koanf.Koanf) error {
+	authMiddleware, publicKeyBytes, err := InitAuthMiddleware(cfg, "MetaLocker", mls.Resolver, mls.ConfigDir, mls.IdentityBackend)
 	if err != nil {
 		return err
 	}
@@ -176,8 +176,8 @@ func (mls *MetaLockerServer) InitAuthentication(v *viper.Viper) error {
 
 	mls.Level1AuthFn = apibase.AccessKeyMiddleware(mls.IdentityBackend, authMiddleware.MiddlewareFunc())
 
-	if v.IsSet("apiKeys") {
-		mls.Level2AuthFn, err = apibase.NewStaticAPIKeyAuthenticationHandler(v, "apiKeys", mls.Level1AuthFn,
+	if cfg.Exists("apiKeys") {
+		mls.Level2AuthFn, err = apibase.NewStaticAPIKeyAuthenticationHandler(cfg, "apiKeys", mls.Level1AuthFn,
 			mls.Resolver, mls.IdentityBackend)
 		if err != nil {
 			return cli.Exit(err, 1)
@@ -189,18 +189,18 @@ func (mls *MetaLockerServer) InitAuthentication(v *viper.Viper) error {
 	return nil
 }
 
-func (mls *MetaLockerServer) InitStandardRoutes(v *viper.Viper) error {
+func (mls *MetaLockerServer) InitStandardRoutes(cfg *koanf.Koanf) error {
 	r := mls.Router
 
-	if v.IsSet("administration") {
-		adminAuthFunc, err := apibase.NewAdminAuthenticationHandler(v, "administration", mls.Resolver)
+	if cfg.Exists("administration") {
+		adminAuthFunc, err := apibase.NewAdminAuthenticationHandler(cfg, "administration", mls.Resolver)
 		if err != nil {
 			return cli.Exit(err, 1)
 		}
 		admin.InitRoutes(r, "/v1/admin", adminAuthFunc, mls.IdentityBackend)
 	}
 
-	api.InitRegisterRoute(r, "/v1/register", v, mls.JWTMiddleware, mls.IdentityBackend, mls.Ledger)
+	api.InitRegisterRoute(r, "/v1/register", cfg, mls.JWTMiddleware, mls.IdentityBackend, mls.Ledger)
 
 	r.POST("/v1/authenticate", mls.JWTMiddleware.LoginHandler)
 	r.GET("/v1/refresh-token", mls.JWTMiddleware.RefreshHandler)
@@ -236,10 +236,10 @@ func (mls *MetaLockerServer) InitStandardRoutes(v *viper.Viper) error {
 	return nil
 }
 
-func (mls *MetaLockerServer) Run(v *viper.Viper) error {
+func (mls *MetaLockerServer) Run(cfg *koanf.Koanf) error {
 	listenAddr := fmt.Sprintf(":%d", mls.port)
 
-	log.Info().Str("addr", listenAddr).Bool("secure", v.GetBool("https")).Msg("Starting HTTP server")
+	log.Info().Str("addr", listenAddr).Bool("secure", cfg.Bool("https")).Msg("Starting HTTP server")
 
 	mls.httpServer = &http.Server{
 		Addr:              listenAddr,
@@ -256,10 +256,10 @@ func (mls *MetaLockerServer) Run(v *viper.Viper) error {
 
 	if mls.protocol == "https" {
 
-		certPath := path.Join(mls.ConfigDir, v.GetString("httpsCert"))
+		certPath := path.Join(mls.ConfigDir, cfg.String("httpsCert"))
 		log.Debug().Str("path", certPath).Msg("Cert file")
 
-		keyPath := path.Join(mls.ConfigDir, v.GetString("httpsKey"))
+		keyPath := path.Join(mls.ConfigDir, cfg.String("httpsKey"))
 		log.Debug().Str("path", keyPath).Msg("Key file")
 
 		_, errCert := os.Stat(certPath)
@@ -309,16 +309,16 @@ func (mls *MetaLockerServer) CloseOnShutdown(closer io.Closer) {
 	mls.Warden.CloseOnShutdown(closer)
 }
 
-func InitIdentityBackend(v *viper.Viper, resolver cmdbase.ParameterResolver) (storage.IdentityBackend, error) {
-	if v.IsSet("accountStore") {
-		var cfg storage.IdentityBackendConfig
-		err := v.Sub("accountStore").Unmarshal(&cfg)
+func InitIdentityBackend(cfg *koanf.Koanf, resolver cmdbase.ParameterResolver) (storage.IdentityBackend, error) {
+	if cfg.Exists("accountStore") {
+		var backendCfg storage.IdentityBackendConfig
+		err := cfg.Unmarshal("accountStore", &backendCfg)
 		if err != nil {
 			log.Err(err).Msg("Failed to read account storage configuration")
 			return nil, cli.Exit(err, 1)
 		}
 
-		identityBackend, err := storage.CreateIdentityBackend(&cfg, resolver)
+		identityBackend, err := storage.CreateIdentityBackend(&backendCfg, resolver)
 		if err != nil {
 			log.Err(err).Msg("Failed to create storage backend")
 			return nil, cli.Exit(err, 1)
@@ -330,15 +330,15 @@ func InitIdentityBackend(v *viper.Viper, resolver cmdbase.ParameterResolver) (st
 	}
 }
 
-func InitOffChainStorage(v *viper.Viper, resolver cmdbase.ParameterResolver) (vaults.Vault, error) {
-	var cfg vaults.Config
-	err := v.UnmarshalKey("offChainStore", &cfg)
+func InitOffChainStorage(cfg *koanf.Koanf, resolver cmdbase.ParameterResolver) (vaults.Vault, error) {
+	var vaultCfg vaults.Config
+	err := cfg.Unmarshal("offChainStore", &vaultCfg)
 	if err != nil {
 		log.Err(err).Msg("Failed to read vault configuration")
 		return nil, cli.Exit(err, 1)
 	}
 
-	offchainAPI, err := vaults.CreateVault(&cfg, resolver, nil)
+	offchainAPI, err := vaults.CreateVault(&vaultCfg, resolver, nil)
 	if err != nil {
 		log.Err(err).Msg("Failed to create an offchain vault")
 		os.Exit(1)
@@ -352,17 +352,17 @@ func InitOffChainStorage(v *viper.Viper, resolver cmdbase.ParameterResolver) (va
 	return offchainAPI, nil
 }
 
-func InitLedger(v *viper.Viper, resolver cmdbase.ParameterResolver, ns notification.Service) (model.Ledger, error) {
+func InitLedger(cfg *koanf.Koanf, resolver cmdbase.ParameterResolver, ns notification.Service) (model.Ledger, error) {
 	var ledgerAPI model.Ledger
-	if v.IsSet("ledger") {
-		var cfg ledger.Config
-		err := v.Sub("ledger").Unmarshal(&cfg)
+	if cfg.Exists("ledger") {
+		var ledgerCfg ledger.Config
+		err := cfg.Unmarshal("ledger", &ledgerCfg)
 		if err != nil {
 			log.Err(err).Msg("Failed to read ledger connector configuration")
 			return nil, cli.Exit(err, 1)
 		}
 
-		ledgerAPI, err = ledger.CreateLedgerConnector(&cfg, ns, resolver)
+		ledgerAPI, err = ledger.CreateLedgerConnector(&ledgerCfg, ns, resolver)
 		if err != nil {
 			log.Err(err).Msg("Failed to create ledger connector")
 			return nil, cli.Exit(err, 1)
@@ -373,9 +373,9 @@ func InitLedger(v *viper.Viper, resolver cmdbase.ParameterResolver, ns notificat
 	}
 }
 
-func InitVaults(v *viper.Viper, resolver cmdbase.ParameterResolver, ledgerAPI model.Ledger, warden *utils.GracefulWarden) (*vaults.LocalBlobManager, error) {
+func InitVaults(cfg *koanf.Koanf, resolver cmdbase.ParameterResolver, ledgerAPI model.Ledger, warden *utils.GracefulWarden) (*vaults.LocalBlobManager, error) {
 	var vaultConfigs []*vaults.Config
-	if err := v.UnmarshalKey("vaults", &vaultConfigs); err != nil {
+	if err := cfg.Unmarshal("vaults", &vaultConfigs); err != nil {
 		log.Err(err).Msg("Failed to read vault configurations")
 		return nil, cli.Exit(err, 1)
 	}
@@ -414,20 +414,20 @@ func InitRouter(corsCfg *cors.Config) *gin.Engine {
 	return r
 }
 
-func InitAuthMiddleware(v *viper.Viper, realm string, resolver cmdbase.ParameterResolver, configDir string, identityBackend storage.IdentityBackend) (*apibase.GinJWTMiddleware, []byte, error) {
-	privateKeyPath := path.Join(configDir, v.GetString("tokenPrivateKey"))
-	publicKeyPath := path.Join(configDir, v.GetString("tokenPublicKey"))
+func InitAuthMiddleware(cfg *koanf.Koanf, realm string, resolver cmdbase.ParameterResolver, configDir string, identityBackend storage.IdentityBackend) (*apibase.GinJWTMiddleware, []byte, error) {
+	privateKeyPath := path.Join(configDir, cfg.String("tokenPrivateKey"))
+	publicKeyPath := path.Join(configDir, cfg.String("tokenPublicKey"))
 
 	// the jwt middleware
-	jwtTimeout := v.GetInt64("jwtTimeout")
+	jwtTimeout := cfg.Int64("jwtTimeout")
 	if jwtTimeout == 0 {
 		// default timeout is 14 days
 		jwtTimeout = 14 * 24 * 60
 	}
 
-	acceptedAudiences := v.GetStringSlice("acceptedAudiences")
+	acceptedAudiences := cfg.Strings("acceptedAudiences")
 
-	defaultAudience := v.GetString("defaultAudience")
+	defaultAudience := cfg.String("defaultAudience")
 	if len(acceptedAudiences) > 0 {
 		if defaultAudience == "" {
 			defaultAudience = acceptedAudiences[0]
@@ -436,13 +436,13 @@ func InitAuthMiddleware(v *viper.Viper, realm string, resolver cmdbase.Parameter
 		acceptedAudiences = append(acceptedAudiences, defaultAudience)
 	}
 
-	defaultAudiencePublicKey, err := resolver.ResolveString(v.Get("defaultAudiencePublicKey"))
+	defaultAudiencePublicKey, err := resolver.ResolveString(cfg.Get("defaultAudiencePublicKey"))
 	if err != nil {
 		log.Error().Msg("Error reading audience public key")
 		return nil, nil, cli.Exit(err, 1)
 	}
 
-	defaultAudiencePrivateKey, err := resolver.ResolveString(v.Get("defaultAudiencePrivateKey"))
+	defaultAudiencePrivateKey, err := resolver.ResolveString(cfg.Get("defaultAudiencePrivateKey"))
 	if err != nil {
 		log.Error().Msg("Error reading audience private key")
 		return nil, nil, cli.Exit(err, 1)
@@ -450,7 +450,7 @@ func InitAuthMiddleware(v *viper.Viper, realm string, resolver cmdbase.Parameter
 
 	authMiddleware, err := apibase.JWTMiddlewareWithTokenIssuance(
 		realm,
-		v.GetString("issuer"),
+		cfg.String("issuer"),
 		apibase.AuthenticationHandler(identityBackend, acceptedAudiences, defaultAudience, defaultAudiencePublicKey),
 		defaultAudiencePrivateKey,
 		privateKeyPath, publicKeyPath, time.Duration(jwtTimeout)*time.Minute, time.Now)

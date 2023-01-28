@@ -94,11 +94,11 @@ type (
 	}
 
 	StoreConfig struct {
-		ID             string         `mapstructure:"id" json:"id"`
-		Name           string         `mapstructure:"name" json:"name"`
-		Type           string         `mapstructure:"type" json:"type"`
-		EncryptionMode EncryptionMode `mapstructure:"encryptionMode" json:"encryptionMode"`
-		Params         map[string]any `mapstructure:"params" json:"params,omitempty"`
+		ID             string         `koanf:"id" json:"id"`
+		Name           string         `koanf:"name" json:"name"`
+		Type           string         `koanf:"type" json:"type"`
+		EncryptionMode EncryptionMode `koanf:"encryptionMode" json:"encryptionMode"`
+		Params         map[string]any `koanf:"params" json:"params,omitempty"`
 	}
 
 	Options struct {
