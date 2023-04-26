@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/piprate/metalocker/model"
 	"github.com/piprate/metalocker/model/account"
 	"github.com/piprate/metalocker/sdk/apibase"
 	"github.com/piprate/metalocker/storage"
@@ -130,7 +131,7 @@ func RecoverAccountHandler(identityBackend storage.IdentityBackend) gin.HandlerF
 		recPubKey, err := base64.StdEncoding.DecodeString(acct.RecoveryPublicKey)
 		if err != nil {
 			log.Err(err).Msg("Error when decoding recovery public key")
-			apibase.AbortWithError(c, http.StatusInternalServerError, "Bad recovery key")
+			apibase.AbortWithError(c, http.StatusBadRequest, "Bad recovery key")
 			return
 		}
 		if !req.Valid(recPubKey) {
@@ -147,11 +148,35 @@ func RecoverAccountHandler(identityBackend storage.IdentityBackend) gin.HandlerF
 		err = account.ReHashPassphrase(acct, nil)
 		if err != nil {
 			log.Err(err).Msg("Error when hashing password")
-			apibase.AbortWithError(c, http.StatusInternalServerError, "Bad account recovery request")
+			apibase.AbortWithError(c, http.StatusBadRequest, "Bad account recovery request")
 			return
 		}
 
-		acct.State = account.StateRecovery
+		if req.ManagedCryptoKey != "" {
+			// perform full managed account recovery. The account will return to 'active' state
+
+			if acct.AccessLevel != model.AccessLevelManaged {
+				log.Error().Msg("Can't recover non-managed account using managed workflow")
+				apibase.AbortWithError(c, http.StatusBadRequest, "Can't use managed crypto key for non-managed account")
+				return
+			}
+
+			managedCryptoKeyBytes, err := base64.StdEncoding.DecodeString(req.ManagedCryptoKey)
+			if err != nil {
+				log.Err(err).Msg("Error when decoding managed crypto key")
+				apibase.AbortWithError(c, http.StatusBadRequest, "Bad managed crypto key")
+				return
+			}
+			managedCryptoKey := model.NewAESKey(managedCryptoKeyBytes)
+			acct, err = account.RecoverManaged(acct, managedCryptoKey, req.EncryptedPassword)
+			if err != nil {
+				log.Err(err).Msg("Error when recovering managed account")
+				apibase.AbortWithError(c, http.StatusInternalServerError, "Error when recovering managed account")
+				return
+			}
+		} else {
+			acct.State = account.StateRecovery
+		}
 
 		err = identityBackend.UpdateAccount(acct)
 		if err != nil {

@@ -229,7 +229,7 @@ func (c *MetaLockerHTTPCaller) GetAccountRecoveryCode(username string) (string, 
 
 func (c *MetaLockerHTTPCaller) RecoverAccount(userID string, privKey ed25519.PrivateKey, recoveryCode, newPassphrase string) (*account.Account, error) {
 
-	req := account.BuildRecoveryRequest(userID, recoveryCode, privKey, newPassphrase)
+	req := account.BuildRecoveryRequest(userID, recoveryCode, privKey, newPassphrase, nil)
 
 	res, err := c.client.SendRequest(http.MethodPost, "/v1/recover-account",
 		httpsecure.WithJSONBody(req),

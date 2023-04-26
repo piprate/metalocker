@@ -147,7 +147,7 @@ func TestRecoverAccountHandler(t *testing.T) {
 
 	newPassphrase := "pass2"
 
-	req := account.BuildRecoveryRequest(rc.UserID, rc.Code, privKey, newPassphrase)
+	req := account.BuildRecoveryRequest(rc.UserID, rc.Code, privKey, newPassphrase, nil)
 	reqBytes, _ = jsonw.Marshal(req)
 
 	rec = invoke(bytes.NewReader(reqBytes))
@@ -156,7 +156,8 @@ func TestRecoverAccountHandler(t *testing.T) {
 	var rsp *AccountRecoveryResponse
 	readBody(t, rec, &rsp)
 
-	assert.NotEmpty(t, rsp.Account)
+	require.NotEmpty(t, rsp.Account)
+	assert.Equal(t, account.StateRecovery, rsp.Account.State)
 	assert.Equal(t, acct.ID, rsp.Account.ID)
 
 	// confirm the code is deleted
@@ -184,7 +185,7 @@ func TestRecoverAccountHandler(t *testing.T) {
 	_, _, privKey, err = account.GenerateKeysFromRecoveryPhrase(recDetails.RecoveryPhrase)
 	require.NoError(t, err)
 
-	req = account.BuildRecoveryRequest(rc.UserID, rc.Code, privKey, newPassphrase)
+	req = account.BuildRecoveryRequest(rc.UserID, rc.Code, privKey, newPassphrase, nil)
 	reqBytes, _ = jsonw.Marshal(req)
 
 	rec = invoke(bytes.NewReader(reqBytes))
@@ -194,4 +195,90 @@ func TestRecoverAccountHandler(t *testing.T) {
 	readBody(t, rec, &msg)
 
 	assert.Equal(t, "Account doesn't support recovery", msg.Message)
+}
+
+func TestRecoverAccountHandler_ManagedWorkflow(t *testing.T) {
+	// this test is for a request that contains the account's managed crypto key.
+	// This enables server side recovery for managed accounts for clients
+	// that don't have access to advanced cryptography.
+	// In the end of this test the managed account should be in 'active' state.
+
+	env := testbase.SetUpTestEnvironment(t)
+	defer func() { _ = env.Close() }()
+
+	invoke := func(body io.Reader) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(rec)
+		c.Request, _ = http.NewRequest(http.MethodPost,
+			"test-url", body)
+
+		RecoverAccountHandler(env.IdentityBackend)(c)
+
+		return rec
+	}
+
+	// should fail for hosted accounts
+
+	_, recDetails, err := env.Factory.RegisterAccount(
+		&account.Account{
+			Email:        "hosted@example.com",
+			Name:         "John Doe",
+			AccessLevel:  model.AccessLevelHosted,
+			DefaultVault: testbase.TestVaultName,
+		},
+		account.WithPassphraseAuth("pass"))
+	require.NoError(t, err)
+
+	rc, err := account.NewRecoveryCode("hosted@example.com", 5*60)
+	require.NoError(t, err)
+
+	err = env.IdentityBackend.CreateRecoveryCode(rc)
+	require.NoError(t, err)
+
+	cryptoKey, _, privKey, err := account.GenerateKeysFromRecoveryPhrase(recDetails.RecoveryPhrase)
+	require.NoError(t, err)
+
+	newPassphrase := "pass2"
+
+	req := account.BuildRecoveryRequest(rc.UserID, rc.Code, privKey, newPassphrase, cryptoKey)
+	reqBytes, _ := jsonw.Marshal(req)
+
+	rec := invoke(bytes.NewReader(reqBytes))
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+
+	// happy path
+
+	dw, recDetails, err := env.Factory.RegisterAccount(
+		&account.Account{
+			Email:        "managed@example.com",
+			Name:         "John Doe",
+			AccessLevel:  model.AccessLevelManaged,
+			DefaultVault: testbase.TestVaultName,
+		},
+		account.WithPassphraseAuth("pass"))
+	require.NoError(t, err)
+
+	acct := dw.Account()
+
+	rc, err = account.NewRecoveryCode("managed@example.com", 5*60)
+	require.NoError(t, err)
+
+	err = env.IdentityBackend.CreateRecoveryCode(rc)
+	require.NoError(t, err)
+
+	cryptoKey, _, privKey, err = account.GenerateKeysFromRecoveryPhrase(recDetails.RecoveryPhrase)
+	require.NoError(t, err)
+
+	req = account.BuildRecoveryRequest(rc.UserID, rc.Code, privKey, newPassphrase, cryptoKey)
+	reqBytes, _ = jsonw.Marshal(req)
+
+	rec = invoke(bytes.NewReader(reqBytes))
+	require.Equal(t, http.StatusOK, rec.Code)
+
+	var rsp *AccountRecoveryResponse
+	readBody(t, rec, &rsp)
+
+	require.NotEmpty(t, rsp.Account)
+	assert.Equal(t, account.StateActive, rsp.Account.State)
+	assert.Equal(t, acct.ID, rsp.Account.ID)
 }
