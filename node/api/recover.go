@@ -140,18 +140,6 @@ func RecoverAccountHandler(identityBackend storage.IdentityBackend) gin.HandlerF
 			return
 		}
 
-		// We update the password to enable the user to log in and update the account properly,
-		// including internal secrets. Until then, the recorded password will be out of sync with the secrets.
-		// This is ok because we consider the password to be irretrievably lost.
-		acct.EncryptedPassword = req.EncryptedPassword
-
-		err = account.ReHashPassphrase(acct, nil)
-		if err != nil {
-			log.Err(err).Msg("Error when hashing password")
-			apibase.AbortWithError(c, http.StatusBadRequest, "Bad account recovery request")
-			return
-		}
-
 		if req.ManagedCryptoKey != "" {
 			// perform full managed account recovery. The account will return to 'active' state
 
@@ -175,7 +163,19 @@ func RecoverAccountHandler(identityBackend storage.IdentityBackend) gin.HandlerF
 				return
 			}
 		} else {
+			// We update the password to enable the user to log in and update the account properly,
+			// including internal secrets. Until then, the recorded password will be out of sync with the secrets.
+			// This is ok because we consider the password to be irretrievably lost.
+			acct.EncryptedPassword = req.EncryptedPassword
+
 			acct.State = account.StateRecovery
+		}
+
+		err = account.ReHashPassphrase(acct, nil)
+		if err != nil {
+			log.Err(err).Msg("Error when hashing password")
+			apibase.AbortWithError(c, http.StatusBadRequest, "Bad account recovery request")
+			return
 		}
 
 		err = identityBackend.UpdateAccount(acct)

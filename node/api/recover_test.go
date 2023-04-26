@@ -31,6 +31,7 @@ import (
 	"github.com/piprate/metalocker/utils/jsonw"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func TestGetRecoveryCodeHandler(t *testing.T) {
@@ -160,6 +161,12 @@ func TestRecoverAccountHandler(t *testing.T) {
 	assert.Equal(t, account.StateRecovery, rsp.Account.State)
 	assert.Equal(t, acct.ID, rsp.Account.ID)
 
+	// check the user can be authenticated using the new passphrase
+
+	storedAcct, err := env.IdentityBackend.GetAccount(acct.ID)
+	assert.NoError(t, err)
+	assert.NoError(t, bcrypt.CompareHashAndPassword([]byte(storedAcct.EncryptedPassword), []byte(account.HashUserPassword(newPassphrase))))
+
 	// confirm the code is deleted
 	_, err = env.IdentityBackend.GetRecoveryCode(rc.Code)
 	require.Error(t, err)
@@ -281,4 +288,10 @@ func TestRecoverAccountHandler_ManagedWorkflow(t *testing.T) {
 	require.NotEmpty(t, rsp.Account)
 	assert.Equal(t, account.StateActive, rsp.Account.State)
 	assert.Equal(t, acct.ID, rsp.Account.ID)
+
+	// check the user can be authenticated using the new passphrase
+
+	acct, err = env.IdentityBackend.GetAccount(acct.ID)
+	assert.NoError(t, err)
+	assert.NoError(t, bcrypt.CompareHashAndPassword([]byte(acct.EncryptedPassword), []byte(account.HashUserPassword(newPassphrase))))
 }
