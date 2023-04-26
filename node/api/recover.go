@@ -18,6 +18,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -40,6 +41,11 @@ type AccountRecoveryResponse struct {
 func GetRecoveryCodeHandler(identityBackend storage.IdentityBackend) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		email := c.Query("email")
+
+		if strings.Contains(email, "@") {
+			// if the username is an email, transform to lower case
+			email = strings.ToLower(email)
+		}
 
 		acct, err := identityBackend.GetAccount(email)
 		if err != nil {
@@ -88,6 +94,11 @@ func RecoverAccountHandler(identityBackend storage.IdentityBackend) gin.HandlerF
 			log.Err(err).Str("body", string(buf)).Msg("Bad recover request body")
 			apibase.AbortWithError(c, http.StatusBadRequest, "Bad register request")
 			return
+		}
+
+		if strings.Contains(req.UserID, "@") {
+			// if the user id is an email, transform to lower case
+			req.UserID = strings.ToLower(req.UserID)
 		}
 
 		rc, err := identityBackend.GetRecoveryCode(req.RecoveryCode)
