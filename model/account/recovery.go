@@ -69,6 +69,7 @@ type RecoveryRequest struct {
 	RecoveryCode          string `json:"recoveryCode"`
 	VerificationSignature string `json:"signature"`
 	EncryptedPassword     string `json:"encryptedPassword"`
+	ManagedCryptoKey      string `json:"managedCryptoKey,omitempty"`
 }
 
 func (req *RecoveryRequest) Valid(recoveryPublicKey []byte) bool {
@@ -77,7 +78,12 @@ func (req *RecoveryRequest) Valid(recoveryPublicKey []byte) bool {
 	return ed25519.Verify(recoveryPublicKey, codeHash[:], sig)
 }
 
-func BuildRecoveryRequest(userID, recoveryCode string, privKey ed25519.PrivateKey, newPassphrase string) *RecoveryRequest {
+// BuildRecoveryRequest creates a recovery request structure that can be sent to /v1/recover-account endpoint
+// to regain access to a MetaLocker account.
+// if cryptoKey is passed, the request will contain the account's managed crypto key in a cleartext form.
+// This enables server side recovery for managed accounts for clients that don't have access to advanced
+// cryptography.
+func BuildRecoveryRequest(userID, recoveryCode string, privKey ed25519.PrivateKey, newPassphrase string, cryptoKey *model.AESKey) *RecoveryRequest {
 
 	codeHash := sha256.Sum256([]byte(recoveryCode))
 
@@ -88,6 +94,10 @@ func BuildRecoveryRequest(userID, recoveryCode string, privKey ed25519.PrivateKe
 		RecoveryCode:          recoveryCode,
 		VerificationSignature: base58.Encode(sig),
 		EncryptedPassword:     HashUserPassword(newPassphrase),
+	}
+
+	if cryptoKey != nil {
+		req.ManagedCryptoKey = base64.StdEncoding.EncodeToString(GenerateManagedFromHostedKey(cryptoKey)[:])
 	}
 
 	return req
@@ -147,6 +157,40 @@ func Recover(acct *Account, cryptoKey *model.AESKey, newPassphrase string) (*Acc
 	}
 
 	managedCryptoKey := GenerateManagedFromHostedKey(cryptoKey)
+
+	// Encrypt the crypto keys with the associated master keys.
+	managedCryptoKeyEncrypted, err := newManagedMasterKey.Encrypt(managedCryptoKey.Bytes())
+	if err != nil {
+		return nil, err
+	}
+
+	acct.ManagedSecretStore.MasterKeyParams = base64.StdEncoding.EncodeToString(newManagedMasterKey.Marshal())
+	acct.ManagedSecretStore.EncryptedPayloadKey = base64.StdEncoding.EncodeToString(managedCryptoKeyEncrypted)
+
+	acct.State = StateActive
+
+	return acct, nil
+}
+
+// RecoverManaged recovers a managed account for clients that don't have access to advanced cryptography.
+func RecoverManaged(acct *Account, managedCryptoKey *model.AESKey, hashedNewPassphrase string) (*Account, error) {
+	var err error
+
+	if acct.AccessLevel != model.AccessLevelManaged {
+		return nil, fmt.Errorf("attempted to recoved account with access level %d as managed", acct.AccessLevel)
+	}
+
+	acct = acct.Copy()
+	acct.EncryptedPassword = hashedNewPassphrase
+
+	// update managed secret store
+
+	managedMasterPassphrase := []byte(hashedNewPassphrase)
+	newManagedMasterKey, err := newSecretKey(&managedMasterPassphrase, managedAccountConfig)
+	if err != nil {
+		log.Err(err).Msg("Failed to create master key")
+		return nil, err
+	}
 
 	// Encrypt the crypto keys with the associated master keys.
 	managedCryptoKeyEncrypted, err := newManagedMasterKey.Encrypt(managedCryptoKey.Bytes())

@@ -18,9 +18,11 @@ import (
 	"encoding/base64"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/piprate/metalocker/model"
 	"github.com/piprate/metalocker/model/account"
 	"github.com/piprate/metalocker/sdk/apibase"
 	"github.com/piprate/metalocker/storage"
@@ -39,6 +41,11 @@ type AccountRecoveryResponse struct {
 func GetRecoveryCodeHandler(identityBackend storage.IdentityBackend) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		email := c.Query("email")
+
+		if strings.Contains(email, "@") {
+			// if the username is an email, transform to lower case
+			email = strings.ToLower(email)
+		}
 
 		acct, err := identityBackend.GetAccount(email)
 		if err != nil {
@@ -89,6 +96,11 @@ func RecoverAccountHandler(identityBackend storage.IdentityBackend) gin.HandlerF
 			return
 		}
 
+		if strings.Contains(req.UserID, "@") {
+			// if the user id is an email, transform to lower case
+			req.UserID = strings.ToLower(req.UserID)
+		}
+
 		rc, err := identityBackend.GetRecoveryCode(req.RecoveryCode)
 		if err != nil {
 			if errors.Is(err, storage.ErrRecoveryCodeNotFound) {
@@ -130,7 +142,7 @@ func RecoverAccountHandler(identityBackend storage.IdentityBackend) gin.HandlerF
 		recPubKey, err := base64.StdEncoding.DecodeString(acct.RecoveryPublicKey)
 		if err != nil {
 			log.Err(err).Msg("Error when decoding recovery public key")
-			apibase.AbortWithError(c, http.StatusInternalServerError, "Bad recovery key")
+			apibase.AbortWithError(c, http.StatusBadRequest, "Bad recovery key")
 			return
 		}
 		if !req.Valid(recPubKey) {
@@ -139,19 +151,43 @@ func RecoverAccountHandler(identityBackend storage.IdentityBackend) gin.HandlerF
 			return
 		}
 
-		// We update the password to enable the user to log in and update the account properly,
-		// including internal secrets. Until then, the recorded password will be out of sync with the secrets.
-		// This is ok because we consider the password to be irretrievably lost.
-		acct.EncryptedPassword = req.EncryptedPassword
+		if req.ManagedCryptoKey != "" {
+			// perform full managed account recovery. The account will return to 'active' state
+
+			if acct.AccessLevel != model.AccessLevelManaged {
+				log.Error().Msg("Can't recover non-managed account using managed workflow")
+				apibase.AbortWithError(c, http.StatusBadRequest, "Can't use managed crypto key for non-managed account")
+				return
+			}
+
+			managedCryptoKeyBytes, err := base64.StdEncoding.DecodeString(req.ManagedCryptoKey)
+			if err != nil {
+				log.Err(err).Msg("Error when decoding managed crypto key")
+				apibase.AbortWithError(c, http.StatusBadRequest, "Bad managed crypto key")
+				return
+			}
+			managedCryptoKey := model.NewAESKey(managedCryptoKeyBytes)
+			acct, err = account.RecoverManaged(acct, managedCryptoKey, req.EncryptedPassword)
+			if err != nil {
+				log.Err(err).Msg("Error when recovering managed account")
+				apibase.AbortWithError(c, http.StatusInternalServerError, "Error when recovering managed account")
+				return
+			}
+		} else {
+			// We update the password to enable the user to log in and update the account properly,
+			// including internal secrets. Until then, the recorded password will be out of sync with the secrets.
+			// This is ok because we consider the password to be irretrievably lost.
+			acct.EncryptedPassword = req.EncryptedPassword
+
+			acct.State = account.StateRecovery
+		}
 
 		err = account.ReHashPassphrase(acct, nil)
 		if err != nil {
 			log.Err(err).Msg("Error when hashing password")
-			apibase.AbortWithError(c, http.StatusInternalServerError, "Bad account recovery request")
+			apibase.AbortWithError(c, http.StatusBadRequest, "Bad account recovery request")
 			return
 		}
-
-		acct.State = account.StateRecovery
 
 		err = identityBackend.UpdateAccount(acct)
 		if err != nil {

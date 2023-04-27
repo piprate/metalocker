@@ -32,10 +32,10 @@ import (
 func TestBuildAccountRecoveryRequest(t *testing.T) {
 	userID := "test@example.com"
 	recoveryCode := "53QPUKdVDjLEbxZA3BZWT7oLpsD1VjqGA7XnN3T21vcV"
-	newPassphrase := "new_password"
+	newPassphrase := "new_password" //nolint:goconst
 	privKeyBytes := base58.Decode("ucHoMKY1EVgGrEMg3aQejMDQvq6hrLcxSZ27eEvK3V3iPv4nxukQ7eLyMK4jGmjkRZpueFmChXNsEV3eawvYbHc")
 	var privKey ed25519.PrivateKey = privKeyBytes
-	req := BuildRecoveryRequest(userID, recoveryCode, privKey, newPassphrase)
+	req := BuildRecoveryRequest(userID, recoveryCode, privKey, newPassphrase, nil)
 
 	actualBytes, _ := jsonw.Marshal(req)
 
@@ -68,6 +68,47 @@ func TestGenerateMasterRecoveryKeyPair(t *testing.T) {
 
 	ld.PrintDocument("publicKey", base58.Encode(publicKey))
 	ld.PrintDocument("privateKey", base58.Encode(privateKey))
+}
+
+func TestFirstLevelRecoveryProcedure(t *testing.T) {
+	env := testbase.SetUpTestEnvironment(t)
+	defer func() { _ = env.Close() }()
+
+	// User registration
+
+	acct := &Account{
+		Email:       "test@example.com",
+		Name:        "Tester",
+		AccessLevel: model.AccessLevelManaged,
+	}
+
+	genResp, err := GenerateAccount(
+		acct,
+		WithPassphraseAuth("pass"))
+	require.NoError(t, err)
+
+	acct = genResp.Account
+	recoveryPhrase := genResp.RecoveryPhrase
+
+	// Account recovery
+
+	cryptoKey, _, _, err := GenerateKeysFromRecoveryPhrase(recoveryPhrase)
+	require.NoError(t, err)
+
+	newPassphrase := "new_password"
+
+	acct.EncryptedPassword = HashUserPassword(newPassphrase)
+
+	recoveredAcct, err := Recover(acct, cryptoKey, newPassphrase)
+	require.NoError(t, err)
+
+	managedKey, err := recoveredAcct.ExtractManagedKey(HashUserPassword(newPassphrase))
+	require.NoError(t, err)
+
+	dw := env.CreateDataWallet(t, recoveredAcct)
+
+	err = dw.UnlockAsManaged(managedKey)
+	require.NoError(t, err)
 }
 
 func TestSecondLevelRecoveryProcedure(t *testing.T) {
@@ -114,7 +155,7 @@ func TestSecondLevelRecoveryProcedure(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, ed25519.PublicKey(recPubKey), privKey.Public())
 
-	req := BuildRecoveryRequest(acct.Email, recoveryCode, privKey, newPassphrase)
+	req := BuildRecoveryRequest(acct.Email, recoveryCode, privKey, newPassphrase, nil)
 
 	require.True(t, req.Valid(recPubKey))
 
@@ -133,6 +174,50 @@ func TestSecondLevelRecoveryProcedure(t *testing.T) {
 	require.NoError(t, err)
 
 	managedKey, err := recoveredAcct.ExtractManagedKey(HashUserPassword(newPassphrase))
+	require.NoError(t, err)
+
+	dw := env.CreateDataWallet(t, recoveredAcct)
+
+	err = dw.UnlockAsManaged(managedKey)
+	require.NoError(t, err)
+}
+
+func TestRecoverManaged(t *testing.T) {
+	env := testbase.SetUpTestEnvironment(t)
+	defer func() { _ = env.Close() }()
+
+	// User registration
+
+	acct := &Account{
+		Email:       "test@example.com",
+		Name:        "Tester",
+		AccessLevel: model.AccessLevelManaged,
+	}
+
+	genResp, err := GenerateAccount(
+		acct,
+		WithPassphraseAuth("pass"))
+	require.NoError(t, err)
+
+	acct = genResp.Account
+	recoveryPhrase := genResp.RecoveryPhrase
+
+	// Account recovery
+
+	cryptoKey, _, _, err := GenerateKeysFromRecoveryPhrase(recoveryPhrase)
+	require.NoError(t, err)
+
+	newPassphrase := "new_password"
+
+	managedCryptoKey := GenerateManagedFromHostedKey(cryptoKey)
+	hashedNewPassphrase := HashUserPassword(newPassphrase)
+
+	acct.EncryptedPassword = hashedNewPassphrase
+
+	recoveredAcct, err := RecoverManaged(acct, managedCryptoKey, hashedNewPassphrase)
+	require.NoError(t, err)
+
+	managedKey, err := recoveredAcct.ExtractManagedKey(hashedNewPassphrase)
 	require.NoError(t, err)
 
 	dw := env.CreateDataWallet(t, recoveredAcct)
