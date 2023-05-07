@@ -32,17 +32,27 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type IndexUpdater struct {
-	ledger  model.Ledger
-	scanner *scanner.Scanner
-	indexes map[string]index.Writer
+type (
+	IndexUpdater struct {
+		ledger  model.Ledger
+		scanner *scanner.Scanner
+		indexes map[string]index.Writer
 
-	syncMutex *sync.Mutex
+		syncMutex *sync.Mutex
 
-	syncCh         chan bool
-	controlCh      chan string
-	eventControlCh chan string
-}
+		syncCh         chan bool
+		controlCh      chan string
+		eventControlCh chan string
+	}
+
+	// AccountIndex allows indexing information that is not available in MetaLocker
+	// datasets. If you pass an index that implements AccountIndex interface to IndexUpdater,
+	// it will receive updates about account components.
+	AccountIndex interface {
+		UpdateIdentity(idy Identity) error
+		UpdateLocker(l Locker) error
+	}
+)
 
 func NewIndexUpdater(ledger model.Ledger) *IndexUpdater {
 
@@ -246,6 +256,7 @@ func (ixf *IndexUpdater) SyncNoWait() {
 
 type consumer struct {
 	index          index.Writer
+	accountIndex   AccountIndex
 	accountID      string
 	dataWallets    map[string]DataWallet
 	sub            *scanner.IndexSubscription
@@ -259,7 +270,7 @@ type consumer struct {
 var _ scanner.IndexBlockConsumer = (*consumer)(nil)
 
 func newConsumer(dw DataWallet, iw index.Writer) *consumer {
-	return &consumer{
+	c := &consumer{
 		index:           iw,
 		accountID:       dw.ID(),
 		dataWallets:     map[string]DataWallet{dw.ID(): dw},
@@ -267,6 +278,12 @@ func newConsumer(dw DataWallet, iw index.Writer) *consumer {
 		offChainStorage: dw.Services().OffChainStorage(),
 		blobManager:     dw.Services().BlobManager(),
 	}
+
+	if ai, ok := iw.(AccountIndex); ok {
+		c.accountIndex = ai
+	}
+
+	return c
 }
 
 func (c *consumer) ConsumeBlock(ctx context.Context, indexID string, partyLookup scanner.PartyLookup, n scanner.BlockNotification) error {
@@ -362,6 +379,13 @@ func (c *consumer) addLocker(dw DataWallet, lockerID string) error {
 			return err
 		}
 	}
+
+	if c.accountIndex != nil {
+		if err = c.accountIndex.UpdateLocker(l); err != nil {
+			return err
+		}
+	}
+
 	return c.sub.AddLockers(scanner.LockerEntry{
 		Locker:    l.Raw(),
 		LastBlock: l.Raw().FirstBlock,
@@ -398,18 +422,31 @@ func (c *consumer) NotifyScanCompleted(topBlock int64) error {
 	// for the unprocessed lockers.
 
 	for _, update := range c.accountUpdates {
+		dw, err := c.getDataWallet(update.AccountID)
+		if err != nil {
+			return err
+		}
 
 		for _, lid := range update.LockersOpened {
-			dw, err := c.getDataWallet(update.AccountID)
-			if err != nil {
-				return err
-			}
 			err = c.addLocker(dw, lid)
 			if err != nil {
 				if errors.Is(err, storage.ErrLockerNotFound) {
 					log.Warn().Str("lid", lid).Msg("Locker from AccountUpdate message not accessible. Skipping...")
 					continue
 				} else {
+					return err
+				}
+			}
+		}
+
+		for _, iid := range update.LockersOpened {
+			if c.accountIndex != nil {
+				idy, err := dw.GetIdentity(iid)
+				if err != nil {
+					return err
+				}
+
+				if err = c.accountIndex.UpdateIdentity(idy); err != nil {
 					return err
 				}
 			}
