@@ -19,7 +19,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/piprate/json-gold/ld"
 	"sync"
 	"time"
 
@@ -75,7 +74,10 @@ func (ixf *IndexUpdater) AddIndexes(dw DataWallet, indexes ...index.Index) error
 		iw, _ := ix.Writer()
 		ixf.indexes[ix.ID()] = iw
 
-		recordConsumer := newConsumer(dw, iw)
+		recordConsumer, err := newConsumer(dw, iw)
+		if err != nil {
+			return err
+		}
 
 		sub := scanner.NewIndexSubscription(iw.ID(), recordConsumer)
 
@@ -270,7 +272,7 @@ type consumer struct {
 
 var _ scanner.IndexBlockConsumer = (*consumer)(nil)
 
-func newConsumer(dw DataWallet, iw index.Writer) *consumer {
+func newConsumer(dw DataWallet, iw index.Writer) (*consumer, error) {
 	c := &consumer{
 		index:           iw,
 		accountID:       dw.ID(),
@@ -282,9 +284,17 @@ func newConsumer(dw DataWallet, iw index.Writer) *consumer {
 
 	if ai, ok := iw.(AccountIndex); ok {
 		c.accountIndex = ai
+
+		rootIdy, err := dw.GetRootIdentity()
+		if err != nil {
+			return nil, err
+		}
+		if err = ai.UpdateIdentity(rootIdy); err != nil {
+			return nil, err
+		}
 	}
 
-	return c
+	return c, nil
 }
 
 func (c *consumer) ConsumeBlock(ctx context.Context, indexID string, partyLookup scanner.PartyLookup, n scanner.BlockNotification) error {
@@ -423,8 +433,6 @@ func (c *consumer) NotifyScanCompleted(topBlock int64) error {
 	// for the unprocessed lockers.
 
 	for _, update := range c.accountUpdates {
-		ld.PrintDocument("Processing account update", update)
-
 		dw, err := c.getDataWallet(update.AccountID)
 		if err != nil {
 			return err
@@ -442,12 +450,8 @@ func (c *consumer) NotifyScanCompleted(topBlock int64) error {
 			}
 		}
 
-		log.Warn().Msg("Processing new identities")
-
 		for _, iid := range update.IdentitiesAdded {
-			log.Warn().Str("iid", iid).Msg("In update.IdentitiesAdded loop")
 			if c.accountIndex != nil {
-				log.Warn().Msg("Trying to read an identity")
 				idy, err := dw.GetIdentity(iid)
 				if err != nil {
 					if errors.Is(err, storage.ErrIdentityNotFound) {
