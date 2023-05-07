@@ -440,13 +440,22 @@ func (c *consumer) NotifyScanCompleted(topBlock int64) error {
 		}
 
 		for _, iid := range update.IdentitiesAdded {
+			log.Warn().Str("iid", iid).Msg("In update.IdentitiesAdded loop")
 			if c.accountIndex != nil {
+				log.Warn().Msg("Trying to read an identity")
 				idy, err := dw.GetIdentity(iid)
 				if err != nil {
-					return err
+					if errors.Is(err, storage.ErrIdentityNotFound) {
+						log.Warn().Str("iid", iid).Msg("Identity from AccountUpdate message not accessible. Skipping...")
+						continue
+					} else {
+						log.Err(err).Msg("Error when reading identity")
+						return err
+					}
 				}
 
 				if err = c.accountIndex.UpdateIdentity(idy); err != nil {
+					log.Err(err).Msg("Error when updating identity")
 					return err
 				}
 			}
