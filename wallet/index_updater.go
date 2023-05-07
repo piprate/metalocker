@@ -439,7 +439,7 @@ func (c *consumer) NotifyScanCompleted(topBlock int64) error {
 			}
 		}
 
-		for _, iid := range update.LockersOpened {
+		for _, iid := range update.IdentitiesAdded {
 			if c.accountIndex != nil {
 				idy, err := dw.GetIdentity(iid)
 				if err != nil {
