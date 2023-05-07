@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/piprate/json-gold/ld"
 	"sync"
 	"time"
 
@@ -422,6 +423,8 @@ func (c *consumer) NotifyScanCompleted(topBlock int64) error {
 	// for the unprocessed lockers.
 
 	for _, update := range c.accountUpdates {
+		ld.PrintDocument("Processing account update", update)
+
 		dw, err := c.getDataWallet(update.AccountID)
 		if err != nil {
 			return err
@@ -438,6 +441,8 @@ func (c *consumer) NotifyScanCompleted(topBlock int64) error {
 				}
 			}
 		}
+
+		log.Warn().Msg("Processing new identities")
 
 		for _, iid := range update.IdentitiesAdded {
 			log.Warn().Str("iid", iid).Msg("In update.IdentitiesAdded loop")
@@ -515,7 +520,7 @@ func (c *consumer) processAccountUpdateMessage(ds model.DataSet) error {
 		return err
 	}
 
-	if len(msg.LockersOpened) > 0 || len(msg.SubAccountsAdded) > 0 {
+	if len(msg.LockersOpened) > 0 || len(msg.IdentitiesAdded) > 0 || len(msg.SubAccountsAdded) > 0 {
 		c.accountUpdates = append(c.accountUpdates, &msg)
 		return scanner.ErrIndexResultPending
 	} else {
