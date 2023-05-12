@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"errors"
+
 	"github.com/piprate/metalocker/model"
 	"github.com/piprate/metalocker/model/account"
 	"github.com/piprate/metalocker/storage"

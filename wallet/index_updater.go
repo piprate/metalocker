@@ -66,10 +66,7 @@ func (ixf *IndexUpdater) AddIndexes(dw DataWallet, indexes ...index.Index) error
 		iw, _ := ix.Writer()
 		ixf.indexes[ix.ID()] = iw
 
-		recordConsumer, err := newConsumer(dw, iw)
-		if err != nil {
-			return err
-		}
+		recordConsumer := newConsumer(dw, iw)
 
 		sub := scanner.NewIndexSubscription(iw.ID(), recordConsumer)
 
@@ -264,7 +261,7 @@ type consumer struct {
 
 var _ scanner.IndexBlockConsumer = (*consumer)(nil)
 
-func newConsumer(dw DataWallet, iw index.Writer) (*consumer, error) {
+func newConsumer(dw DataWallet, iw index.Writer) *consumer {
 	c := &consumer{
 		index:           iw,
 		accountID:       dw.ID(),
@@ -278,7 +275,7 @@ func newConsumer(dw DataWallet, iw index.Writer) (*consumer, error) {
 		c.accountIndex = ai
 	}
 
-	return c, nil
+	return c
 }
 
 func (c *consumer) ConsumeBlock(ctx context.Context, indexID string, partyLookup scanner.PartyLookup, n scanner.BlockNotification) error {
