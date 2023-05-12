@@ -1490,6 +1490,13 @@ func (dw *LocalDataWallet) CreateIndex(indexStoreName, indexType string, opts ..
 		}
 	}
 
+	if ai, ok := ix.(AccountIndex); ok {
+		// initialise account index
+		if err = InitAccountIndex(ai, dw); err != nil {
+			return nil, err
+		}
+	}
+
 	return ix, nil
 }
 

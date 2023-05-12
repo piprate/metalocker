@@ -169,6 +169,8 @@ type (
 		// external indexes can rely on this function.
 		EncryptionKey(tag string, accessLevel model.AccessLevel) (*model.AESKey, error)
 
+		// LockLevel returns the wallet's current lock level
+		LockLevel() model.AccessLevel
 		// Lock locks the data wallet and clears all sensitive information held in memory.
 		Lock() error
 		// Unlock unlocks the data wallet using a passphrase. Data wallet needs to be unlocked

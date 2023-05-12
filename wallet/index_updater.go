@@ -44,14 +44,6 @@ type (
 		controlCh      chan string
 		eventControlCh chan string
 	}
-
-	// AccountIndex allows indexing information that is not available in MetaLocker
-	// datasets. If you pass an index that implements AccountIndex interface to IndexUpdater,
-	// it will receive updates about account components.
-	AccountIndex interface {
-		UpdateIdentity(idy Identity) error
-		UpdateLocker(l Locker) error
-	}
 )
 
 func NewIndexUpdater(ledger model.Ledger) *IndexUpdater {
@@ -284,14 +276,6 @@ func newConsumer(dw DataWallet, iw index.Writer) (*consumer, error) {
 
 	if ai, ok := iw.(AccountIndex); ok {
 		c.accountIndex = ai
-
-		rootIdy, err := dw.GetRootIdentity()
-		if err != nil {
-			return nil, err
-		}
-		if err = ai.UpdateIdentity(rootIdy); err != nil {
-			return nil, err
-		}
 	}
 
 	return c, nil
@@ -391,12 +375,6 @@ func (c *consumer) addLocker(dw DataWallet, lockerID string) error {
 		}
 	}
 
-	if c.accountIndex != nil {
-		if err = c.accountIndex.UpdateLocker(l); err != nil {
-			return err
-		}
-	}
-
 	return c.sub.AddLockers(scanner.LockerEntry{
 		Locker:    l.Raw(),
 		LastBlock: l.Raw().FirstBlock,
@@ -450,26 +428,6 @@ func (c *consumer) NotifyScanCompleted(topBlock int64) error {
 			}
 		}
 
-		for _, iid := range update.IdentitiesAdded {
-			if c.accountIndex != nil {
-				idy, err := dw.GetIdentity(iid)
-				if err != nil {
-					if errors.Is(err, storage.ErrIdentityNotFound) {
-						log.Warn().Str("iid", iid).Msg("Identity from AccountUpdate message not accessible. Skipping...")
-						continue
-					} else {
-						log.Err(err).Msg("Error when reading identity")
-						return err
-					}
-				}
-
-				if err = c.accountIndex.UpdateIdentity(idy); err != nil {
-					log.Err(err).Msg("Error when updating identity")
-					return err
-				}
-			}
-		}
-
 		for _, subID := range update.SubAccountsAdded {
 			log.Debug().Str("subID", subID).Msg("Processing new sub-account")
 
@@ -500,6 +458,12 @@ func (c *consumer) NotifyScanCompleted(topBlock int64) error {
 					return err
 				}
 				log.Debug().Int32("lvl", int32(lvl)).Str("lid", rootLocker.ID()).Msg("Added sub-account's root locker")
+			}
+		}
+
+		if c.accountIndex != nil {
+			if err = ApplyAccountUpdate(c.accountIndex, update, dw); err != nil {
+				return err
 			}
 		}
 	}
