@@ -32,17 +32,19 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type IndexUpdater struct {
-	ledger  model.Ledger
-	scanner *scanner.Scanner
-	indexes map[string]index.Writer
+type (
+	IndexUpdater struct {
+		ledger  model.Ledger
+		scanner *scanner.Scanner
+		indexes map[string]index.Writer
 
-	syncMutex *sync.Mutex
+		syncMutex *sync.Mutex
 
-	syncCh         chan bool
-	controlCh      chan string
-	eventControlCh chan string
-}
+		syncCh         chan bool
+		controlCh      chan string
+		eventControlCh chan string
+	}
+)
 
 func NewIndexUpdater(ledger model.Ledger) *IndexUpdater {
 
@@ -246,6 +248,7 @@ func (ixf *IndexUpdater) SyncNoWait() {
 
 type consumer struct {
 	index          index.Writer
+	accountIndex   AccountIndex
 	accountID      string
 	dataWallets    map[string]DataWallet
 	sub            *scanner.IndexSubscription
@@ -259,7 +262,7 @@ type consumer struct {
 var _ scanner.IndexBlockConsumer = (*consumer)(nil)
 
 func newConsumer(dw DataWallet, iw index.Writer) *consumer {
-	return &consumer{
+	c := &consumer{
 		index:           iw,
 		accountID:       dw.ID(),
 		dataWallets:     map[string]DataWallet{dw.ID(): dw},
@@ -267,6 +270,12 @@ func newConsumer(dw DataWallet, iw index.Writer) *consumer {
 		offChainStorage: dw.Services().OffChainStorage(),
 		blobManager:     dw.Services().BlobManager(),
 	}
+
+	if ai, ok := iw.(AccountIndex); ok {
+		c.accountIndex = ai
+	}
+
+	return c
 }
 
 func (c *consumer) ConsumeBlock(ctx context.Context, indexID string, partyLookup scanner.PartyLookup, n scanner.BlockNotification) error {
@@ -362,6 +371,7 @@ func (c *consumer) addLocker(dw DataWallet, lockerID string) error {
 			return err
 		}
 	}
+
 	return c.sub.AddLockers(scanner.LockerEntry{
 		Locker:    l.Raw(),
 		LastBlock: l.Raw().FirstBlock,
@@ -398,12 +408,12 @@ func (c *consumer) NotifyScanCompleted(topBlock int64) error {
 	// for the unprocessed lockers.
 
 	for _, update := range c.accountUpdates {
+		dw, err := c.getDataWallet(update.AccountID)
+		if err != nil {
+			return err
+		}
 
 		for _, lid := range update.LockersOpened {
-			dw, err := c.getDataWallet(update.AccountID)
-			if err != nil {
-				return err
-			}
 			err = c.addLocker(dw, lid)
 			if err != nil {
 				if errors.Is(err, storage.ErrLockerNotFound) {
@@ -447,6 +457,12 @@ func (c *consumer) NotifyScanCompleted(topBlock int64) error {
 				log.Debug().Int32("lvl", int32(lvl)).Str("lid", rootLocker.ID()).Msg("Added sub-account's root locker")
 			}
 		}
+
+		if c.accountIndex != nil {
+			if err = ApplyAccountUpdate(c.accountIndex, update, dw); err != nil {
+				return err
+			}
+		}
 	}
 
 	if c.sub.Status() != scanner.ScanStatusError {
@@ -469,7 +485,7 @@ func (c *consumer) processAccountUpdateMessage(ds model.DataSet) error {
 		return err
 	}
 
-	if len(msg.LockersOpened) > 0 || len(msg.SubAccountsAdded) > 0 {
+	if len(msg.LockersOpened) > 0 || len(msg.IdentitiesAdded) > 0 || len(msg.SubAccountsAdded) > 0 {
 		c.accountUpdates = append(c.accountUpdates, &msg)
 		return scanner.ErrIndexResultPending
 	} else {
