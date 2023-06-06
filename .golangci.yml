@@ -51,7 +51,7 @@ linters:
     - bodyclose
     - containedctx
     - contextcheck
-    - depguard
+#   - depguard
     - dogsled
 #   - dupl
     - durationcheck
