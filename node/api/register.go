@@ -121,9 +121,9 @@ func RegisterHandler(registrationCodes []string, defaultVault string, secondLeve
 				account.WithCustomEntropy(entropyFunc),
 				account.WithSLRK(secondLevelRecoveryKey),
 				account.WithLogger(log))
-			recoveryPhrase = recDetails.RecoveryPhrase
-			secondLevelRecoveryCode = recDetails.SecondLevelRecoveryCode
 			if err == nil {
+				recoveryPhrase = recDetails.RecoveryPhrase
+				secondLevelRecoveryCode = recDetails.SecondLevelRecoveryCode
 				acct = dw.Account()
 			}
 		} else {
