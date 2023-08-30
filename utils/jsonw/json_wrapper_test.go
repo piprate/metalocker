@@ -16,6 +16,7 @@ package jsonw_test
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 
 	. "github.com/piprate/metalocker/utils/jsonw"
@@ -64,8 +65,7 @@ func TestMarshalIndent(t *testing.T) {
 	assert.Equal(t, `{
   "id": 123,
   "name": "struct name"
-}
-`, string(b))
+}`, strings.TrimSpace(string(b)))
 }
 
 func TestDecode(t *testing.T) {
