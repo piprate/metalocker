@@ -64,7 +64,8 @@ func TestMarshalIndent(t *testing.T) {
 	assert.Equal(t, `{
   "id": 123,
   "name": "struct name"
-}`, string(b))
+}
+`, string(b))
 }
 
 func TestDecode(t *testing.T) {
