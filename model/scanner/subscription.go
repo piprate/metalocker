@@ -71,6 +71,15 @@ func NewIndexSubscription(indexID string, consumer IndexBlockConsumer) *IndexSub
 	return sub
 }
 
+func (w *IndexSubscription) Close() error {
+	w.keys = nil
+	w.keyOrder = nil
+	w.configs = nil
+	w.consumer = nil
+
+	return nil
+}
+
 func (w *IndexSubscription) IndexID() string {
 	return w.indexID
 }

@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"sort"
 	"strconv"
 
@@ -33,6 +34,8 @@ var (
 	// of the underlying index (a set of locker participant keys that belongs to the same entity)
 	// should be paused until the processing is completed.
 	ErrIndexResultPending = errors.New("index result pending")
+
+	ErrSubscriptionNotFound = errors.New("subscription not found")
 )
 
 const (
@@ -60,6 +63,8 @@ type (
 	}
 
 	Subscription interface {
+		io.Closer
+
 		IndexID() string
 		LockerConfigs() []*LockerConfig
 		ConsumeBlock(ctx context.Context, n BlockNotification) error
@@ -254,7 +259,24 @@ func (isu *Scanner) AddSubscription(sub Subscription) error {
 }
 
 func (isu *Scanner) RemoveSubscription(indexID string) error {
-	return errors.New("operation RemoveSubscription not implemented")
+	sub, found := isu.subscriptions[indexID]
+	if !found {
+		return ErrSubscriptionNotFound
+	}
+
+	newSubscriptionList := make([]string, len(isu.subscriptionList)-1)
+	i := 0
+	for _, idx := range isu.subscriptionList {
+		if idx != indexID {
+			newSubscriptionList[i] = idx
+			i++
+		}
+	}
+	isu.subscriptionList = newSubscriptionList
+
+	delete(isu.subscriptions, indexID)
+
+	return sub.Close()
 }
 
 func (isu *Scanner) Subscriptions() map[string]Subscription {
