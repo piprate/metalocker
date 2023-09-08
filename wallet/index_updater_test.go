@@ -502,3 +502,92 @@ func TestForceSyncRootIndex_LockerStateExists(t *testing.T) {
 	err = updater.Sync()
 	require.NoError(t, err)
 }
+
+func TestIndexUpdater_RemoveIndex(t *testing.T) {
+	env := testbase.SetUpTestEnvironment(t)
+	defer env.Close()
+
+	dw := env.CreateTestManagedAccount(t)
+
+	log.Warn().Msg("~~~~~ BEGIN TEST ~~~~~")
+
+	lockers, err := dw.GetLockers()
+	require.NoError(t, err)
+	require.True(t, len(lockers) > 0)
+
+	locker := lockers[0] // one of the root lockers
+
+	rootIndex, err := dw.CreateRootIndex(testbase.IndexStoreName)
+	require.NoError(t, err)
+
+	updater, err := dw.IndexUpdater(rootIndex)
+	require.NoError(t, err)
+	err = updater.StartSyncOnEvents(env.NS, true, 0)
+	require.NoError(t, err)
+	defer updater.Close()
+
+	lb, err := dw.DataStore().NewDataSetBuilder(locker.ID, dataset.WithVault(testbase.TestVaultName))
+	require.NoError(t, err)
+
+	_, err = lb.AddMetaResource(map[string]any{
+		"id":   "test1",
+		"type": "TestDataset1",
+	})
+	require.NoError(t, err)
+
+	f := lb.Submit(expiry.FromNow("1h"))
+
+	err = f.Wait(time.Second * 5)
+	require.NoError(t, err)
+
+	sleepTime := time.Millisecond * 10
+	var totalWaitingTime time.Duration
+	received := false
+	for totalWaitingTime < time.Second {
+		rec, err := rootIndex.GetRecord(f.ID())
+		require.NoError(t, err)
+
+		if rec != nil {
+			received = true
+			break
+		}
+
+		time.Sleep(sleepTime)
+
+		totalWaitingTime += sleepTime
+	}
+
+	assert.True(t, received, "timeout when waiting for an index record")
+
+	err = updater.RemoveIndex(rootIndex.ID())
+	require.NoError(t, err)
+
+	_, err = lb.AddMetaResource(map[string]any{
+		"id":   "test2",
+		"type": "TestDataset2",
+	})
+	require.NoError(t, err)
+
+	f = lb.Submit(expiry.FromNow("1h"))
+
+	err = f.Wait(time.Second * 5)
+	require.NoError(t, err)
+
+	totalWaitingTime = 0
+	received = false
+	for totalWaitingTime < time.Second {
+		rec, err := rootIndex.GetRecord(f.ID())
+		require.NoError(t, err)
+
+		if rec != nil {
+			received = true
+			break
+		}
+
+		time.Sleep(sleepTime)
+
+		totalWaitingTime += sleepTime
+	}
+
+	assert.False(t, received, "received a record in the removed index")
+}

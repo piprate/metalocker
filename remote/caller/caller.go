@@ -143,6 +143,7 @@ func (c *MetaLockerHTTPCaller) SubAccountInstance(subAccountID string) (wallet.N
 }
 
 type LoginResponse struct {
+	Code   int       `json:"code"`
 	Expire time.Time `json:"expire"`
 	Token  string    `json:"token"`
 }

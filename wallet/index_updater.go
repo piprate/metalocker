@@ -106,6 +106,13 @@ func (ixf *IndexUpdater) AddIndexes(dw DataWallet, indexes ...index.Index) error
 	return nil
 }
 
+func (ixf *IndexUpdater) RemoveIndex(indexID string) error {
+	ixf.syncMutex.Lock()
+	defer ixf.syncMutex.Unlock()
+
+	return ixf.scanner.RemoveSubscription(indexID)
+}
+
 func (ixf *IndexUpdater) StartSyncOnEvents(ns notification.Service, syncOnStart bool, forceSyncInterval time.Duration) error {
 	if syncOnStart {
 		if err := ixf.Sync(); err != nil {

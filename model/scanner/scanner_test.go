@@ -307,6 +307,135 @@ func TestScanner_Scan_TwoIterations(t *testing.T) {
 	assert.True(t, consumer2.AllRecordsMatched(), "Received less matching records than expected")
 }
 
+func TestScanner_RemoveSubscription(t *testing.T) {
+	env := testbase.SetUpTestEnvironment(t)
+	defer env.Close()
+
+	// set up Data Wallet 1
+
+	dw1 := env.CreateCustomAccount(t, "test1@example.com", "John Doe 1", model.AccessLevelManaged, model.WithSeed("Acct1"))
+
+	idy1, err := dw1.NewIdentity(model.AccessLevelManaged, "")
+	require.NoError(t, err)
+
+	// set up Data Wallet 2
+
+	dw2 := env.CreateCustomAccount(t, "test2@example.com", "John Doe 2", model.AccessLevelManaged, model.WithSeed("Acct2"))
+
+	idy2, err := dw2.NewIdentity(model.AccessLevelManaged, "")
+	require.NoError(t, err)
+
+	// set up a shared locker
+
+	sharedLocker1, err := idy1.NewLocker("Test Locker", wallet.Participant(idy2.DID(), nil))
+	require.NoError(t, err)
+
+	sharedLocker2, err := dw2.AddLocker(sharedLocker1.Raw().Perspective(idy2.ID()))
+	require.NoError(t, err)
+
+	// publish 1 record
+
+	lb, err := sharedLocker1.NewDataSetBuilder(dataset.WithVault(testbase.TestVaultName))
+	require.NoError(t, err)
+
+	_, err = lb.AddMetaResource(map[string]any{
+		"id":   "test2",
+		"type": "TestDataset2",
+	})
+	require.NoError(t, err)
+
+	f := lb.Submit(expiry.FromNow("1h"))
+	err = f.Wait(time.Second * 2)
+	require.NoError(t, err)
+
+	rid2 := f.ID()
+
+	ledgerScanner := NewScanner(env.Ledger)
+
+	consumer1 := &CheckingConsumer{
+		T: t,
+		ExpectedMatches: []map[string]any{
+			{
+				"userID":        dw1.ID(),
+				"rid":           rid2,
+				"t":             model.OpTypeLease,
+				"lockerID":      sharedLocker1.ID(),
+				"participantID": idy1.ID(),
+				"acceptedAt":    sharedLocker1.Raw().AcceptedAtBlock(),
+			},
+		},
+	}
+
+	consumer2 := &CheckingConsumer{
+		T: t,
+		ExpectedMatches: []map[string]any{
+			{
+				"userID":        dw2.ID(),
+				"rid":           rid2,
+				"t":             model.OpTypeLease,
+				"lockerID":      sharedLocker2.ID(),
+				"participantID": idy1.ID(),
+				"acceptedAt":    sharedLocker2.Raw().AcceptedAtBlock(), // NOTE: this value would differ from sharedLocker1's.
+			},
+		},
+	}
+
+	sub1 := NewIndexSubscription(dw1.ID(), consumer1)
+	_ = sub1.AddLockers(LockerEntry{Locker: sharedLocker1.Raw()})
+	_ = ledgerScanner.AddSubscription(sub1)
+
+	sub2 := NewIndexSubscription(dw2.ID(), consumer2)
+	_ = sub2.AddLockers(LockerEntry{Locker: sharedLocker2.Raw()})
+	_ = ledgerScanner.AddSubscription(sub2)
+
+	complete, err := ledgerScanner.Scan()
+	require.NoError(t, err)
+	assert.True(t, complete)
+
+	assert.True(t, consumer1.AllRecordsMatched(), "Received less matching records than expected")
+	assert.True(t, consumer2.AllRecordsMatched(), "Received less matching records than expected")
+
+	err = ledgerScanner.RemoveSubscription(dw2.ID())
+	require.NoError(t, err)
+
+	lb, err = sharedLocker1.NewDataSetBuilder(dataset.WithVault(testbase.TestVaultName))
+	require.NoError(t, err)
+
+	_, err = lb.AddMetaResource(map[string]any{
+		"id":   "test3",
+		"type": "TestDataset3",
+	})
+	require.NoError(t, err)
+
+	f = lb.Submit(expiry.FromNow("1h"))
+	err = f.Wait(time.Second * 2)
+	require.NoError(t, err)
+
+	rid3 := f.ID()
+
+	consumer1.ExpectedMatches = []map[string]any{
+		{
+			"userID":        dw1.ID(),
+			"rid":           rid3,
+			"t":             model.OpTypeLease,
+			"lockerID":      sharedLocker1.ID(),
+			"participantID": idy1.ID(),
+			"acceptedAt":    sharedLocker1.Raw().AcceptedAtBlock(),
+		},
+	}
+	consumer1.Reset()
+
+	consumer2.ExpectedMatches = []map[string]any{}
+	consumer2.Reset()
+
+	complete, err = ledgerScanner.Scan()
+	require.NoError(t, err)
+	assert.True(t, complete)
+
+	assert.True(t, consumer1.AllRecordsMatched(), "Received less matching records than expected")
+	assert.True(t, consumer2.AllRecordsMatched(), "Received less matching records than expected")
+}
+
 type CheckingConsumer struct {
 	T               *testing.T
 	ExpectedMatches []map[string]any
@@ -360,4 +489,8 @@ func (cc *CheckingConsumer) SetSubscription(sub Subscription) {
 
 func (cc *CheckingConsumer) AllRecordsMatched() bool {
 	return cc.Counter == len(cc.ExpectedMatches)
+}
+
+func (cc *CheckingConsumer) Reset() {
+	cc.Counter = 0
 }
