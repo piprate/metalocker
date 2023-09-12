@@ -8,7 +8,7 @@ DEPINSTALL := cd /tmp && go install -v
 
 GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
-.PHONY: all install-deps vet unit-test test fmt lint test-cov module-updates install help
+.PHONY: all install-deps vet unit-test test fmt lint test-cov install-depu module-updates install help
 
 all: install-deps vet test
 
@@ -36,8 +36,11 @@ lint:
 test-cov: $(GOACC_BIN)
 	$(GOACC_BIN) ./...
 
+install-depu:
+	go install github.com/kevwan/depu@latest
+
 module-updates:
-	go list -u -m -json all | go-mod-outdated -direct -update
+	depu
 
 install:
 	GOBIN=`pwd`/bin/ go install -v github.com/piprate/metalocker/cmd/...
