@@ -16,6 +16,7 @@ package dataset
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
@@ -41,9 +42,9 @@ const (
 )
 
 type LeaseBuilderBackend interface {
-	Load(id string, opts ...LoadOption) (model.DataSet, error)
+	Load(ctx context.Context, id string, opts ...LoadOption) (model.DataSet, error)
 
-	Submit(lease *model.Lease, cleartext bool, lockerID string, sender *model.LockerParticipant, headName ...string) RecordFuture
+	Submit(ctx context.Context, lease *model.Lease, cleartext bool, lockerID string, sender *model.LockerParticipant, headName ...string) RecordFuture
 }
 
 func GenerateLeaseID() (string, error) {
@@ -174,11 +175,13 @@ type LeaseBuilder struct {
 	parentProvenance map[string]map[string]any
 	provenance       map[string]any
 	metaProvTemplate map[string]any
+
+	ctx context.Context
 }
 
 var _ Builder = (*LeaseBuilder)(nil)
 
-func NewLeaseBuilder(c LeaseBuilderBackend, blobManager model.BlobManager, locker *model.Locker, creator *model.DID, opts ...BuilderOption) (*LeaseBuilder, error) {
+func NewLeaseBuilder(ctx context.Context, c LeaseBuilderBackend, blobManager model.BlobManager, locker *model.Locker, creator *model.DID, opts ...BuilderOption) (*LeaseBuilder, error) {
 
 	// process builder options
 
@@ -216,10 +219,12 @@ func NewLeaseBuilder(c LeaseBuilderBackend, blobManager model.BlobManager, locke
 		resources:         make(map[string]*model.StoredResource),
 		headNames:         options.heads,
 		timestampOverride: options.timeStamp,
+		ctx:               ctx,
 	}
 
 	if options.parentRecordID != "" {
 		if err := b.setParent(
+			ctx,
 			options.parentRecordID,
 			options.parentLockerID,
 			options.blobCopyMode,
@@ -240,7 +245,7 @@ func NewLeaseBuilder(c LeaseBuilderBackend, blobManager model.BlobManager, locke
 	return b, nil
 }
 
-func NewLeaseBuilderForSharing(source model.DataSet, c LeaseBuilderBackend, blobManager model.BlobManager, blobCopyMode string, creator, sender *model.DID, recipientID, vaultName string, timeStamp *time.Time) (*LeaseBuilder, error) {
+func NewLeaseBuilderForSharing(ctx context.Context, source model.DataSet, c LeaseBuilderBackend, blobManager model.BlobManager, blobCopyMode string, creator, sender *model.DID, recipientID, vaultName string, timeStamp *time.Time) (*LeaseBuilder, error) {
 
 	if sender == nil {
 		sender = creator
@@ -260,6 +265,7 @@ func NewLeaseBuilderForSharing(source model.DataSet, c LeaseBuilderBackend, blob
 		sourceRecordID:    source.ID(),
 		sourceLease:       sourceLease,
 		timestampOverride: timeStamp,
+		ctx:               ctx,
 	}
 
 	// copy embedded blobs
@@ -473,8 +479,8 @@ NEXT:
 	return nil
 }
 
-func (b *LeaseBuilder) setParent(parentRecordID, parentLockerID, blobCopyMode string, detachments []string, detachResource bool) error {
-	parentDS, err := b.backend.Load(parentRecordID, FromLocker(parentLockerID))
+func (b *LeaseBuilder) setParent(ctx context.Context, parentRecordID, parentLockerID, blobCopyMode string, detachments []string, detachResource bool) error {
+	parentDS, err := b.backend.Load(ctx, parentRecordID, FromLocker(parentLockerID))
 	if err != nil {
 		return err
 	}
@@ -752,7 +758,7 @@ func (b *LeaseBuilder) Submit(expiryTime time.Time) RecordFuture {
 		return RecordFutureWithError(err)
 	}
 
-	return b.backend.Submit(lease, b.cleartext, b.lockerID, b.senderParticipant, b.headNames...)
+	return b.backend.Submit(b.ctx, lease, b.cleartext, b.lockerID, b.senderParticipant, b.headNames...)
 }
 
 func (b *LeaseBuilder) Cancel() error {

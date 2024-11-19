@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"time"
 
@@ -55,11 +56,14 @@ func main() {
 		panic(err)
 	}
 
+	ctx := context.Background()
+
 	// create account 1: Jack
 
 	passPhrase := "passw0rd!"
 
 	jackWallet, _, err := factory.RegisterAccount(
+		ctx,
 		&account.Account{
 			Email:       "jack@example.com",
 			Name:        "Jack",
@@ -73,7 +77,7 @@ func main() {
 
 	// the wallet needs to be unlocked before use
 
-	err = jackWallet.Unlock(passPhrase)
+	err = jackWallet.Unlock(ctx, passPhrase)
 	if err != nil {
 		panic(err)
 	}
@@ -81,6 +85,7 @@ func main() {
 	// create account 2: Jill
 
 	jillWallet, _, err := factory.RegisterAccount(
+		ctx,
 		&account.Account{
 			Email:       "jill@example.com",
 			Name:        "Jill",
@@ -92,26 +97,26 @@ func main() {
 		panic(err)
 	}
 
-	err = jillWallet.Unlock(passPhrase)
+	err = jillWallet.Unlock(ctx, passPhrase)
 	if err != nil {
 		panic(err)
 	}
 
 	// create identities for Jack and Jill. An account can have an unlimited number of identities.
 
-	jack, err := jackWallet.NewIdentity(model.AccessLevelHosted, "Jack")
+	jack, err := jackWallet.NewIdentity(ctx, model.AccessLevelHosted, "Jack")
 	if err != nil {
 		panic(err)
 	}
 
-	jill, err := jillWallet.NewIdentity(model.AccessLevelHosted, "Jill")
+	jill, err := jillWallet.NewIdentity(ctx, model.AccessLevelHosted, "Jill")
 	if err != nil {
 		panic(err)
 	}
 
 	// create a private uni-locker for Jack
 
-	privateLockerForJack, err := jack.NewLocker("Private Hill")
+	privateLockerForJack, err := jack.NewLocker(ctx, "Private Hill")
 	if err != nil {
 		panic(err)
 	}
@@ -121,19 +126,19 @@ func main() {
 	// 2. Jill imports this locker into her wallet. In real life Jack would need to share the locker with Jill
 	// using a secure communication channel. MetaLocker doesn't prescribe what channel should be used.
 
-	lockerForJack, err := jack.NewLocker("Hill", wallet.Participant(jill.DID(), nil))
+	lockerForJack, err := jack.NewLocker(ctx, "Hill", wallet.Participant(jill.DID(), nil))
 	if err != nil {
 		panic(err)
 	}
 
-	lockerForJill, err := jillWallet.AddLocker(lockerForJack.Raw().Perspective(jill.ID()))
+	lockerForJill, err := jillWallet.AddLocker(ctx, lockerForJack.Raw().Perspective(jill.ID()))
 	if err != nil {
 		panic(err)
 	}
 
 	// publish a JSON document in Jack's private locker
 
-	lb, err := privateLockerForJack.NewDataSetBuilder(dataset.WithVault("local"))
+	lb, err := privateLockerForJack.NewDataSetBuilder(ctx, dataset.WithVault("local"))
 	if err != nil {
 		panic(err)
 	}
@@ -157,7 +162,7 @@ func main() {
 	// in the shared locker and add provenance information that can prove it's an authentic copy
 	// of the original record.
 
-	future2 := lockerForJack.Share(future1.ID(), "local", expiry.FromNow("45min"))
+	future2 := lockerForJack.Share(ctx, future1.ID(), "local", expiry.FromNow("45min"))
 	err = future2.Wait(time.Second)
 	if err != nil {
 		panic(err)
@@ -165,7 +170,7 @@ func main() {
 
 	// load the dataset from Jill's wallet and show provenance
 
-	ds1, err := jillWallet.DataStore().Load(future2.ID(), dataset.FromLocker(lockerForJill.ID()))
+	ds1, err := jillWallet.DataStore().Load(ctx, future2.ID(), dataset.FromLocker(lockerForJill.ID()))
 	if err != nil {
 		panic(err)
 	}

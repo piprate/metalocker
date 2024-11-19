@@ -15,6 +15,7 @@
 package testbase
 
 import (
+	"context"
 	"io"
 	"os"
 	"path/filepath"
@@ -56,6 +57,7 @@ type TestMetaLockerEnvironment struct {
 	Router          *gin.Engine
 	TempDir         string
 	ExtraServices   map[string]any
+	Ctx             context.Context
 }
 
 func (env *TestMetaLockerEnvironment) Close() error {
@@ -105,12 +107,12 @@ func (env *TestMetaLockerEnvironment) CreateTestManagedAccount(t *testing.T) wal
 	nodeClient := wallet.NewLocalNodeClient(resp.Account.ID, env.IdentityBackend, env.Ledger, env.OffChainStorage,
 		env.BlobManager, env.NS)
 
-	err = wallet.SaveNewAccount(resp, nodeClient, "", fastHash)
+	err = wallet.SaveNewAccount(env.Ctx, resp, nodeClient, "", fastHash)
 	require.NoError(t, err)
 
 	dw := env.CreateDataWallet(t, resp.Account)
 
-	err = dw.Unlock(TestAccountPassword)
+	err = dw.Unlock(env.Ctx, TestAccountPassword)
 	require.NoError(t, err)
 
 	return dw
@@ -129,12 +131,13 @@ func (env *TestMetaLockerEnvironment) CreateCustomAccount(t *testing.T, email, n
 	rootIdentity, err := model.GenerateDID(rootIdentityOptions...)
 	require.NoError(t, err)
 
-	dw, _, err := env.Factory.RegisterAccount(acctTemplate,
+	dw, _, err := env.Factory.RegisterAccount(env.Ctx,
+		acctTemplate,
 		account.WithPassphraseAuth(TestAccountPassword),
 		account.WithRootIdentity(rootIdentity))
 	require.NoError(t, err)
 
-	err = dw.Unlock(TestAccountPassword)
+	err = dw.Unlock(env.Ctx, TestAccountPassword)
 	require.NoError(t, err)
 
 	return dw
@@ -154,10 +157,10 @@ func (env *TestMetaLockerEnvironment) SetUpTestScenario1(t *testing.T) {
 
 	unilocker := TestUniLocker(t)
 
-	err := dw.AddIdentity(idy1)
+	err := dw.AddIdentity(env.Ctx, idy1)
 	require.NoError(t, err)
 
-	_, err = dw.AddLocker(unilocker)
+	_, err = dw.AddLocker(env.Ctx, unilocker)
 	require.NoError(t, err)
 
 	env.Router.Use(func(c *gin.Context) {
@@ -179,6 +182,7 @@ func SetUpTestEnvironment(t *testing.T) *TestMetaLockerEnvironment {
 
 	env := &TestMetaLockerEnvironment{
 		ExtraServices: make(map[string]any),
+		Ctx:           context.Background(),
 	}
 
 	router := gin.Default()

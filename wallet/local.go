@@ -15,6 +15,7 @@
 package wallet
 
 import (
+	"context"
 	"errors"
 
 	"github.com/piprate/metalocker/index"
@@ -48,8 +49,8 @@ func NewLocalNodeClient(accountID string, identityBackend storage.IdentityBacken
 	}
 }
 
-func (lnc *LocalNodeClient) CreateAccount(acct *account.Account, registrationCode string) error {
-	err := lnc.identityBackend.CreateAccount(acct)
+func (lnc *LocalNodeClient) CreateAccount(ctx context.Context, acct *account.Account, registrationCode string) error {
+	err := lnc.identityBackend.CreateAccount(ctx, acct)
 	if err != nil {
 		return err
 	}
@@ -57,39 +58,39 @@ func (lnc *LocalNodeClient) CreateAccount(acct *account.Account, registrationCod
 	return nil
 }
 
-func (lnc *LocalNodeClient) CreateSubAccount(acct *account.Account) (*account.Account, error) {
-	err := lnc.identityBackend.CreateAccount(acct)
+func (lnc *LocalNodeClient) CreateSubAccount(ctx context.Context, acct *account.Account) (*account.Account, error) {
+	err := lnc.identityBackend.CreateAccount(ctx, acct)
 	if err != nil {
 		return nil, err
 	}
 	return acct, nil
 }
 
-func (lnc *LocalNodeClient) GetOwnAccount() (*account.Account, error) {
-	return lnc.identityBackend.GetAccount(lnc.accountID)
+func (lnc *LocalNodeClient) GetOwnAccount(ctx context.Context) (*account.Account, error) {
+	return lnc.identityBackend.GetAccount(ctx, lnc.accountID)
 }
 
-func (lnc *LocalNodeClient) GetAccount(id string) (*account.Account, error) {
-	return lnc.identityBackend.GetAccount(id)
+func (lnc *LocalNodeClient) GetAccount(ctx context.Context, id string) (*account.Account, error) {
+	return lnc.identityBackend.GetAccount(ctx, id)
 }
 
-func (lnc *LocalNodeClient) ListSubAccounts(id string) ([]*account.Account, error) {
-	return lnc.identityBackend.ListAccounts(id, "")
+func (lnc *LocalNodeClient) ListSubAccounts(ctx context.Context, id string) ([]*account.Account, error) {
+	return lnc.identityBackend.ListAccounts(ctx, id, "")
 }
 
-func (lnc *LocalNodeClient) DeleteAccount(id string) error {
-	acct, err := lnc.identityBackend.GetAccount(id)
+func (lnc *LocalNodeClient) DeleteAccount(ctx context.Context, id string) error {
+	acct, err := lnc.identityBackend.GetAccount(ctx, id)
 	if err != nil {
 		return err
 	}
 	if acct.ParentAccount != lnc.accountID {
 		return errors.New("sub-account not found")
 	}
-	return lnc.identityBackend.DeleteAccount(id)
+	return lnc.identityBackend.DeleteAccount(ctx, id)
 }
 
-func (lnc *LocalNodeClient) CreateAccessKey(key *model.AccessKey) (*model.AccessKey, error) {
-	err := lnc.identityBackend.StoreAccessKey(key)
+func (lnc *LocalNodeClient) CreateAccessKey(ctx context.Context, key *model.AccessKey) (*model.AccessKey, error) {
+	err := lnc.identityBackend.StoreAccessKey(ctx, key)
 	if err != nil {
 		return nil, err
 	}
@@ -97,32 +98,32 @@ func (lnc *LocalNodeClient) CreateAccessKey(key *model.AccessKey) (*model.Access
 	return key, nil
 }
 
-func (lnc *LocalNodeClient) DeleteAccessKey(keyID string) error {
-	return lnc.identityBackend.DeleteAccessKey(keyID)
+func (lnc *LocalNodeClient) DeleteAccessKey(ctx context.Context, keyID string) error {
+	return lnc.identityBackend.DeleteAccessKey(ctx, keyID)
 }
 
-func (lnc *LocalNodeClient) GetAccessKey(keyID string) (*model.AccessKey, error) {
-	return lnc.identityBackend.GetAccessKey(keyID)
+func (lnc *LocalNodeClient) GetAccessKey(ctx context.Context, keyID string) (*model.AccessKey, error) {
+	return lnc.identityBackend.GetAccessKey(ctx, keyID)
 }
 
-func (lnc *LocalNodeClient) ListAccessKeys() ([]*model.AccessKey, error) {
-	return lnc.identityBackend.ListAccessKeys(lnc.accountID)
+func (lnc *LocalNodeClient) ListAccessKeys(ctx context.Context) ([]*model.AccessKey, error) {
+	return lnc.identityBackend.ListAccessKeys(ctx, lnc.accountID)
 }
 
-func (lnc *LocalNodeClient) CreateDIDDocument(ddoc *model.DIDDocument) error {
-	return lnc.identityBackend.CreateDIDDocument(ddoc)
+func (lnc *LocalNodeClient) CreateDIDDocument(ctx context.Context, ddoc *model.DIDDocument) error {
+	return lnc.identityBackend.CreateDIDDocument(ctx, ddoc)
 }
 
-func (lnc *LocalNodeClient) GetDIDDocument(iid string) (*model.DIDDocument, error) {
-	return lnc.identityBackend.GetDIDDocument(iid)
+func (lnc *LocalNodeClient) GetDIDDocument(ctx context.Context, iid string) (*model.DIDDocument, error) {
+	return lnc.identityBackend.GetDIDDocument(ctx, iid)
 }
 
-func (lnc *LocalNodeClient) UpdateAccount(acct *account.Account) error {
-	return lnc.identityBackend.UpdateAccount(acct)
+func (lnc *LocalNodeClient) UpdateAccount(ctx context.Context, acct *account.Account) error {
+	return lnc.identityBackend.UpdateAccount(ctx, acct)
 }
 
-func (lnc *LocalNodeClient) PatchAccount(email, oldEncryptedPassword, newEncryptedPassword, name, givenName, familyName string) error {
-	acct, err := lnc.identityBackend.GetAccount(lnc.accountID)
+func (lnc *LocalNodeClient) PatchAccount(ctx context.Context, email, oldEncryptedPassword, newEncryptedPassword, name, givenName, familyName string) error {
+	acct, err := lnc.identityBackend.GetAccount(ctx, lnc.accountID)
 	if err != nil {
 		return err
 	}
@@ -141,51 +142,51 @@ func (lnc *LocalNodeClient) PatchAccount(email, oldEncryptedPassword, newEncrypt
 	if familyName != "" {
 		acct.FamilyName = familyName
 	}
-	return lnc.identityBackend.UpdateAccount(acct)
+	return lnc.identityBackend.UpdateAccount(ctx, acct)
 }
 
-func (lnc *LocalNodeClient) StoreIdentity(idy *account.DataEnvelope) error {
-	return lnc.identityBackend.StoreIdentity(lnc.accountID, idy)
+func (lnc *LocalNodeClient) StoreIdentity(ctx context.Context, idy *account.DataEnvelope) error {
+	return lnc.identityBackend.StoreIdentity(ctx, lnc.accountID, idy)
 }
 
-func (lnc *LocalNodeClient) GetIdentity(hash string) (*account.DataEnvelope, error) {
-	return lnc.identityBackend.GetIdentity(lnc.accountID, hash)
+func (lnc *LocalNodeClient) GetIdentity(ctx context.Context, hash string) (*account.DataEnvelope, error) {
+	return lnc.identityBackend.GetIdentity(ctx, lnc.accountID, hash)
 }
 
-func (lnc *LocalNodeClient) ListIdentities() ([]*account.DataEnvelope, error) {
-	return lnc.identityBackend.ListIdentities(lnc.accountID, 0)
+func (lnc *LocalNodeClient) ListIdentities(ctx context.Context) ([]*account.DataEnvelope, error) {
+	return lnc.identityBackend.ListIdentities(ctx, lnc.accountID, 0)
 }
 
-func (lnc *LocalNodeClient) StoreLocker(l *account.DataEnvelope) error {
-	return lnc.identityBackend.StoreLocker(lnc.accountID, l)
+func (lnc *LocalNodeClient) StoreLocker(ctx context.Context, l *account.DataEnvelope) error {
+	return lnc.identityBackend.StoreLocker(ctx, lnc.accountID, l)
 }
 
-func (lnc *LocalNodeClient) GetLocker(hash string) (*account.DataEnvelope, error) {
-	return lnc.identityBackend.GetLocker(lnc.accountID, hash)
+func (lnc *LocalNodeClient) GetLocker(ctx context.Context, hash string) (*account.DataEnvelope, error) {
+	return lnc.identityBackend.GetLocker(ctx, lnc.accountID, hash)
 }
 
-func (lnc *LocalNodeClient) ListLockers() ([]*account.DataEnvelope, error) {
-	return lnc.identityBackend.ListLockers(lnc.accountID, 0)
+func (lnc *LocalNodeClient) ListLockers(ctx context.Context) ([]*account.DataEnvelope, error) {
+	return lnc.identityBackend.ListLockers(ctx, lnc.accountID, 0)
 }
 
-func (lnc *LocalNodeClient) ListLockerHashes() ([]string, error) {
-	return lnc.identityBackend.ListLockerHashes(lnc.accountID, 0)
+func (lnc *LocalNodeClient) ListLockerHashes(ctx context.Context) ([]string, error) {
+	return lnc.identityBackend.ListLockerHashes(ctx, lnc.accountID, 0)
 }
 
-func (lnc *LocalNodeClient) StoreProperty(prop *account.DataEnvelope) error {
-	return lnc.identityBackend.StoreProperty(lnc.accountID, prop)
+func (lnc *LocalNodeClient) StoreProperty(ctx context.Context, prop *account.DataEnvelope) error {
+	return lnc.identityBackend.StoreProperty(ctx, lnc.accountID, prop)
 }
 
-func (lnc *LocalNodeClient) GetProperty(hash string) (*account.DataEnvelope, error) {
-	return lnc.identityBackend.GetProperty(lnc.accountID, hash)
+func (lnc *LocalNodeClient) GetProperty(ctx context.Context, hash string) (*account.DataEnvelope, error) {
+	return lnc.identityBackend.GetProperty(ctx, lnc.accountID, hash)
 }
 
-func (lnc *LocalNodeClient) ListProperties() ([]*account.DataEnvelope, error) {
-	return lnc.identityBackend.ListProperties(lnc.accountID, 0)
+func (lnc *LocalNodeClient) ListProperties(ctx context.Context) ([]*account.DataEnvelope, error) {
+	return lnc.identityBackend.ListProperties(ctx, lnc.accountID, 0)
 }
 
-func (lnc *LocalNodeClient) DeleteProperty(hash string) error {
-	return lnc.identityBackend.DeleteProperty(lnc.accountID, hash)
+func (lnc *LocalNodeClient) DeleteProperty(ctx context.Context, hash string) error {
+	return lnc.identityBackend.DeleteProperty(ctx, lnc.accountID, hash)
 }
 
 func (lnc *LocalNodeClient) DIDProvider() model.DIDProvider {
@@ -249,7 +250,7 @@ func NewLocalFactory(ledger model.Ledger, offChainStorage model.OffChainStorage,
 	return lf, nil
 }
 
-func (lf *LocalFactory) RegisterAccount(acctTemplate *account.Account, opts ...account.Option) (DataWallet, *RecoveryDetails, error) {
+func (lf *LocalFactory) RegisterAccount(ctx context.Context, acctTemplate *account.Account, opts ...account.Option) (DataWallet, *RecoveryDetails, error) {
 	tb, err := lf.ledger.GetTopBlock()
 	if err != nil {
 		return nil, nil, err
@@ -269,7 +270,7 @@ func (lf *LocalFactory) RegisterAccount(acctTemplate *account.Account, opts ...a
 	nodeClient := NewLocalNodeClient(resp.Account.ID, lf.identityBackend, lf.ledger, lf.offChainStorage,
 		lf.blobManager, lf.notificationService)
 
-	err = SaveNewAccount(resp, nodeClient, "", lf.hashFunction)
+	err = SaveNewAccount(ctx, resp, nodeClient, "", lf.hashFunction)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -282,7 +283,7 @@ func (lf *LocalFactory) RegisterAccount(acctTemplate *account.Account, opts ...a
 	return dw, recDetails, nil
 }
 
-func (lf *LocalFactory) SaveAccount(acct *account.Account) (DataWallet, error) {
+func (lf *LocalFactory) SaveAccount(ctx context.Context, acct *account.Account) (DataWallet, error) {
 	if acct.EncryptedPassword != "" {
 		if err := account.ReHashPassphrase(acct, lf.hashFunction); err != nil {
 			return nil, err
@@ -298,13 +299,13 @@ func (lf *LocalFactory) SaveAccount(acct *account.Account) (DataWallet, error) {
 
 	if acct.ParentAccount != "" {
 		// sub-account
-		subAcct, err := nodeClient.CreateSubAccount(acct)
+		subAcct, err := nodeClient.CreateSubAccount(ctx, acct)
 		if err != nil {
 			return nil, err
 		}
 		acct = subAcct
 	} else {
-		if err := nodeClient.CreateAccount(acct, ""); err != nil {
+		if err := nodeClient.CreateAccount(ctx, acct, ""); err != nil {
 			return nil, err
 		}
 	}
@@ -322,9 +323,9 @@ func (lf *LocalFactory) CreateDataWallet(acct *account.Account) (DataWallet, err
 		lf.indexClient)
 }
 
-func (lf *LocalFactory) GetWalletWithAccessKey(apiKey, apiSecret string) (DataWallet, error) {
+func (lf *LocalFactory) GetWalletWithAccessKey(ctx context.Context, apiKey, apiSecret string) (DataWallet, error) {
 
-	ak, err := lf.identityBackend.GetAccessKey(apiKey)
+	ak, err := lf.identityBackend.GetAccessKey(ctx, apiKey)
 	if err != nil {
 		return nil, err
 	}
@@ -332,7 +333,7 @@ func (lf *LocalFactory) GetWalletWithAccessKey(apiKey, apiSecret string) (DataWa
 	localBackend := NewLocalNodeClient(ak.AccountID, lf.identityBackend, lf.ledger, lf.offChainStorage,
 		lf.blobManager, lf.notificationService)
 
-	acct, err := localBackend.GetAccount(ak.AccountID)
+	acct, err := localBackend.GetAccount(ctx, ak.AccountID)
 	if err != nil {
 		return nil, err
 	}
@@ -342,7 +343,7 @@ func (lf *LocalFactory) GetWalletWithAccessKey(apiKey, apiSecret string) (DataWa
 		return nil, err
 	}
 
-	if err = dw.UnlockWithAccessKey(apiKey, apiSecret); err != nil {
+	if err = dw.UnlockWithAccessKey(ctx, apiKey, apiSecret); err != nil {
 		_ = dw.Close()
 		return nil, err
 	}

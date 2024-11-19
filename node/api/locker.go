@@ -38,7 +38,7 @@ func (h *AccountHandler) GetLockerListHandler(c *gin.Context) {
 		return
 	}
 
-	lockerList, err := h.identityBackend.ListLockers(accountID, model.AccessLevel(accessLevel))
+	lockerList, err := h.identityBackend.ListLockers(c, accountID, model.AccessLevel(accessLevel))
 	if err != nil {
 		log := apibase.CtxLogger(c)
 		log.Err(err).Msg("Error when reading locker list")
@@ -75,7 +75,7 @@ func (h *AccountHandler) PostLockerHandler(c *gin.Context) {
 		return
 	}
 
-	err = h.identityBackend.StoreLocker(accountID, &lockerEnvelope)
+	err = h.identityBackend.StoreLocker(c, accountID, &lockerEnvelope)
 
 	if err != nil {
 		apibase.AbortWithError(c, http.StatusInternalServerError, "Locker creation failed")
@@ -104,7 +104,7 @@ func (h *AccountHandler) GetLockerHandler(c *gin.Context) {
 
 	hash := c.Params.ByName("hash")
 
-	lockerEnvelope, err := h.identityBackend.GetLocker(accountID, hash)
+	lockerEnvelope, err := h.identityBackend.GetLocker(c, accountID, hash)
 	if err != nil {
 		if errors.Is(err, storage.ErrLockerNotFound) {
 			c.AbortWithStatus(http.StatusNotFound)

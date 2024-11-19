@@ -58,7 +58,7 @@ func NewIndexUpdater(ledger model.Ledger) *IndexUpdater {
 	return updater
 }
 
-func (ixf *IndexUpdater) AddIndexes(dw DataWallet, indexes ...index.Index) error {
+func (ixf *IndexUpdater) AddIndexes(ctx context.Context, dw DataWallet, indexes ...index.Index) error {
 	for _, ix := range indexes {
 		if !ix.IsWritable() {
 			return fmt.Errorf("index isn't writable: %s, can't update", ix.ID())
@@ -76,12 +76,12 @@ func (ixf *IndexUpdater) AddIndexes(dw DataWallet, indexes ...index.Index) error
 		}
 		for _, ls := range lockerStates {
 
-			lockerDW, err := recordConsumer.getDataWallet(ls.AccountID)
+			lockerDW, err := recordConsumer.getDataWallet(ctx, ls.AccountID)
 			if err != nil {
 				return err
 			}
 
-			l, err := lockerDW.GetLocker(ls.ID)
+			l, err := lockerDW.GetLocker(ctx, ls.ID)
 			if err != nil {
 				if errors.Is(err, storage.ErrLockerNotFound) {
 					log.Warn().Str("lid", ls.ID).Msg("Locker not found for index locker state")
@@ -365,9 +365,9 @@ func (c *consumer) ConsumeBlock(ctx context.Context, indexID string, partyLookup
 	return returnError
 }
 
-func (c *consumer) addLocker(dw DataWallet, lockerID string) error {
+func (c *consumer) addLocker(ctx context.Context, dw DataWallet, lockerID string) error {
 
-	l, err := dw.GetLocker(lockerID)
+	l, err := dw.GetLocker(ctx, lockerID)
 	if err != nil {
 		return err
 	}
@@ -385,11 +385,11 @@ func (c *consumer) addLocker(dw DataWallet, lockerID string) error {
 	})
 }
 
-func (c *consumer) getDataWallet(accountID string) (DataWallet, error) {
+func (c *consumer) getDataWallet(ctx context.Context, accountID string) (DataWallet, error) {
 	dw, found := c.dataWallets[accountID]
 	if !found {
 		var err error
-		dw, err = c.dataWallets[c.accountID].GetSubAccountWallet(accountID)
+		dw, err = c.dataWallets[c.accountID].GetSubAccountWallet(ctx, accountID)
 		if err != nil {
 			return nil, err
 		}
@@ -404,6 +404,8 @@ var (
 )
 
 func (c *consumer) NotifyScanCompleted(topBlock int64) error {
+	ctx := context.Background()
+
 	if topBlock > 0 {
 		// top block was updated
 		if err := c.index.UpdateTopBlock(topBlock); err != nil {
@@ -415,13 +417,13 @@ func (c *consumer) NotifyScanCompleted(topBlock int64) error {
 	// for the unprocessed lockers.
 
 	for _, update := range c.accountUpdates {
-		dw, err := c.getDataWallet(update.AccountID)
+		dw, err := c.getDataWallet(ctx, update.AccountID)
 		if err != nil {
 			return err
 		}
 
 		for _, lid := range update.LockersOpened {
-			err = c.addLocker(dw, lid)
+			err = c.addLocker(ctx, dw, lid)
 			if err != nil {
 				if errors.Is(err, storage.ErrLockerNotFound) {
 					log.Warn().Str("lid", lid).Msg("Locker from AccountUpdate message not accessible. Skipping...")
@@ -435,7 +437,7 @@ func (c *consumer) NotifyScanCompleted(topBlock int64) error {
 		for _, subID := range update.SubAccountsAdded {
 			log.Debug().Str("subID", subID).Msg("Processing new sub-account")
 
-			subDW, err := c.getDataWallet(subID)
+			subDW, err := c.getDataWallet(ctx, subID)
 			if err != nil {
 				return err
 			}
@@ -448,7 +450,7 @@ func (c *consumer) NotifyScanCompleted(topBlock int64) error {
 			}
 
 			for _, lvl := range levels {
-				rootLocker, err := subDW.GetRootLocker(lvl)
+				rootLocker, err := subDW.GetRootLocker(ctx, lvl)
 				if err != nil {
 					if errors.Is(err, storage.ErrLockerNotFound) {
 						log.Warn().Str("lid", rootLocker.ID()).Msg("Sub-account's root locker message not accessible. Skipping...")
@@ -457,7 +459,7 @@ func (c *consumer) NotifyScanCompleted(topBlock int64) error {
 						return err
 					}
 				}
-				err = c.addLocker(subDW, rootLocker.ID())
+				err = c.addLocker(ctx, subDW, rootLocker.ID())
 				if err != nil {
 					return err
 				}
@@ -466,7 +468,7 @@ func (c *consumer) NotifyScanCompleted(topBlock int64) error {
 		}
 
 		if c.accountIndex != nil {
-			if err = ApplyAccountUpdate(c.accountIndex, update, dw); err != nil {
+			if err = ApplyAccountUpdate(ctx, c.accountIndex, update, dw); err != nil {
 				return err
 			}
 		}
@@ -503,9 +505,11 @@ func (c *consumer) processAccountUpdateMessage(ds model.DataSet) error {
 func ForceSyncRootIndex(dw DataWallet) error {
 	defer measure.ExecTime("wallet.ForceSyncRootIndex")()
 
+	ctx := context.Background()
+
 	log.Warn().Msg("Force root index sync: adding missing locker states and syncing")
 
-	ix, err := dw.RootIndex()
+	ix, err := dw.RootIndex(ctx)
 	if err != nil {
 		return err
 	}
@@ -528,7 +532,7 @@ func ForceSyncRootIndex(dw DataWallet) error {
 		walletLockerMap[ls.ID] = ls
 	}
 
-	lockerList, err := dw.GetLockers()
+	lockerList, err := dw.GetLockers(ctx)
 	if err != nil {
 		return err
 	}
@@ -541,7 +545,7 @@ func ForceSyncRootIndex(dw DataWallet) error {
 		}
 	}
 
-	updated, err := dw.IndexUpdater(ix)
+	updated, err := dw.IndexUpdater(ctx, ix)
 	if err != nil {
 		return err
 	}

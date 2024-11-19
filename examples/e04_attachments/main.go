@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"strings"
 	"time"
@@ -55,11 +56,14 @@ func main() {
 		panic(err)
 	}
 
+	ctx := context.Background()
+
 	// create an account
 
 	passPhrase := "passw0rd!"
 
 	dataWallet, _, err := factory.RegisterAccount(
+		ctx,
 		&account.Account{
 			Email:       "hackers@example.com",
 			Name:        "Hackers The Movie",
@@ -73,28 +77,28 @@ func main() {
 
 	// the wallet needs to be unlocked before use
 
-	err = dataWallet.Unlock(passPhrase)
+	err = dataWallet.Unlock(ctx, passPhrase)
 	if err != nil {
 		panic(err)
 	}
 
 	// create an identity
 
-	crash, err := dataWallet.NewIdentity(model.AccessLevelHosted, "Crash Override")
+	crash, err := dataWallet.NewIdentity(ctx, model.AccessLevelHosted, "Crash Override")
 	if err != nil {
 		panic(err)
 	}
 
 	// create a locker
 
-	locker, err := crash.NewLocker("Warez")
+	locker, err := crash.NewLocker(ctx, "Warez")
 	if err != nil {
 		panic(err)
 	}
 
 	// publish a dataset that contains an attachment
 
-	lb, err := locker.NewDataSetBuilder(dataset.WithVault("local"))
+	lb, err := locker.NewDataSetBuilder(ctx, dataset.WithVault("local"))
 	if err != nil {
 		panic(err)
 	}

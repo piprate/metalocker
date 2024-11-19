@@ -15,6 +15,7 @@
 package examples
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -82,7 +83,7 @@ fAX1YBBXUb3XGJNZlQIDAQAB
 		return nil, "", err
 	}
 
-	if err := srv.InitAuthentication(cfg); err != nil {
+	if err := srv.InitAuthentication(context.Background(), cfg); err != nil {
 		return nil, "", err
 	}
 

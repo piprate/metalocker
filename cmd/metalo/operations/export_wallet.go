@@ -15,6 +15,7 @@
 package operations
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -31,8 +32,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func ExportWallet(dw wallet.DataWallet, destDir, lockerID, participantID string, userFriendly, forceRewrite bool) error {
-	rootIndex, err := dw.RootIndex()
+func ExportWallet(ctx context.Context, dw wallet.DataWallet, destDir, lockerID, participantID string, userFriendly, forceRewrite bool) error {
+	rootIndex, err := dw.RootIndex(ctx)
 	if err != nil {
 		return err
 	}
@@ -43,7 +44,7 @@ func ExportWallet(dw wallet.DataWallet, destDir, lockerID, participantID string,
 			return nil
 		}
 
-		locker, err := dw.GetLocker(r.LockerID)
+		locker, err := dw.GetLocker(ctx, r.LockerID)
 		if err != nil {
 			return err
 		}
@@ -78,7 +79,7 @@ func ExportWallet(dw wallet.DataWallet, destDir, lockerID, participantID string,
 
 		log.Debug().Str("rid", r.ID).Str("path", dest).Msg("Exporting dataset")
 
-		ds, err := dw.DataStore().Load(r.ID, dataset.FromLocker(locker.ID()))
+		ds, err := dw.DataStore().Load(ctx, r.ID, dataset.FromLocker(locker.ID()))
 		if err != nil {
 			return err
 		}

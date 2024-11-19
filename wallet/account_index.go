@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"context"
 	"errors"
 
 	"github.com/piprate/metalocker/model"
@@ -20,13 +21,13 @@ type (
 	}
 )
 
-func InitAccountIndex(ai AccountIndex, dw DataWallet) error {
+func InitAccountIndex(ctx context.Context, ai AccountIndex, dw DataWallet) error {
 
 	if err := ai.UpdateAccount(dw.Account()); err != nil {
 		return err
 	}
 
-	rootIdy, err := dw.GetRootIdentity()
+	rootIdy, err := dw.GetRootIdentity(ctx)
 	if err != nil {
 		return err
 	}
@@ -34,7 +35,7 @@ func InitAccountIndex(ai AccountIndex, dw DataWallet) error {
 		return err
 	}
 
-	l, err := dw.GetRootLocker(model.AccessLevelManaged)
+	l, err := dw.GetRootLocker(ctx, model.AccessLevelManaged)
 	if err != nil {
 		return err
 	}
@@ -43,7 +44,7 @@ func InitAccountIndex(ai AccountIndex, dw DataWallet) error {
 	}
 
 	if dw.LockLevel() >= model.AccessLevelHosted {
-		l, err := dw.GetRootLocker(model.AccessLevelHosted)
+		l, err := dw.GetRootLocker(ctx, model.AccessLevelHosted)
 		if err != nil {
 			return err
 		}
@@ -55,9 +56,9 @@ func InitAccountIndex(ai AccountIndex, dw DataWallet) error {
 	return nil
 }
 
-func ApplyAccountUpdate(ai AccountIndex, update *AccountUpdate, dw DataWallet) error {
+func ApplyAccountUpdate(ctx context.Context, ai AccountIndex, update *AccountUpdate, dw DataWallet) error {
 	for _, iid := range update.IdentitiesAdded {
-		idy, err := dw.GetIdentity(iid)
+		idy, err := dw.GetIdentity(ctx, iid)
 		if err != nil {
 			if errors.Is(err, storage.ErrIdentityNotFound) {
 				continue
@@ -73,7 +74,7 @@ func ApplyAccountUpdate(ai AccountIndex, update *AccountUpdate, dw DataWallet) e
 	}
 
 	for _, lid := range update.LockersOpened {
-		l, err := dw.GetLocker(lid)
+		l, err := dw.GetLocker(ctx, lid)
 		if err != nil {
 			if errors.Is(err, storage.ErrLockerNotFound) {
 				continue
@@ -91,12 +92,12 @@ func ApplyAccountUpdate(ai AccountIndex, update *AccountUpdate, dw DataWallet) e
 	for _, subID := range update.SubAccountsAdded {
 		log.Debug().Str("subID", subID).Msg("Processing new sub-account")
 
-		subDW, err := dw.GetSubAccountWallet(subID)
+		subDW, err := dw.GetSubAccountWallet(ctx, subID)
 		if err != nil {
 			return err
 		}
 
-		if err = InitAccountIndex(ai, subDW); err != nil {
+		if err = InitAccountIndex(ctx, ai, subDW); err != nil {
 			return err
 		}
 	}

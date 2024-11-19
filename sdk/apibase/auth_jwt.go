@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // MapClaims type that uses the map[string]any for JSON decoding
@@ -609,14 +609,13 @@ func (mw *GinJWTMiddleware) CheckIfTokenExpire(c *gin.Context) (jwt.MapClaims, e
 	token, err := mw.ParseToken(c)
 
 	if err != nil {
-		// If we receive an error, and the error is anything other than a single
-		// ValidationErrorExpired, we want to return the error.
-		// If the error is just ValidationErrorExpired, we want to continue, as we can still
+		// If we receive an error, and the error is anything other than
+		// ErrTokenExpired, we want to return the error.
+		// If the error is just ErrTokenExpired, we want to continue, as we can still
 		// refresh the token if it's within the MaxRefresh time.
 		// (see https://github.com/appleboy/gin-jwt/issues/176)
 
-		validationErr, ok := err.(*jwt.ValidationError) //nolint:errorlint
-		if !ok || validationErr.Errors != jwt.ValidationErrorExpired {
+		if !errors.Is(err, jwt.ErrTokenExpired) {
 			return nil, err
 		}
 	}

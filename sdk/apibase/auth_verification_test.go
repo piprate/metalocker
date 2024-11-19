@@ -17,7 +17,7 @@ package apibase_test
 import (
 	"testing"
 
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	. "github.com/piprate/metalocker/sdk/apibase"
 	"github.com/stretchr/testify/require"
 )

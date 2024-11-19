@@ -15,6 +15,7 @@
 package caller
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -24,15 +25,15 @@ import (
 	"github.com/piprate/metalocker/storage"
 )
 
-func (c *MetaLockerHTTPCaller) StoreIdentity(idy *account.DataEnvelope) error {
+func (c *MetaLockerHTTPCaller) StoreIdentity(ctx context.Context, idy *account.DataEnvelope) error {
 	return c.storeDataEnvelope("identity", idy)
 }
 
-func (c *MetaLockerHTTPCaller) GetIdentity(hash string) (*account.DataEnvelope, error) {
+func (c *MetaLockerHTTPCaller) GetIdentity(ctx context.Context, hash string) (*account.DataEnvelope, error) {
 	return c.getDataEnvelope("identity", hash, storage.ErrIdentityNotFound)
 }
 
-func (c *MetaLockerHTTPCaller) ListIdentities() ([]*account.DataEnvelope, error) {
+func (c *MetaLockerHTTPCaller) ListIdentities(ctx context.Context) ([]*account.DataEnvelope, error) {
 	return c.listDataEnvelopes("identity")
 }
 

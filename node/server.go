@@ -15,6 +15,7 @@
 package node
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -166,7 +167,7 @@ func (mls *MetaLockerServer) InitServices(cfg *koanf.Koanf, debugMode bool) erro
 	return nil
 }
 
-func (mls *MetaLockerServer) InitAuthentication(cfg *koanf.Koanf) error {
+func (mls *MetaLockerServer) InitAuthentication(ctx context.Context, cfg *koanf.Koanf) error {
 	authMiddleware, publicKeyBytes, err := InitAuthMiddleware(cfg, "MetaLocker", mls.Resolver, mls.ConfigDir, mls.IdentityBackend)
 	if err != nil {
 		return err
@@ -177,7 +178,7 @@ func (mls *MetaLockerServer) InitAuthentication(cfg *koanf.Koanf) error {
 	mls.Level1AuthFn = apibase.AccessKeyMiddleware(mls.IdentityBackend, authMiddleware.MiddlewareFunc())
 
 	if cfg.Exists("apiKeys") {
-		mls.Level2AuthFn, err = apibase.NewStaticAPIKeyAuthenticationHandler(cfg, "apiKeys", mls.Level1AuthFn,
+		mls.Level2AuthFn, err = apibase.NewStaticAPIKeyAuthenticationHandler(ctx, cfg, "apiKeys", mls.Level1AuthFn,
 			mls.Resolver, mls.IdentityBackend)
 		if err != nil {
 			return cli.Exit(err, 1)

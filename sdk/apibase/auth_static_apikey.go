@@ -15,6 +15,7 @@
 package apibase
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
@@ -33,7 +34,7 @@ type apiKeyStruct struct {
 	Secret any `json:"secret"`
 }
 
-func NewStaticAPIKeyAuthenticationHandler(cfg *koanf.Koanf, key string, mainAuthFunc gin.HandlerFunc,
+func NewStaticAPIKeyAuthenticationHandler(ctx context.Context, cfg *koanf.Koanf, key string, mainAuthFunc gin.HandlerFunc,
 	resolver cmdbase.ParameterResolver, identityBackend storage.IdentityBackend) (gin.HandlerFunc, error) {
 
 	var keyDefs []*apiKeyStruct
@@ -52,7 +53,7 @@ func NewStaticAPIKeyAuthenticationHandler(cfg *koanf.Koanf, key string, mainAuth
 			log.Err(err).Msg("Failed to resolve API key's userID")
 			return nil, ErrBadConfiguration
 		}
-		acct, err := identityBackend.GetAccount(accountID)
+		acct, err := identityBackend.GetAccount(ctx, accountID)
 		if err != nil {
 			if !errors.Is(err, storage.ErrAccountNotFound) {
 				log.Err(err).Msg("Error when retrieving account")

@@ -15,6 +15,7 @@
 package wallet
 
 import (
+	"context"
 	"time"
 
 	"github.com/piprate/metalocker/model"
@@ -87,7 +88,7 @@ func (iw *identityWrapper) Raw() *account.Identity {
 	return iw.raw
 }
 
-func (iw *identityWrapper) NewLocker(name string, options ...LockerOption) (Locker, error) {
+func (iw *identityWrapper) NewLocker(ctx context.Context, name string, options ...LockerOption) (Locker, error) {
 	var opts lockerOptions
 
 	for _, fn := range options {
@@ -113,10 +114,10 @@ func (iw *identityWrapper) NewLocker(name string, options ...LockerOption) (Lock
 		return nil, err
 	}
 
-	return iw.wallet.AddLocker(locker)
+	return iw.wallet.AddLocker(ctx, locker)
 }
 
-func (dw *LocalDataWallet) NewIdentity(accessLevel model.AccessLevel, name string, options ...IdentityOption) (Identity, error) {
+func (dw *LocalDataWallet) NewIdentity(ctx context.Context, accessLevel model.AccessLevel, name string, options ...IdentityOption) (Identity, error) {
 	var opts identityOptions
 	for _, fn := range options {
 		if err := fn(&opts); err != nil {
@@ -145,7 +146,7 @@ func (dw *LocalDataWallet) NewIdentity(accessLevel model.AccessLevel, name strin
 		AccessLevel: accessLevel,
 	}
 
-	if err := dw.AddIdentity(idy); err != nil {
+	if err := dw.AddIdentity(ctx, idy); err != nil {
 		return nil, err
 	}
 

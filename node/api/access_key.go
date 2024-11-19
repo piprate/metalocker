@@ -34,7 +34,7 @@ func (h *AccountHandler) GetAccessKeyListHandler(c *gin.Context) {
 		return
 	}
 
-	keys, err := h.identityBackend.ListAccessKeys(accountID)
+	keys, err := h.identityBackend.ListAccessKeys(c, accountID)
 	if err != nil {
 		log := apibase.CtxLogger(c)
 		log.Err(err).Msg("Error when reading sub-account list")
@@ -58,7 +58,7 @@ func (h *AccountHandler) GetAccessKeyHandler(c *gin.Context) {
 
 	id := c.Params.ByName("id")
 
-	ak, err := h.identityBackend.GetAccessKey(id)
+	ak, err := h.identityBackend.GetAccessKey(c, id)
 	if err != nil {
 		if errors.Is(err, storage.ErrAccessKeyNotFound) {
 			c.AbortWithStatus(http.StatusNotFound)
@@ -110,7 +110,7 @@ func (h *AccountHandler) PostAccessKeyHandler(c *gin.Context) {
 		ak.ID = model.GenerateAccessKeyID()
 	}
 
-	err = h.identityBackend.StoreAccessKey(&ak)
+	err = h.identityBackend.StoreAccessKey(c, &ak)
 	if err != nil {
 		log.Err(err).Msg("Error when saving new access key")
 		_ = c.AbortWithError(http.StatusInternalServerError, err)
@@ -133,7 +133,7 @@ func (h *AccountHandler) DeleteAccessKeyHandler(c *gin.Context) {
 
 	id := c.Params.ByName("id")
 
-	ak, err := h.identityBackend.GetAccessKey(id)
+	ak, err := h.identityBackend.GetAccessKey(c, id)
 	if err != nil {
 		if errors.Is(err, storage.ErrAccessKeyNotFound) {
 			c.AbortWithStatus(http.StatusNotFound)
@@ -153,7 +153,7 @@ func (h *AccountHandler) DeleteAccessKeyHandler(c *gin.Context) {
 		return
 	}
 
-	err = h.identityBackend.DeleteAccessKey(id)
+	err = h.identityBackend.DeleteAccessKey(c, id)
 	if err != nil {
 		log := apibase.CtxLogger(c)
 		if errors.Is(err, storage.ErrAccessKeyNotFound) {

@@ -15,6 +15,7 @@
 package wallet
 
 import (
+	"context"
 	"errors"
 	"io"
 	"time"
@@ -56,7 +57,7 @@ type (
 		Raw() *account.Identity
 		// NewLocker creates a new locker for the identity. Use Participant option
 		// to add other participants to the locker.
-		NewLocker(name string, options ...LockerOption) (Locker, error)
+		NewLocker(ctx context.Context, name string, options ...LockerOption) (Locker, error)
 	}
 
 	// Locker is an interface to the account's lockers (secure, persistent, bidirectional communication
@@ -89,20 +90,20 @@ type (
 
 		// NewDataSetBuilder returns an instance of dataset.Builder that enables interactive construction
 		// of a dataset. This builder assumes the dataset will be stored in this locker.
-		NewDataSetBuilder(opts ...dataset.BuilderOption) (dataset.Builder, error)
+		NewDataSetBuilder(ctx context.Context, opts ...dataset.BuilderOption) (dataset.Builder, error)
 		// Store is a convenience method that submits a dataset with no attachments to this locker.
-		Store(meta any, expiryTime time.Time, opts ...dataset.BuilderOption) dataset.RecordFuture
+		Store(ctx context.Context, meta any, expiryTime time.Time, opts ...dataset.BuilderOption) dataset.RecordFuture
 		// Share shares the dataset from the record with the given id (we assume the account has access
 		// to this record) through the locker.
-		Share(id, vaultName string, expiryTime time.Time) dataset.RecordFuture
+		Share(ctx context.Context, id, vaultName string, expiryTime time.Time) dataset.RecordFuture
 		// HeadID returns the ID of the dataset head for the given asset ID and head name (and linked
 		// to the locker).
-		HeadID(assetID string, headName string) string
+		HeadID(ctx context.Context, assetID string, headName string) string
 		// SetAssetHead sets the record with the given ID as a head for the dataset with the given asset ID.
-		SetAssetHead(assetID, headName, recordID string) dataset.RecordFuture
+		SetAssetHead(ctx context.Context, assetID, headName, recordID string) dataset.RecordFuture
 
 		// Seal closes the locker. NOT CURRENTLY SUPPORTED.
-		Seal() error
+		Seal(ctx context.Context) error
 	}
 
 	// Services is an interface to MetaLocker services that are necessary for data wallet operations.
@@ -121,24 +122,24 @@ type (
 	DataStore interface {
 		// NewDataSetBuilder returns an instance of dataset.Builder that enables interactive construction
 		// of a dataset.
-		NewDataSetBuilder(lockerID string, opts ...dataset.BuilderOption) (dataset.Builder, error)
+		NewDataSetBuilder(ctx context.Context, lockerID string, opts ...dataset.BuilderOption) (dataset.Builder, error)
 		// Load returns an interface to interact with the dataset behind the given record ID.
-		Load(id string, opts ...dataset.LoadOption) (model.DataSet, error)
+		Load(ctx context.Context, id string, opts ...dataset.LoadOption) (model.DataSet, error)
 		// Revoke revokes for the lease for the dataset behind the given record ID.
-		Revoke(id string) dataset.RecordFuture
+		Revoke(ctx context.Context, id string) dataset.RecordFuture
 
 		// AssetHead returns the dataset that is a head with the given ID.
-		AssetHead(headID string, opts ...dataset.LoadOption) (model.DataSet, error)
+		AssetHead(ctx context.Context, headID string, opts ...dataset.LoadOption) (model.DataSet, error)
 		// SetAssetHead sets the record with the given ID as a head for the dataset with the given asset ID,
 		// name and for the given locker.
-		SetAssetHead(assetID string, locker *model.Locker, headName string, recordID string) dataset.RecordFuture
+		SetAssetHead(ctx context.Context, assetID string, locker *model.Locker, headName string, recordID string) dataset.RecordFuture
 
 		// Share shares the dataset from the record with the given id (we assume the account has access
 		// to this record) through the locker.
-		Share(ds model.DataSet, locker Locker, vaultName string, expiryTime time.Time) dataset.RecordFuture
+		Share(ctx context.Context, ds model.DataSet, locker Locker, vaultName string, expiryTime time.Time) dataset.RecordFuture
 
 		// PurgeDataAssets purges all data assets (resources) for the given revoked lease.
-		PurgeDataAssets(recordID string) error
+		PurgeDataAssets(ctx context.Context, recordID string) error
 	}
 
 	DataSetStoreConstructor func(dataWallet DataWallet, services Services) (DataStore, error)
@@ -156,11 +157,11 @@ type (
 		// ChangePassphrase updates the passphrase for the account. If isHash is true,
 		// the provided passphrase is a double SHA256 of the passphrase, not the cleartext
 		// passphrase.
-		ChangePassphrase(oldPassphrase, newPassphrase string, isHash bool) (DataWallet, error)
+		ChangePassphrase(ctx context.Context, oldPassphrase, newPassphrase string, isHash bool) (DataWallet, error)
 		// ChangeEmail changes the email of the account.
-		ChangeEmail(email string) error
+		ChangeEmail(ctx context.Context, email string) error
 		// Recover enables account recovery, in the passphrase has been lost.
-		Recover(cryptoKey *model.AESKey, newPassphrase string) (DataWallet, error)
+		Recover(ctx context.Context, cryptoKey *model.AESKey, newPassphrase string) (DataWallet, error)
 
 		// EncryptionKey derives a deterministic AES key for the given tag. We assume that this derivation
 		// can be repeated by the user at any time, producing the same key. Only a party in possession of
@@ -175,52 +176,52 @@ type (
 		Lock() error
 		// Unlock unlocks the data wallet using a passphrase. Data wallet needs to be unlocked
 		// to perform the majority of operations with the underlying account and its data.
-		Unlock(passphrase string) error
+		Unlock(ctx context.Context, passphrase string) error
 		// UnlockAsManaged unlocks the data wallet at 'managed' level using the provided key.
-		UnlockAsManaged(managedKey *model.AESKey) error
+		UnlockAsManaged(ctx context.Context, managedKey *model.AESKey) error
 		// UnlockWithAccessKey unlocks the data wallet using an access key. Access level depends on the underlying
 		// key's access level.
-		UnlockWithAccessKey(apiKey, apiSecret string) error
+		UnlockWithAccessKey(ctx context.Context, apiKey, apiSecret string) error
 		// UnlockAsChild unlock the data wallet for sub-account using its parent secret.
-		UnlockAsChild(parentNode slip10.Node) error
+		UnlockAsChild(ctx context.Context, parentNode slip10.Node) error
 
-		CreateSubAccount(accessLevel model.AccessLevel, name string, opts ...account.Option) (DataWallet, error)
-		GetSubAccount(id string) (*account.Account, error)
-		DeleteSubAccount(id string) error
-		SubAccounts() ([]*account.Account, error)
-		GetSubAccountWallet(id string) (DataWallet, error)
+		CreateSubAccount(ctx context.Context, accessLevel model.AccessLevel, name string, opts ...account.Option) (DataWallet, error)
+		GetSubAccount(ctx context.Context, id string) (*account.Account, error)
+		DeleteSubAccount(ctx context.Context, id string) error
+		SubAccounts(ctx context.Context) ([]*account.Account, error)
+		GetSubAccountWallet(ctx context.Context, id string) (DataWallet, error)
 
-		CreateAccessKey(accessLevel model.AccessLevel, duration time.Duration) (*model.AccessKey, error)
-		GetAccessKey(keyID string) (*model.AccessKey, error)
-		RevokeAccessKey(keyID string) error
-		AccessKeys() ([]*model.AccessKey, error)
+		CreateAccessKey(ctx context.Context, accessLevel model.AccessLevel, duration time.Duration) (*model.AccessKey, error)
+		GetAccessKey(ctx context.Context, keyID string) (*model.AccessKey, error)
+		RevokeAccessKey(ctx context.Context, keyID string) error
+		AccessKeys(ctx context.Context) ([]*model.AccessKey, error)
 
 		RestrictedWallet(identities []string) (DataWallet, error)
 
-		NewIdentity(accessLevel model.AccessLevel, name string, options ...IdentityOption) (Identity, error)
-		AddIdentity(idy *account.Identity) error
-		GetIdentities() (map[string]Identity, error)
-		GetIdentity(iid string) (Identity, error)
-		GetDID(iid string) (*model.DID, error)
-		GetRootIdentity() (Identity, error)
+		NewIdentity(ctx context.Context, accessLevel model.AccessLevel, name string, options ...IdentityOption) (Identity, error)
+		AddIdentity(ctx context.Context, idy *account.Identity) error
+		GetIdentities(ctx context.Context) (map[string]Identity, error)
+		GetIdentity(ctx context.Context, iid string) (Identity, error)
+		GetDID(ctx context.Context, iid string) (*model.DID, error)
+		GetRootIdentity(ctx context.Context) (Identity, error)
 
-		AddLocker(l *model.Locker) (Locker, error)
-		GetLockers() ([]*model.Locker, error)
-		GetLocker(lockerID string) (Locker, error)
-		GetRootLocker(level model.AccessLevel) (Locker, error)
+		AddLocker(ctx context.Context, l *model.Locker) (Locker, error)
+		GetLockers(ctx context.Context) ([]*model.Locker, error)
+		GetLocker(ctx context.Context, lockerID string) (Locker, error)
+		GetRootLocker(ctx context.Context, level model.AccessLevel) (Locker, error)
 
-		GetProperty(key string) (string, error)
-		SetProperty(key string, value string, lvl model.AccessLevel) error
-		GetProperties() (map[string]string, error)
-		DeleteProperty(key string, lvl model.AccessLevel) error
+		GetProperty(ctx context.Context, key string) (string, error)
+		SetProperty(ctx context.Context, key string, value string, lvl model.AccessLevel) error
+		GetProperties(ctx context.Context) (map[string]string, error)
+		DeleteProperty(ctx context.Context, key string, lvl model.AccessLevel) error
 
-		CreateRootIndex(indexStoreName string) (index.RootIndex, error)
-		RootIndex() (index.RootIndex, error)
+		CreateRootIndex(ctx context.Context, indexStoreName string) (index.RootIndex, error)
+		RootIndex(ctx context.Context) (index.RootIndex, error)
 
-		CreateIndex(indexStoreName, indexType string, opts ...index.Option) (index.Index, error)
-		Index(id string) (index.Index, error)
+		CreateIndex(ctx context.Context, indexStoreName, indexType string, opts ...index.Option) (index.Index, error)
+		Index(ctx context.Context, id string) (index.Index, error)
 
-		IndexUpdater(indexes ...index.Index) (*IndexUpdater, error)
+		IndexUpdater(ctx context.Context, indexes ...index.Index) (*IndexUpdater, error)
 
 		DataStore() DataStore
 
@@ -240,6 +241,6 @@ type (
 	// This interface can hide details how the wallet is constructed and whether it's local or remote.
 	Factory interface {
 		// GetWalletWithAccessKey returns an unlocked data wallet instance for the given access key and secret.
-		GetWalletWithAccessKey(apiKey, apiSecret string) (DataWallet, error)
+		GetWalletWithAccessKey(ctx context.Context, apiKey, apiSecret string) (DataWallet, error)
 	}
 )

@@ -15,6 +15,7 @@
 package wallet
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
@@ -66,8 +67,8 @@ func newLocalDataStore(dataWallet DataWallet, services Services) (DataStore, err
 	}, nil
 }
 
-func (c *localStoreImpl) getRootIndexRecord(id string) (*index.RecordState, error) {
-	rootIndex, err := c.dataWallet.RootIndex()
+func (c *localStoreImpl) getRootIndexRecord(ctx context.Context, id string) (*index.RecordState, error) {
+	rootIndex, err := c.dataWallet.RootIndex(ctx)
 	if err != nil {
 		if errors.Is(err, index.ErrIndexNotFound) {
 			return nil, nil
@@ -85,8 +86,8 @@ func (c *localStoreImpl) getRootIndexRecord(id string) (*index.RecordState, erro
 
 type recordProcessor func(blockNumber int64, lockerID, participantID string, symKey *model.AESKey) error
 
-func (c *localStoreImpl) processRecord(lr *model.Record, suggestedLockerID string, fn recordProcessor) error {
-	rec, err := c.getRootIndexRecord(lr.ID)
+func (c *localStoreImpl) processRecord(ctx context.Context, lr *model.Record, suggestedLockerID string, fn recordProcessor) error {
+	rec, err := c.getRootIndexRecord(ctx, lr.ID)
 	if err != nil {
 		return err
 	}
@@ -102,7 +103,7 @@ func (c *localStoreImpl) processRecord(lr *model.Record, suggestedLockerID strin
 	if rec == nil {
 		var lockers []*model.Locker
 		if suggestedLockerID != "" {
-			l, err := c.dataWallet.GetLocker(suggestedLockerID)
+			l, err := c.dataWallet.GetLocker(ctx, suggestedLockerID)
 			if err != nil {
 				if !errors.Is(err, storage.ErrLockerNotFound) {
 					return err
@@ -116,7 +117,7 @@ func (c *localStoreImpl) processRecord(lr *model.Record, suggestedLockerID strin
 		}
 		if len(lockers) == 0 {
 			// record is not yet in the index. Retrieve crypto material from the lockers, if available
-			lockers, err = c.dataWallet.GetLockers()
+			lockers, err = c.dataWallet.GetLockers(ctx)
 			if err != nil {
 				return err
 			}
@@ -150,7 +151,7 @@ func (c *localStoreImpl) processRecord(lr *model.Record, suggestedLockerID strin
 	} else {
 		if lr.Flags&model.RecordFlagPublic == 0 {
 			// retrieve crypto material from the locker this record belongs to
-			l, err := c.dataWallet.GetLocker(rec.LockerID)
+			l, err := c.dataWallet.GetLocker(ctx, rec.LockerID)
 			if err != nil {
 				return err
 			}
@@ -183,7 +184,7 @@ func (c *localStoreImpl) processRecord(lr *model.Record, suggestedLockerID strin
 	return fn(blockNumber, lockerID, participantID, symKey)
 }
 
-func (c *localStoreImpl) Load(recordID string, opts ...dataset.LoadOption) (model.DataSet, error) {
+func (c *localStoreImpl) Load(ctx context.Context, recordID string, opts ...dataset.LoadOption) (model.DataSet, error) {
 	var options dataset.LoadOptions
 	for _, fn := range opts {
 		if err := fn(&options); err != nil {
@@ -205,7 +206,7 @@ func (c *localStoreImpl) Load(recordID string, opts ...dataset.LoadOption) (mode
 	}
 
 	var ds model.DataSet
-	err = c.processRecord(rec, options.LockerID, func(blockNumber int64, lockerID, participantID string, symKey *model.AESKey) error {
+	err = c.processRecord(ctx, rec, options.LockerID, func(blockNumber int64, lockerID, participantID string, symKey *model.AESKey) error {
 		opRecBytes, err := c.offChainStorage.GetOperation(rec.OperationAddress)
 		if err != nil {
 			if rec.Status == model.StatusRevoked {
@@ -235,7 +236,7 @@ func (c *localStoreImpl) Load(recordID string, opts ...dataset.LoadOption) (mode
 	return ds, err
 }
 
-func (c *localStoreImpl) Submit(lease *model.Lease, cleartext bool, lockerID string, sender *model.LockerParticipant, headName ...string) dataset.RecordFuture {
+func (c *localStoreImpl) Submit(ctx context.Context, lease *model.Lease, cleartext bool, lockerID string, sender *model.LockerParticipant, headName ...string) dataset.RecordFuture {
 	defer measure.ExecTime("store.Submit")()
 
 	log.Debug().Str("lid", lockerID).Msg("Processing a new lease submission")
@@ -422,13 +423,13 @@ func (c *localStoreImpl) submitLeaseRevocation(recordID string, p *model.LockerP
 	return rec.ID, nil
 }
 
-func (c *localStoreImpl) Share(ds model.DataSet, locker Locker, vaultName string, expiryTime time.Time) dataset.RecordFuture {
+func (c *localStoreImpl) Share(ctx context.Context, ds model.DataSet, locker Locker, vaultName string, expiryTime time.Time) dataset.RecordFuture {
 	sender := locker.Us()
 	if sender == nil {
 		return dataset.RecordFutureWithError(fmt.Errorf("read-only locker"))
 	}
 	us := sender.ID
-	idy, err := c.dataWallet.GetIdentity(us)
+	idy, err := c.dataWallet.GetIdentity(ctx, us)
 	if err != nil {
 		return dataset.RecordFutureWithError(err)
 	}
@@ -441,7 +442,8 @@ func (c *localStoreImpl) Share(ds model.DataSet, locker Locker, vaultName string
 		recipient = locker.Them()
 	}
 
-	builder, err := dataset.NewLeaseBuilderForSharing(ds, c, c.blobManager, dataset.CopyModeDeep, creator, nil, recipient[0].ID, vaultName, nil)
+	builder, err := dataset.NewLeaseBuilderForSharing(ctx, ds, c, c.blobManager, dataset.CopyModeDeep, creator,
+		nil, recipient[0].ID, vaultName, nil)
 	if err != nil {
 		return dataset.RecordFutureWithError(err)
 	}
@@ -451,13 +453,13 @@ func (c *localStoreImpl) Share(ds model.DataSet, locker Locker, vaultName string
 		return dataset.RecordFutureWithError(err)
 	}
 
-	return c.Submit(lease, false, locker.ID(), sender)
+	return c.Submit(ctx, lease, false, locker.ID(), sender)
 }
 
-func (c *localStoreImpl) Revoke(id string) dataset.RecordFuture {
+func (c *localStoreImpl) Revoke(ctx context.Context, id string) dataset.RecordFuture {
 	defer measure.ExecTime("store.RevokeLease")()
 
-	rs, err := c.getRootIndexRecord(id)
+	rs, err := c.getRootIndexRecord(ctx, id)
 	if err != nil {
 		return dataset.RecordFutureWithError(err)
 	}
@@ -474,7 +476,7 @@ func (c *localStoreImpl) Revoke(id string) dataset.RecordFuture {
 		return dataset.RecordFutureWithError(fmt.Errorf("lease already revoked: %s", id))
 	}
 
-	locker, err := c.dataWallet.GetLocker(rs.LockerID)
+	locker, err := c.dataWallet.GetLocker(ctx, rs.LockerID)
 	if err != nil {
 		return dataset.RecordFutureWithError(err)
 	}
@@ -500,12 +502,12 @@ func (c *localStoreImpl) Revoke(id string) dataset.RecordFuture {
 	return dataset.RecordFutureWithResult(c.ledger, c.ns, recID, nil, nil, []string{recID})
 }
 
-func (c *localStoreImpl) PurgeDataAssets(recordID string) error {
+func (c *localStoreImpl) PurgeDataAssets(ctx context.Context, recordID string) error {
 	log.Debug().Str("rid", recordID).Msg("Purging data assets from record")
 
 	// purge blobs
 
-	ds, err := c.Load(recordID)
+	ds, err := c.Load(ctx, recordID)
 	if err != nil {
 		if errors.Is(err, model.ErrOperationNotFound) {
 			log.Warn().Str("rid", recordID).Msg("Operation already purged")
@@ -550,8 +552,8 @@ func (c *localStoreImpl) PurgeDataAssets(recordID string) error {
 	return nil
 }
 
-func (c *localStoreImpl) NewDataSetBuilder(lockerID string, opts ...dataset.BuilderOption) (dataset.Builder, error) {
-	locker, err := c.dataWallet.GetLocker(lockerID)
+func (c *localStoreImpl) NewDataSetBuilder(ctx context.Context, lockerID string, opts ...dataset.BuilderOption) (dataset.Builder, error) {
+	locker, err := c.dataWallet.GetLocker(ctx, lockerID)
 	if err != nil {
 		return nil, err
 	}
@@ -562,12 +564,12 @@ func (c *localStoreImpl) NewDataSetBuilder(lockerID string, opts ...dataset.Buil
 	}
 
 	us := usParty.ID
-	creator, err := c.dataWallet.GetIdentity(us)
+	creator, err := c.dataWallet.GetIdentity(ctx, us)
 	if err != nil {
 		return nil, err
 	}
 
-	lb, err := dataset.NewLeaseBuilder(c, c.blobManager, locker.Raw(), creator.DID(), opts...)
+	lb, err := dataset.NewLeaseBuilder(ctx, c, c.blobManager, locker.Raw(), creator.DID(), opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -575,7 +577,7 @@ func (c *localStoreImpl) NewDataSetBuilder(lockerID string, opts ...dataset.Buil
 	return lb, nil
 }
 
-func (c *localStoreImpl) AssetHead(headID string, opts ...dataset.LoadOption) (model.DataSet, error) {
+func (c *localStoreImpl) AssetHead(ctx context.Context, headID string, opts ...dataset.LoadOption) (model.DataSet, error) {
 	defer measure.ExecTime("store.AssetHead")()
 
 	var options dataset.LoadOptions
@@ -591,7 +593,7 @@ func (c *localStoreImpl) AssetHead(headID string, opts ...dataset.LoadOption) (m
 	}
 
 	var recordID string
-	err = c.processRecord(headRec, options.LockerID, func(blockNumber int64, lockerID, participantID string, symKey *model.AESKey) error {
+	err = c.processRecord(ctx, headRec, options.LockerID, func(blockNumber int64, lockerID, participantID string, symKey *model.AESKey) error {
 		headBodyBytes, err := base64.StdEncoding.DecodeString(headRec.HeadBody)
 		if err != nil {
 			return err
@@ -610,10 +612,10 @@ func (c *localStoreImpl) AssetHead(headID string, opts ...dataset.LoadOption) (m
 		return nil, err
 	}
 
-	return c.Load(recordID)
+	return c.Load(ctx, recordID)
 }
 
-func (c *localStoreImpl) SetAssetHead(assetID string, locker *model.Locker, headName, recordID string) dataset.RecordFuture {
+func (c *localStoreImpl) SetAssetHead(ctx context.Context, assetID string, locker *model.Locker, headName, recordID string) dataset.RecordFuture {
 	defer measure.ExecTime("store.SetAssetHead")()
 
 	headDataSetRecord, err := c.ledger.GetRecord(recordID)

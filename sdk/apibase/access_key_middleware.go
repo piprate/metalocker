@@ -16,6 +16,7 @@ package apibase
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -33,7 +34,7 @@ import (
 )
 
 type AccessKeyPersister interface {
-	GetAccessKey(keyID string) (*model.AccessKey, error)
+	GetAccessKey(ctx context.Context, keyID string) (*model.AccessKey, error)
 }
 
 func AccessKeyMiddleware(accessKeyStorage AccessKeyPersister, next gin.HandlerFunc) gin.HandlerFunc {
@@ -41,7 +42,7 @@ func AccessKeyMiddleware(accessKeyStorage AccessKeyPersister, next gin.HandlerFu
 		req := c.Request
 		keyID, sig, err := model.ExtractSignature(req.Header)
 		if err == nil {
-			key, err := accessKeyStorage.GetAccessKey(keyID)
+			key, err := accessKeyStorage.GetAccessKey(c, keyID)
 			if err != nil {
 				if errors.Is(err, storage.ErrAccessKeyNotFound) {
 					c.AbortWithStatus(http.StatusUnauthorized)

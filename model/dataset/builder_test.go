@@ -15,6 +15,7 @@
 package dataset_test
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -56,7 +57,7 @@ func TestLeaseBuilderSimple(t *testing.T) {
 
 	ts := time.Unix(1000, 0).UTC()
 
-	lb, err := NewLeaseBuilder(mockBuilderBackend, bm, locker, creator,
+	lb, err := NewLeaseBuilder(context.Background(), mockBuilderBackend, bm, locker, creator,
 		WithVault(testbase.TestVaultName),
 		WithTimestamp(ts))
 	require.NoError(t, err)
@@ -92,7 +93,7 @@ func TestLeaseBuilderNoExpiry(t *testing.T) {
 
 	ts := time.Unix(1000, 0).UTC()
 
-	lb, err := NewLeaseBuilder(mockBuilderBackend, bm, locker, creator,
+	lb, err := NewLeaseBuilder(context.Background(), mockBuilderBackend, bm, locker, creator,
 		WithVault(testbase.TestVaultName),
 		WithTimestamp(ts))
 	require.NoError(t, err)
@@ -117,7 +118,7 @@ func TestLeaseBuilder_CustomMethod(t *testing.T) {
 
 	ts := time.Unix(1000, 0).UTC()
 
-	lb, err := NewLeaseBuilder(mockBuilderBackend, bm, locker, creator,
+	lb, err := NewLeaseBuilder(context.Background(), mockBuilderBackend, bm, locker, creator,
 		WithVault(testbase.TestVaultName),
 		WithDIDMethod("example"),
 		WithTimestamp(ts))
@@ -146,7 +147,7 @@ func TestLeaseBuilder_WithProvenance_File(t *testing.T) {
 
 	ts := time.Unix(1000, 0).UTC()
 
-	lb, err := NewLeaseBuilder(mockBuilderBackend, bm, locker, creator,
+	lb, err := NewLeaseBuilder(context.Background(), mockBuilderBackend, bm, locker, creator,
 		WithVault(testbase.TestVaultName),
 		WithTimestamp(ts))
 	require.NoError(t, err)
@@ -236,7 +237,7 @@ func TestLeaseBuilder_WithProvenanceTemplate_File(t *testing.T) {
 
 	ts := time.Unix(1000, 0).UTC()
 
-	lb, err := NewLeaseBuilder(mockBuilderBackend, bm, locker, creator,
+	lb, err := NewLeaseBuilder(context.Background(), mockBuilderBackend, bm, locker, creator,
 		WithVault(testbase.TestVaultName),
 		WithTimestamp(ts))
 	require.NoError(t, err)
@@ -326,7 +327,7 @@ func TestLeaseBuilder_WithProvenance_Document(t *testing.T) {
 
 	ts := time.Unix(1000, 0).UTC()
 
-	lb, err := NewLeaseBuilder(mockBuilderBackend, bm, locker, creator,
+	lb, err := NewLeaseBuilder(context.Background(), mockBuilderBackend, bm, locker, creator,
 		WithVault(testbase.TestVaultName),
 		WithTimestamp(ts))
 	require.NoError(t, err)
@@ -446,11 +447,11 @@ func TestLeaseBuilder_WithProvenance_Document2ndRevision(t *testing.T) {
 
 	mockDataSet := &testbase.MockDataSet{}
 	mockDataSet.AddMockLeaseFromFile(t, "record123", "testdata/builder/_results/prov_document_lease.json")
-	mockBuilderBackend.EXPECT().Load("record123", gomock.Any()).Return(mockDataSet, nil)
+	mockBuilderBackend.EXPECT().Load(gomock.Any(), "record123", gomock.Any()).Return(mockDataSet, nil)
 
 	ts := time.Unix(1000, 0).UTC()
 
-	lb, err := NewLeaseBuilder(mockBuilderBackend, bm, locker, creator,
+	lb, err := NewLeaseBuilder(context.Background(), mockBuilderBackend, bm, locker, creator,
 		WithParent("record123", "", CopyModeNone, nil, false),
 		WithTimestamp(ts))
 	require.NoError(t, err)
@@ -570,11 +571,11 @@ func TestLeaseBuilder_WithProvenance_Document2ndRevisionMetaOnly(t *testing.T) {
 
 	mockDataSet := &testbase.MockDataSet{}
 	mockDataSet.AddMockLeaseFromFile(t, "record123", "testdata/builder/_results/prov_document_lease.json")
-	mockBuilderBackend.EXPECT().Load("record123", gomock.Any()).Return(mockDataSet, nil)
+	mockBuilderBackend.EXPECT().Load(gomock.Any(), "record123", gomock.Any()).Return(mockDataSet, nil)
 
 	ts := time.Unix(1000, 0).UTC()
 
-	lb, err := NewLeaseBuilder(mockBuilderBackend, bm, locker, creator,
+	lb, err := NewLeaseBuilder(context.Background(), mockBuilderBackend, bm, locker, creator,
 		WithParent("record123", "", CopyModeNone, nil, false),
 		WithVault(testbase.TestVaultName),
 		WithTimestamp(ts))
@@ -680,8 +681,8 @@ func TestLeaseBuilder_WithProvenance_SharingFirst(t *testing.T) {
 
 	ts := time.Unix(100000, 0).UTC()
 
-	lb, err := NewLeaseBuilderForSharing(srcDataSet, mockBuilderBackend, bm, CopyModeDeep, creator, nil,
-		recipient.ID, testbase.TestVaultName, &ts)
+	lb, err := NewLeaseBuilderForSharing(context.Background(), srcDataSet, mockBuilderBackend, bm, CopyModeDeep,
+		creator, nil, recipient.ID, testbase.TestVaultName, &ts)
 	require.NoError(t, err)
 
 	res, err := lb.Build(expiry.Months(12))
@@ -726,8 +727,8 @@ func TestLeaseBuilder_WithProvenance_SharingSecond(t *testing.T) {
 
 	ts := time.Unix(100000, 0).UTC()
 
-	lb, err := NewLeaseBuilderForSharing(srcDataSet, mockBuilderBackend, bm, CopyModeDeep, creator, nil, recipient.ID,
-		testbase.TestVaultName, &ts)
+	lb, err := NewLeaseBuilderForSharing(context.Background(), srcDataSet, mockBuilderBackend, bm, CopyModeDeep,
+		creator, nil, recipient.ID, testbase.TestVaultName, &ts)
 	require.NoError(t, err)
 
 	res, err := lb.Build(expiry.Months(12))
@@ -762,7 +763,7 @@ func TestLeaseBuilder_WithProvenance_SharingOnly(t *testing.T) {
 
 	ts := time.Unix(1000, 0).UTC()
 
-	lb, err := NewLeaseBuilder(mockBuilderBackend, bm, locker, creator, WithTimestamp(ts))
+	lb, err := NewLeaseBuilder(context.Background(), mockBuilderBackend, bm, locker, creator, WithTimestamp(ts))
 	require.NoError(t, err)
 
 	file, err := os.Open("testdata/builder/prov_document/file1.txt")

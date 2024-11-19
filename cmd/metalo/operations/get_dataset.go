@@ -15,6 +15,7 @@
 package operations
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
@@ -24,9 +25,9 @@ import (
 	"github.com/piprate/metalocker/wallet"
 )
 
-func GetDataSet(dw wallet.DataWallet, rid, dest string, exportMetaData bool) error {
+func GetDataSet(ctx context.Context, dw wallet.DataWallet, rid, dest string, exportMetaData bool) error {
 
-	ds, err := dw.DataStore().Load(rid)
+	ds, err := dw.DataStore().Load(ctx, rid)
 	if err != nil {
 		return err
 	}

@@ -80,7 +80,7 @@ func AuthenticationHandler(accountBackend storage.IdentityBackend, acceptedAudie
 			userID = strings.ToLower(userID)
 		}
 
-		acct, err := accountBackend.GetAccount(userID)
+		acct, err := accountBackend.GetAccount(c, userID)
 		if err != nil {
 			log.Err(err).Str("ip", c.ClientIP()).Str("userID", userID).Msg("Error when retrieving account for authentication")
 			return userID, ErrFailedAuthentication

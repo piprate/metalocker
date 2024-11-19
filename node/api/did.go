@@ -44,7 +44,7 @@ func InitDIDRoutes(rg *gin.RouterGroup, didStorage storage.DIDBackend) {
 func (h *DIDHandler) GetDIDDocumentHandler(c *gin.Context) {
 	iid := c.Params.ByName("id")
 
-	ddoc, err := h.didStorage.GetDIDDocument(iid)
+	ddoc, err := h.didStorage.GetDIDDocument(c, iid)
 	if err != nil {
 		if errors.Is(err, storage.ErrDIDNotFound) {
 			c.AbortWithStatus(http.StatusNotFound)
@@ -70,7 +70,7 @@ func (h *DIDHandler) PostDIDDocumentHandler(c *gin.Context) {
 		return
 	}
 
-	err = h.didStorage.CreateDIDDocument(&ddoc)
+	err = h.didStorage.CreateDIDDocument(c, &ddoc)
 	if err != nil {
 		log.Err(err).Msg("Error when saving identity")
 		_ = c.AbortWithError(http.StatusInternalServerError, err)

@@ -35,24 +35,26 @@ func TestIndexUpdater(t *testing.T) {
 
 	dw := env.CreateTestManagedAccount(t)
 
+	ctx := env.Ctx
+
 	log.Warn().Msg("~~~~~ BEGIN TEST ~~~~~")
 
-	lockers, err := dw.GetLockers()
+	lockers, err := dw.GetLockers(ctx)
 	require.NoError(t, err)
 	require.True(t, len(lockers) > 0)
 
 	locker := lockers[0] // one of the root lockers
 
-	rootIndex, err := dw.CreateRootIndex(testbase.IndexStoreName)
+	rootIndex, err := dw.CreateRootIndex(ctx, testbase.IndexStoreName)
 	require.NoError(t, err)
 
-	updater, err := dw.IndexUpdater(rootIndex)
+	updater, err := dw.IndexUpdater(ctx, rootIndex)
 	require.NoError(t, err)
 	err = updater.StartSyncOnEvents(env.NS, true, 0)
 	require.NoError(t, err)
 	defer updater.Close()
 
-	lb, err := dw.DataStore().NewDataSetBuilder(locker.ID, dataset.WithVault(testbase.TestVaultName))
+	lb, err := dw.DataStore().NewDataSetBuilder(ctx, locker.ID, dataset.WithVault(testbase.TestVaultName))
 	require.NoError(t, err)
 
 	_, err = lb.AddMetaResource(map[string]any{
@@ -90,24 +92,27 @@ func TestIndexUpdater_PublicRecord(t *testing.T) {
 
 	dw := env.CreateTestManagedAccount(t)
 
+	ctx := env.Ctx
+
 	log.Warn().Msg("~~~~~ BEGIN TEST ~~~~~")
 
-	lockers, err := dw.GetLockers()
+	lockers, err := dw.GetLockers(ctx)
 	require.NoError(t, err)
 	require.True(t, len(lockers) > 0)
 
 	locker := lockers[0] // one of the root lockers
 
-	rootIndex, err := dw.CreateRootIndex(testbase.IndexStoreName)
+	rootIndex, err := dw.CreateRootIndex(ctx, testbase.IndexStoreName)
 	require.NoError(t, err)
 
-	updater, err := dw.IndexUpdater(rootIndex)
+	updater, err := dw.IndexUpdater(ctx, rootIndex)
 	require.NoError(t, err)
 	err = updater.StartSyncOnEvents(env.NS, true, 0)
 	require.NoError(t, err)
 	defer updater.Close()
 
-	lb, err := dw.DataStore().NewDataSetBuilder(locker.ID,
+	lb, err := dw.DataStore().NewDataSetBuilder(ctx,
+		locker.ID,
 		dataset.WithVault(testbase.TestVaultName),
 		dataset.AsCleartext()) // create a cleartext record
 	require.NoError(t, err)
@@ -145,32 +150,34 @@ func TestUpdater_MultipleIndexes(t *testing.T) {
 	env := testbase.SetUpTestEnvironment(t)
 	defer env.Close()
 
+	ctx := env.Ctx
+
 	// set up wallet 1
 
 	dataWallet1 := env.CreateCustomAccount(t, "test1@example.com", "John Doe 1", model.AccessLevelManaged)
 
-	idy1, err := dataWallet1.NewIdentity(model.AccessLevelManaged, "")
+	idy1, err := dataWallet1.NewIdentity(ctx, model.AccessLevelManaged, "")
 	require.NoError(t, err)
 
-	uniLocker, err := idy1.NewLocker("UniLocker")
+	uniLocker, err := idy1.NewLocker(ctx, "UniLocker")
 	require.NoError(t, err)
 
 	// set up wallet 2
 
 	dataWallet2 := env.CreateCustomAccount(t, "test2@example.com", "John Doe 2", model.AccessLevelManaged)
 
-	idy2, err := dataWallet2.NewIdentity(model.AccessLevelManaged, "")
+	idy2, err := dataWallet2.NewIdentity(ctx, model.AccessLevelManaged, "")
 	require.NoError(t, err)
 
 	// set up a shared locker
 
-	sharedLocker, err := idy1.NewLocker("Test Locker", Participant(idy2.DID(), nil))
+	sharedLocker, err := idy1.NewLocker(ctx, "Test Locker", Participant(idy2.DID(), nil))
 	require.NoError(t, err)
 
-	_, err = dataWallet2.AddLocker(sharedLocker.Raw().Perspective(idy2.ID()))
+	_, err = dataWallet2.AddLocker(ctx, sharedLocker.Raw().Perspective(idy2.ID()))
 	require.NoError(t, err)
 
-	lb, err := uniLocker.NewDataSetBuilder(dataset.WithVault(testbase.TestVaultName))
+	lb, err := uniLocker.NewDataSetBuilder(ctx, dataset.WithVault(testbase.TestVaultName))
 	require.NoError(t, err)
 
 	_, err = lb.AddMetaResource(map[string]any{
@@ -184,7 +191,7 @@ func TestUpdater_MultipleIndexes(t *testing.T) {
 
 	rid1 := f.ID()
 
-	lb, err = sharedLocker.NewDataSetBuilder(dataset.WithVault(testbase.TestVaultName))
+	lb, err = sharedLocker.NewDataSetBuilder(ctx, dataset.WithVault(testbase.TestVaultName))
 	require.NoError(t, err)
 
 	_, err = lb.AddMetaResource(map[string]any{
@@ -223,9 +230,9 @@ func TestUpdater_MultipleIndexes(t *testing.T) {
 
 	updater := NewIndexUpdater(env.Ledger)
 
-	err = updater.AddIndexes(dataWallet1, index1)
+	err = updater.AddIndexes(ctx, dataWallet1, index1)
 	require.NoError(t, err)
-	err = updater.AddIndexes(dataWallet2, index2)
+	err = updater.AddIndexes(ctx, dataWallet2, index2)
 	require.NoError(t, err)
 
 	err = updater.Sync()
@@ -271,17 +278,19 @@ func TestIndexUpdater_StaggeredLockers(t *testing.T) {
 	env := testbase.SetUpTestEnvironment(t)
 	defer env.Close()
 
+	ctx := env.Ctx
+
 	dw := env.CreateCustomAccount(t, "test1@example.com", "John Doe", model.AccessLevelManaged)
 
 	log.Warn().Msg("~~~~~ BEGIN TEST ~~~~~")
 
-	lockers, err := dw.GetLockers()
+	lockers, err := dw.GetLockers(ctx)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(lockers))
 
 	locker := lockers[0]
 
-	rootIndex, err := dw.CreateRootIndex(testbase.IndexStoreName)
+	rootIndex, err := dw.CreateRootIndex(ctx, testbase.IndexStoreName)
 	require.NoError(t, err)
 
 	iw, _ := rootIndex.Writer()
@@ -289,11 +298,11 @@ func TestIndexUpdater_StaggeredLockers(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(states))
 
-	updater, err := dw.IndexUpdater(rootIndex)
+	updater, err := dw.IndexUpdater(ctx, rootIndex)
 	require.NoError(t, err)
 	defer updater.Close()
 
-	lb, err := dw.DataStore().NewDataSetBuilder(locker.ID, dataset.WithVault(testbase.TestVaultName))
+	lb, err := dw.DataStore().NewDataSetBuilder(ctx, locker.ID, dataset.WithVault(testbase.TestVaultName))
 	require.NoError(t, err)
 
 	_, err = lb.AddMetaResource(map[string]any{
@@ -314,13 +323,13 @@ func TestIndexUpdater_StaggeredLockers(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, rec)
 
-	idy2, err := dw.NewIdentity(model.AccessLevelManaged, "Second Identity")
+	idy2, err := dw.NewIdentity(ctx, model.AccessLevelManaged, "Second Identity")
 	require.NoError(t, err)
 
-	locker2, err := idy2.NewLocker("Second Locker")
+	locker2, err := idy2.NewLocker(ctx, "Second Locker")
 	require.NoError(t, err)
 
-	lb, err = locker2.NewDataSetBuilder(dataset.WithVault(testbase.TestVaultName))
+	lb, err = locker2.NewDataSetBuilder(ctx, dataset.WithVault(testbase.TestVaultName))
 	require.NoError(t, err)
 
 	_, err = lb.AddMetaResource(map[string]any{
@@ -358,15 +367,17 @@ func TestIndexUpdater_SubAccounts(t *testing.T) {
 
 	dw := env.CreateTestManagedAccount(t)
 
+	ctx := env.Ctx
+
 	log.Warn().Msg("~~~~~ BEGIN TEST ~~~~~")
 
-	lockers, err := dw.GetLockers()
+	lockers, err := dw.GetLockers(ctx)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(lockers))
 
 	locker := lockers[0]
 
-	rootIndex, err := dw.CreateRootIndex(testbase.IndexStoreName)
+	rootIndex, err := dw.CreateRootIndex(ctx, testbase.IndexStoreName)
 	require.NoError(t, err)
 
 	iw, _ := rootIndex.Writer()
@@ -374,11 +385,11 @@ func TestIndexUpdater_SubAccounts(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(states))
 
-	updater, err := dw.IndexUpdater(rootIndex)
+	updater, err := dw.IndexUpdater(ctx, rootIndex)
 	require.NoError(t, err)
 	defer updater.Close()
 
-	lb, err := dw.DataStore().NewDataSetBuilder(locker.ID, dataset.WithVault(testbase.TestVaultName))
+	lb, err := dw.DataStore().NewDataSetBuilder(ctx, locker.ID, dataset.WithVault(testbase.TestVaultName))
 	require.NoError(t, err)
 
 	_, err = lb.AddMetaResource(map[string]any{
@@ -399,16 +410,16 @@ func TestIndexUpdater_SubAccounts(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, rec)
 
-	subDW, err := dw.CreateSubAccount(model.AccessLevelManaged, "Sub-Account")
+	subDW, err := dw.CreateSubAccount(ctx, model.AccessLevelManaged, "Sub-Account")
 	require.NoError(t, err)
 
-	idy1, err := subDW.NewIdentity(model.AccessLevelManaged, "Second Identity")
+	idy1, err := subDW.NewIdentity(ctx, model.AccessLevelManaged, "Second Identity")
 	require.NoError(t, err)
 
-	secondLocker, err := idy1.NewLocker("Second Locker")
+	secondLocker, err := idy1.NewLocker(ctx, "Second Locker")
 	require.NoError(t, err)
 
-	lb, err = secondLocker.NewDataSetBuilder(dataset.WithVault(testbase.TestVaultName))
+	lb, err = secondLocker.NewDataSetBuilder(ctx, dataset.WithVault(testbase.TestVaultName))
 	require.NoError(t, err)
 
 	_, err = lb.AddMetaResource(map[string]any{
@@ -439,11 +450,11 @@ func TestIndexUpdater_SubAccounts(t *testing.T) {
 	// create another IndexUpdater instance and ensure it picks up
 	// the previously saved locker states from the sub-account
 
-	secondUpdater, err := dw.IndexUpdater(rootIndex)
+	secondUpdater, err := dw.IndexUpdater(ctx, rootIndex)
 	require.NoError(t, err)
 	defer secondUpdater.Close()
 
-	lb, err = secondLocker.NewDataSetBuilder(dataset.WithVault(testbase.TestVaultName))
+	lb, err = secondLocker.NewDataSetBuilder(ctx, dataset.WithVault(testbase.TestVaultName))
 	require.NoError(t, err)
 
 	_, err = lb.AddMetaResource(map[string]any{
@@ -478,22 +489,24 @@ func TestForceSyncRootIndex_LockerStateExists(t *testing.T) {
 
 	dw := env.CreateTestManagedAccount(t)
 
+	ctx := env.Ctx
+
 	log.Warn().Msg("~~~~~ BEGIN TEST ~~~~~")
 
-	rootIndex, err := dw.CreateRootIndex(testbase.IndexStoreName)
+	rootIndex, err := dw.CreateRootIndex(ctx, testbase.IndexStoreName)
 	require.NoError(t, err)
 
-	updater, err := dw.IndexUpdater(rootIndex)
+	updater, err := dw.IndexUpdater(ctx, rootIndex)
 	require.NoError(t, err)
 	defer updater.Close()
 
 	err = updater.Sync()
 	require.NoError(t, err)
 
-	idy1, err := dw.NewIdentity(model.AccessLevelManaged, "Second Identity")
+	idy1, err := dw.NewIdentity(ctx, model.AccessLevelManaged, "Second Identity")
 	require.NoError(t, err)
 
-	_, err = idy1.NewLocker("New Locker")
+	_, err = idy1.NewLocker(ctx, "New Locker")
 	require.NoError(t, err)
 
 	err = ForceSyncRootIndex(dw)
@@ -509,24 +522,26 @@ func TestIndexUpdater_RemoveIndex(t *testing.T) {
 
 	dw := env.CreateTestManagedAccount(t)
 
+	ctx := env.Ctx
+
 	log.Warn().Msg("~~~~~ BEGIN TEST ~~~~~")
 
-	lockers, err := dw.GetLockers()
+	lockers, err := dw.GetLockers(ctx)
 	require.NoError(t, err)
 	require.True(t, len(lockers) > 0)
 
 	locker := lockers[0] // one of the root lockers
 
-	rootIndex, err := dw.CreateRootIndex(testbase.IndexStoreName)
+	rootIndex, err := dw.CreateRootIndex(ctx, testbase.IndexStoreName)
 	require.NoError(t, err)
 
-	updater, err := dw.IndexUpdater(rootIndex)
+	updater, err := dw.IndexUpdater(ctx, rootIndex)
 	require.NoError(t, err)
 	err = updater.StartSyncOnEvents(env.NS, true, 0)
 	require.NoError(t, err)
 	defer updater.Close()
 
-	lb, err := dw.DataStore().NewDataSetBuilder(locker.ID, dataset.WithVault(testbase.TestVaultName))
+	lb, err := dw.DataStore().NewDataSetBuilder(ctx, locker.ID, dataset.WithVault(testbase.TestVaultName))
 	require.NoError(t, err)
 
 	_, err = lb.AddMetaResource(map[string]any{

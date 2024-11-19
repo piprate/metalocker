@@ -74,7 +74,7 @@ func InitAccountRoutes(rg *gin.RouterGroup, identityBackend storage.IdentityBack
 }
 
 func (h *AccountHandler) GetOwnAccountHandler(c *gin.Context) {
-	acct, err := h.identityBackend.GetAccount(apibase.GetUserID(c))
+	acct, err := h.identityBackend.GetAccount(c, apibase.GetUserID(c))
 	if err != nil {
 		log := apibase.CtxLogger(c)
 		log.Err(err).Str("id", apibase.GetUserID(c)).Msg("Error when retrieving account details")
@@ -112,7 +112,7 @@ func (h *AccountHandler) PutAccountHandler(c *gin.Context) {
 		return
 	}
 
-	oldAccountRecord, err := h.identityBackend.GetAccount(apibase.GetUserID(c))
+	oldAccountRecord, err := h.identityBackend.GetAccount(c, apibase.GetUserID(c))
 	if err != nil {
 		log.Err(err).Msg("Error updating account")
 		apibase.AbortWithError(c, http.StatusBadRequest, err.Error())
@@ -149,7 +149,7 @@ func (h *AccountHandler) PutAccountHandler(c *gin.Context) {
 		acct.EncryptedPassword = oldAccountRecord.EncryptedPassword
 	}
 
-	err = h.identityBackend.UpdateAccount(&acct)
+	err = h.identityBackend.UpdateAccount(c, &acct)
 	if err != nil {
 		log.Err(err).Msg("Error updating account")
 		apibase.AbortWithError(c, http.StatusInternalServerError, err.Error())
@@ -181,7 +181,7 @@ func (h *AccountHandler) PatchAccountHandler(c *gin.Context) {
 		return
 	}
 
-	acct, err := h.identityBackend.GetAccount(apibase.GetUserID(c))
+	acct, err := h.identityBackend.GetAccount(c, apibase.GetUserID(c))
 	if err != nil {
 		log.Err(err).Msg("Error retrieving account")
 		apibase.AbortWithError(c, http.StatusInternalServerError, "Error retrieving account")
@@ -234,7 +234,7 @@ func (h *AccountHandler) PatchAccountHandler(c *gin.Context) {
 		acct.FamilyName = patch.FamilyName
 	}
 
-	err = h.identityBackend.UpdateAccount(acct)
+	err = h.identityBackend.UpdateAccount(c, acct)
 	if err != nil {
 		if errors.Is(err, storage.ErrAccountExists) {
 			apibase.AbortWithError(c, http.StatusBadRequest, "Error updating account")
@@ -256,7 +256,7 @@ func (h *AccountHandler) DeleteAccountHandler(c *gin.Context) {
 		return
 	}
 
-	acct, err := h.identityBackend.GetAccount(accountID)
+	acct, err := h.identityBackend.GetAccount(c, accountID)
 	if err != nil {
 		log := apibase.CtxLogger(c)
 		log.Err(err).Msg("Error retrieving account")
@@ -269,7 +269,7 @@ func (h *AccountHandler) DeleteAccountHandler(c *gin.Context) {
 		return
 	}
 
-	err = h.identityBackend.DeleteAccount(accountID)
+	err = h.identityBackend.DeleteAccount(c, accountID)
 	if err != nil {
 		apibase.AbortWithError(c, http.StatusInternalServerError, err.Error())
 		return
@@ -288,7 +288,7 @@ func (h *AccountHandler) GetSubAccountListHandler(c *gin.Context) {
 		return
 	}
 
-	accounts, err := h.identityBackend.ListAccounts(accountID, state)
+	accounts, err := h.identityBackend.ListAccounts(c, accountID, state)
 	if err != nil {
 		log := apibase.CtxLogger(c)
 		log.Err(err).Msg("Error when reading sub-account list")
@@ -335,7 +335,7 @@ func (h *AccountHandler) PostSubAccountHandler(c *gin.Context) {
 	registeredAt := time.Now()
 	acct.RegisteredAt = &registeredAt
 
-	err = h.identityBackend.CreateAccount(&acct)
+	err = h.identityBackend.CreateAccount(c, &acct)
 
 	if err != nil {
 		log.Err(err).Msg("Error when registering account")
@@ -351,7 +351,7 @@ func (h *AccountHandler) PostSubAccountHandler(c *gin.Context) {
 }
 
 func hasAccountPermissions(c *gin.Context, backend storage.IdentityBackend, masterAccountID, accountID string) bool {
-	hasAccess, err := backend.HasAccountAccess(masterAccountID, accountID)
+	hasAccess, err := backend.HasAccountAccess(c, masterAccountID, accountID)
 	if err != nil {
 		log := apibase.CtxLogger(c)
 		if errors.Is(err, storage.ErrAccountNotFound) {
@@ -385,7 +385,7 @@ func (h *AccountHandler) GetAccountHandler(c *gin.Context) {
 		return
 	}
 
-	acct, err := h.identityBackend.GetAccount(accountID)
+	acct, err := h.identityBackend.GetAccount(c, accountID)
 	if err != nil {
 		log := apibase.CtxLogger(c)
 		log.Err(err).Msg("Error when retrieving account details")

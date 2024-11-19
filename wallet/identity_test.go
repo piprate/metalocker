@@ -32,20 +32,22 @@ func TestIdentityWrapper_NewLocker_Hosted(t *testing.T) {
 
 	dw := testHostedAccount(t, env, true)
 
-	idy, err := dw.NewIdentity(model.AccessLevelHosted, "John XXX")
+	ctx := env.Ctx
+
+	idy, err := dw.NewIdentity(ctx, model.AccessLevelHosted, "John XXX")
 	require.NoError(t, err)
 
-	locker, err := idy.NewLocker(idy.Name())
+	locker, err := idy.NewLocker(ctx, idy.Name())
 	require.NoError(t, err)
 	require.NotEmpty(t, locker)
 	assert.Equal(t, "John XXX", locker.Name())
 	assert.True(t, locker.IsUniLocker())
 
-	retrievedLocker, err := dw.GetLocker(locker.ID())
+	retrievedLocker, err := dw.GetLocker(ctx, locker.ID())
 	require.NoError(t, err)
 	require.NotEmpty(t, retrievedLocker)
 
-	retrievedLocker, err = dw.GetLocker("non-existent-locker")
+	retrievedLocker, err = dw.GetLocker(ctx, "non-existent-locker")
 	require.True(t, errors.Is(err, storage.ErrLockerNotFound))
 	require.Empty(t, retrievedLocker)
 }
@@ -56,10 +58,12 @@ func TestIdentityWrapper_NewLocker_Managed(t *testing.T) {
 
 	dw := testHostedAccount(t, env, true)
 
-	idy, err := dw.NewIdentity(model.AccessLevelManaged, "John XXX")
+	ctx := env.Ctx
+
+	idy, err := dw.NewIdentity(ctx, model.AccessLevelManaged, "John XXX")
 	require.NoError(t, err)
 
-	locker, err := idy.NewLocker(idy.Name())
+	locker, err := idy.NewLocker(ctx, idy.Name())
 	require.NoError(t, err)
 	assert.NotEmpty(t, locker)
 
@@ -73,29 +77,31 @@ func TestLocalDataWallet_NewIdentity_Hosted(t *testing.T) {
 
 	dw := testHostedAccount(t, env, false)
 
+	ctx := env.Ctx
+
 	// this call should fail because the wallet is locked
-	_, err := dw.NewIdentity(model.AccessLevelHosted, "John XXX")
+	_, err := dw.NewIdentity(ctx, model.AccessLevelHosted, "John XXX")
 	require.Error(t, err)
 
-	err = dw.Unlock(TestPassphrase)
+	err = dw.Unlock(ctx, TestPassphrase)
 	require.NoError(t, err)
 
-	idy, err := dw.NewIdentity(model.AccessLevelHosted, "John XXX")
+	idy, err := dw.NewIdentity(ctx, model.AccessLevelHosted, "John XXX")
 	require.NoError(t, err)
 
 	err = dw.Lock()
 	require.NoError(t, err)
 
-	err = dw.Unlock(TestPassphrase)
+	err = dw.Unlock(ctx, TestPassphrase)
 	require.NoError(t, err)
 
 	text := []byte("plain text")
-	identityForSignature, err := dw.GetIdentity(idy.ID())
+	identityForSignature, err := dw.GetIdentity(ctx, idy.ID())
 	require.NoError(t, err)
 	require.NotNil(t, identityForSignature)
 	_ = identityForSignature.DID().Sign(text)
 
-	idList, err := dw.GetIdentities()
+	idList, err := dw.GetIdentities(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(idList))
 	assert.Equal(t, "John XXX", idList[idy.ID()].Name())
@@ -108,22 +114,24 @@ func TestLocalDataWallet_NewIdentity_ManagedToHosted(t *testing.T) {
 
 	dw := testHostedAccount(t, env, false)
 
+	ctx := env.Ctx
+
 	hashedPassphrase := account.HashUserPassword(TestPassphrase)
 	managedKey, err := dw.Account().ExtractManagedKey(hashedPassphrase)
 	require.NoError(t, err)
 
-	err = dw.UnlockAsManaged(managedKey)
+	err = dw.UnlockAsManaged(ctx, managedKey)
 	require.NoError(t, err)
 
-	idy, err := dw.NewIdentity(model.AccessLevelManaged, "John XXX")
+	idy, err := dw.NewIdentity(ctx, model.AccessLevelManaged, "John XXX")
 	require.NoError(t, err)
 
 	require.NoError(t, dw.Lock())
 
-	err = dw.Unlock(TestPassphrase)
+	err = dw.Unlock(ctx, TestPassphrase)
 	require.NoError(t, err)
 
-	idList, err := dw.GetIdentities()
+	idList, err := dw.GetIdentities(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(idList))
 	assert.Equal(t, "John XXX", idList[idy.ID()].Name())
@@ -136,22 +144,24 @@ func TestLocalDataWallet_NewIdentity_ManagedToManaged(t *testing.T) {
 
 	dw := testHostedAccount(t, env, false)
 
+	ctx := env.Ctx
+
 	hashedPassphrase := account.HashUserPassword(TestPassphrase)
 	managedKey, err := dw.Account().ExtractManagedKey(hashedPassphrase)
 	require.NoError(t, err)
 
-	err = dw.UnlockAsManaged(managedKey)
+	err = dw.UnlockAsManaged(ctx, managedKey)
 	require.NoError(t, err)
 
-	idy, err := dw.NewIdentity(model.AccessLevelManaged, "John XXX")
+	idy, err := dw.NewIdentity(ctx, model.AccessLevelManaged, "John XXX")
 	require.NoError(t, err)
 
 	require.NoError(t, dw.Lock())
 
-	err = dw.UnlockAsManaged(managedKey)
+	err = dw.UnlockAsManaged(ctx, managedKey)
 	require.NoError(t, err)
 
-	idList, err := dw.GetIdentities()
+	idList, err := dw.GetIdentities(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(idList))
 	assert.Equal(t, "John XXX", idList[idy.ID()].Name())

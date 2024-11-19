@@ -16,6 +16,7 @@ package apibase_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
@@ -24,7 +25,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/piprate/json-gold/ld"
 	"github.com/piprate/metalocker/contexts"
 	"github.com/piprate/metalocker/model"
@@ -90,13 +91,15 @@ func TestAuthenticationHandler_EmptyBody(t *testing.T) {
 func TestAuthenticationHandler_AccountSuspended(t *testing.T) {
 	identityBackend, _ := memory.CreateIdentityBackend(nil, nil)
 
-	err := identityBackend.CreateAccount(&account.Account{
-		ID:                "did:piprate:F73f5Yr5iAxgfD8ZHrvKvrrpKbAR2M99TxeDcy1HXQAY",
-		Email:             "test@example.com",
-		State:             account.StateSuspended,
-		EncryptedPassword: "$2a$10$IsBlCjQAZohKKu5JXpQMQeITWNvf.jsX9bMtqS1PZ24W3ho6LpAly",
-		Name:              "John Doe",
-	})
+	err := identityBackend.CreateAccount(
+		context.Background(),
+		&account.Account{
+			ID:                "did:piprate:F73f5Yr5iAxgfD8ZHrvKvrrpKbAR2M99TxeDcy1HXQAY",
+			Email:             "test@example.com",
+			State:             account.StateSuspended,
+			EncryptedPassword: "$2a$10$IsBlCjQAZohKKu5JXpQMQeITWNvf.jsX9bMtqS1PZ24W3ho6LpAly",
+			Name:              "John Doe",
+		})
 	require.NoError(t, err)
 
 	rec := invokeLoginHandler(t,
@@ -131,13 +134,15 @@ func TestAuthenticationHandler_UnknownAccount(t *testing.T) {
 func TestAuthenticationHandler_WrongPassword(t *testing.T) {
 	identityBackend, _ := memory.CreateIdentityBackend(nil, nil)
 
-	err := identityBackend.CreateAccount(&account.Account{
-		ID:                "did:piprate:F73f5Yr5iAxgfD8ZHrvKvrrpKbAR2M99TxeDcy1HXQAY",
-		Email:             "test@example.com",
-		State:             account.StateActive,
-		EncryptedPassword: "$2a$10$IsBlCjQAZohKKu5JXpQMQeITWNvf.jsX9bMtqS1PZ24W3ho6LpAly",
-		Name:              "John Doe",
-	})
+	err := identityBackend.CreateAccount(
+		context.Background(),
+		&account.Account{
+			ID:                "did:piprate:F73f5Yr5iAxgfD8ZHrvKvrrpKbAR2M99TxeDcy1HXQAY",
+			Email:             "test@example.com",
+			State:             account.StateActive,
+			EncryptedPassword: "$2a$10$IsBlCjQAZohKKu5JXpQMQeITWNvf.jsX9bMtqS1PZ24W3ho6LpAly",
+			Name:              "John Doe",
+		})
 	require.NoError(t, err)
 
 	rec := invokeLoginHandler(t,
@@ -174,7 +179,7 @@ var testAccountV3 = &account.Account{
 func TestAuthenticationHandler_Success_NoAudience_NoDefaultAudience(t *testing.T) {
 	identityBackend, _ := memory.CreateIdentityBackend(nil, nil)
 
-	err := identityBackend.CreateAccount(testAccountV3)
+	err := identityBackend.CreateAccount(context.Background(), testAccountV3)
 	require.NoError(t, err)
 
 	rec := invokeLoginHandler(t,
@@ -211,7 +216,7 @@ func TestAuthenticationHandler_Success_NoAudience_NoDefaultAudience(t *testing.T
 func TestAuthenticationHandler_Success_NoAudience_DefaultAudience(t *testing.T) {
 	identityBackend, _ := memory.CreateIdentityBackend(nil, nil)
 
-	err := identityBackend.CreateAccount(testAccountV3)
+	err := identityBackend.CreateAccount(context.Background(), testAccountV3)
 	require.NoError(t, err)
 
 	defaultAudiencePublicKeyStr := "MCXWA73n/1g9gTfG6wR3mk1XLODzu9giissqL+Wg7Zs="
@@ -253,7 +258,7 @@ func TestAuthenticationHandler_Success_NoAudience_DefaultAudience(t *testing.T) 
 func TestAuthenticationHandler_Success_WithAudience_NotDefault(t *testing.T) {
 	identityBackend, _ := memory.CreateIdentityBackend(nil, nil)
 
-	err := identityBackend.CreateAccount(testAccountV3)
+	err := identityBackend.CreateAccount(context.Background(), testAccountV3)
 	require.NoError(t, err)
 
 	defaultAudiencePublicKeyStr := "MCXWA73n/1g9gTfG6wR3mk1XLODzu9giissqL+Wg7Zs="
@@ -299,7 +304,7 @@ func TestAuthenticationHandler_Success_WithAudience_NotDefault(t *testing.T) {
 func TestAuthenticationHandler_Success_WithAudience_Default(t *testing.T) {
 	identityBackend, _ := memory.CreateIdentityBackend(nil, nil)
 
-	err := identityBackend.CreateAccount(testAccountV3)
+	err := identityBackend.CreateAccount(context.Background(), testAccountV3)
 	require.NoError(t, err)
 
 	defaultAudiencePublicKeyStr := "MCXWA73n/1g9gTfG6wR3mk1XLODzu9giissqL+Wg7Zs="

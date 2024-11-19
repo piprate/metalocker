@@ -44,13 +44,13 @@ func TestAccountHandler_GetAccessKeyListHandler(t *testing.T) {
 
 	dw := env.CreateDataWallet(t, acct)
 
-	err := dw.Unlock("pass")
+	err := dw.Unlock(env.Ctx, "pass")
 	require.NoError(t, err)
 
-	ak, err := dw.CreateAccessKey(acct.AccessLevel, time.Hour)
+	ak, err := dw.CreateAccessKey(env.Ctx, acct.AccessLevel, time.Hour)
 	require.NoError(t, err)
 
-	err = env.IdentityBackend.StoreAccessKey(ak)
+	err = env.IdentityBackend.StoreAccessKey(env.Ctx, ak)
 	require.NoError(t, err)
 
 	invoke := func(authID, accountID string) *httptest.ResponseRecorder {
@@ -94,10 +94,10 @@ func TestAccountHandler_PostAccessKeyHandler(t *testing.T) {
 
 	dw := env.CreateDataWallet(t, acct)
 
-	err := dw.Unlock("pass")
+	err := dw.Unlock(env.Ctx, "pass")
 	require.NoError(t, err)
 
-	ak, err := dw.CreateAccessKey(acct.AccessLevel, time.Hour)
+	ak, err := dw.CreateAccessKey(env.Ctx, acct.AccessLevel, time.Hour)
 	require.NoError(t, err)
 
 	invoke := func(authID, accountID string, body io.Reader) *httptest.ResponseRecorder {
@@ -158,13 +158,13 @@ func TestAccountHandler_GetAccessKeyHandler(t *testing.T) {
 
 	dw := env.CreateDataWallet(t, acct)
 
-	err := dw.Unlock("pass")
+	err := dw.Unlock(env.Ctx, "pass")
 	require.NoError(t, err)
 
-	ak, err := dw.CreateAccessKey(acct.AccessLevel, time.Hour)
+	ak, err := dw.CreateAccessKey(env.Ctx, acct.AccessLevel, time.Hour)
 	require.NoError(t, err)
 
-	err = env.IdentityBackend.StoreAccessKey(ak)
+	err = env.IdentityBackend.StoreAccessKey(env.Ctx, ak)
 	require.NoError(t, err)
 
 	invoke := func(authID, accountID, keyID string) *httptest.ResponseRecorder {
@@ -214,13 +214,13 @@ func TestAccountHandler_DeleteAccessKeyHandler(t *testing.T) {
 
 	dw := env.CreateDataWallet(t, acct)
 
-	err := dw.Unlock("pass")
+	err := dw.Unlock(env.Ctx, "pass")
 	require.NoError(t, err)
 
-	ak, err := dw.CreateAccessKey(acct.AccessLevel, time.Hour)
+	ak, err := dw.CreateAccessKey(env.Ctx, acct.AccessLevel, time.Hour)
 	require.NoError(t, err)
 
-	err = env.IdentityBackend.StoreAccessKey(ak)
+	err = env.IdentityBackend.StoreAccessKey(env.Ctx, ak)
 	require.NoError(t, err)
 
 	invoke := func(authID, accountID, keyID string) *httptest.ResponseRecorder {
@@ -258,6 +258,6 @@ func TestAccountHandler_DeleteAccessKeyHandler(t *testing.T) {
 	//require.Equal(t, http.StatusNoContent, rec.Code)
 	require.True(t, rec.Code >= 200)
 
-	_, err = env.IdentityBackend.GetAccessKey(ak.ID)
+	_, err = env.IdentityBackend.GetAccessKey(env.Ctx, ak.ID)
 	require.Error(t, err)
 }

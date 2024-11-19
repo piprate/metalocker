@@ -15,6 +15,7 @@
 package caller
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -22,7 +23,7 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/piprate/json-gold/ld"
 	"github.com/piprate/metalocker/model"
 	"github.com/piprate/metalocker/model/account"
@@ -239,12 +240,12 @@ func (c *MetaLockerHTTPCaller) LoginWithAdminKeys(adminKey, adminSecret string) 
 	return nil
 }
 
-func (c *MetaLockerHTTPCaller) LoginWithAccessKeys(apiKey, clientSecret string) error {
+func (c *MetaLockerHTTPCaller) LoginWithAccessKeys(ctx context.Context, apiKey, clientSecret string) error {
 	if err := httpsecure.WithAccessKey(apiKey, clientSecret)(c.client); err != nil {
 		return err
 	}
 
-	acct, err := c.GetOwnAccount()
+	acct, err := c.GetOwnAccount(ctx)
 	if err != nil {
 		return err
 	}
@@ -268,7 +269,7 @@ type NewAccountForm struct {
 	RegistrationCode string           `json:"registrationCode"`
 }
 
-func (c *MetaLockerHTTPCaller) CreateAccount(acct *account.Account, registrationCode string) error {
+func (c *MetaLockerHTTPCaller) CreateAccount(ctx context.Context, acct *account.Account, registrationCode string) error {
 	form := NewAccountForm{
 		Account:          acct,
 		RegistrationCode: registrationCode,

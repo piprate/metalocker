@@ -33,7 +33,7 @@ func SetProperty(c *cli.Context) error {
 		return cli.Exit("please specify property key and value", InvalidParameter)
 	}
 
-	return dataWallet.SetProperty(c.Args().Get(0), c.Args().Get(1), dataWallet.Account().AccessLevel)
+	return dataWallet.SetProperty(c.Context, c.Args().Get(0), c.Args().Get(1), dataWallet.Account().AccessLevel)
 }
 
 func ListProperties(c *cli.Context) error {
@@ -42,7 +42,7 @@ func ListProperties(c *cli.Context) error {
 		return err
 	}
 
-	props, err := dataWallet.GetProperties()
+	props, err := dataWallet.GetProperties(c.Context)
 	if err != nil {
 		return cli.Exit(err.Error(), OperationFailed)
 	}
@@ -81,7 +81,7 @@ func GetProperty(c *cli.Context) error {
 		return err
 	}
 
-	val, err := dw.GetProperty(c.Args().Get(0))
+	val, err := dw.GetProperty(c.Context, c.Args().Get(0))
 	if err != nil {
 		return cli.Exit(err.Error(), OperationFailed)
 	}
@@ -101,5 +101,5 @@ func DeleteProperty(c *cli.Context) error {
 		return err
 	}
 
-	return dw.DeleteProperty(c.Args().Get(0), dw.Account().AccessLevel)
+	return dw.DeleteProperty(c.Context, c.Args().Get(0), dw.Account().AccessLevel)
 }

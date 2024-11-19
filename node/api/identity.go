@@ -38,7 +38,7 @@ func (h *AccountHandler) GetIdentityListHandler(c *gin.Context) {
 		return
 	}
 
-	idyList, err := h.identityBackend.ListIdentities(accountID, model.AccessLevel(accessLevel))
+	idyList, err := h.identityBackend.ListIdentities(c, accountID, model.AccessLevel(accessLevel))
 	if err != nil {
 		log := apibase.CtxLogger(c)
 		log.Err(err).Msg("Error when reading identity list")
@@ -75,7 +75,7 @@ func (h *AccountHandler) PostIdentityHandler(c *gin.Context) {
 		return
 	}
 
-	err = h.identityBackend.StoreIdentity(accountID, &idyEnv)
+	err = h.identityBackend.StoreIdentity(c, accountID, &idyEnv)
 
 	if err != nil {
 		apibase.AbortWithError(c, http.StatusInternalServerError, "Identity creation failed")
@@ -104,7 +104,7 @@ func (h *AccountHandler) GetIdentityHandler(c *gin.Context) {
 
 	hash := c.Params.ByName("hash")
 
-	idyEnv, err := h.identityBackend.GetIdentity(accountID, hash)
+	idyEnv, err := h.identityBackend.GetIdentity(c, accountID, hash)
 	if err != nil {
 		if errors.Is(err, storage.ErrIdentityNotFound) {
 			c.AbortWithStatus(http.StatusNotFound)

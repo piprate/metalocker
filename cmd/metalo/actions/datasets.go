@@ -62,7 +62,7 @@ func StoreDataSet(c *cli.Context) error {
 		return err
 	}
 
-	recID, impID, err := operations.StoreDataSet(dw.DataStore(), c.Args().Get(0), metaType, vaultName, lockerID, provPath, provMapping,
+	recID, impID, err := operations.StoreDataSet(c.Context, dw.DataStore(), c.Args().Get(0), metaType, vaultName, lockerID, provPath, provMapping,
 		parentRecordID, leaseDuration, waitForConfirmation)
 	if err != nil {
 		log.Err(err).Msg("Data set upload failed")
@@ -96,7 +96,7 @@ func StoreDataSets(c *cli.Context) error {
 		return err
 	}
 
-	idList, err := operations.StoreDataSets(dw.DataStore(), c.Args().Get(0), metaType, vaultName,
+	idList, err := operations.StoreDataSets(c.Context, dw.DataStore(), c.Args().Get(0), metaType, vaultName,
 		lockerID, provPath, provMapping, leaseDuration, waitForConfirmation)
 	if err != nil {
 		log.Err(err).Msg("Data set upload failed")
@@ -130,17 +130,17 @@ func ShareDataSet(c *cli.Context) error {
 
 	recID := extractRecordID(c.Args().Get(0))
 
-	sourceDS, err := dw.DataStore().Load(recID)
+	sourceDS, err := dw.DataStore().Load(c.Context, recID)
 	if err != nil {
 		return err
 	}
 
-	locker, err := dw.GetLocker(lockerID)
+	locker, err := dw.GetLocker(c.Context, lockerID)
 	if err != nil {
 		return err
 	}
 
-	f := dw.DataStore().Share(sourceDS, locker, vaultName, expiry.FromNow(leaseDuration))
+	f := dw.DataStore().Share(c.Context, sourceDS, locker, vaultName, expiry.FromNow(leaseDuration))
 	if waitForConfirmation {
 		err = f.Wait(60 * time.Second)
 	} else {
@@ -169,7 +169,7 @@ func RevokeLease(c *cli.Context) error {
 
 	recID := c.Args().Get(0)
 
-	f := dw.DataStore().Revoke(recID)
+	f := dw.DataStore().Revoke(c.Context, recID)
 
 	if waitForConfirmation {
 		err = f.Wait(60 * time.Second)
@@ -198,7 +198,7 @@ func GetDataSet(c *cli.Context) error {
 		return err
 	}
 
-	err = operations.GetDataSet(dw, recordID, dest, writeMetaData)
+	err = operations.GetDataSet(c.Context, dw, recordID, dest, writeMetaData)
 	if err != nil {
 		log.Err(err).Msg("Data set retrieval failed")
 		return cli.Exit(err, OperationFailed)

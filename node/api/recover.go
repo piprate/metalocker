@@ -47,7 +47,7 @@ func GetRecoveryCodeHandler(identityBackend storage.IdentityBackend) gin.Handler
 			email = strings.ToLower(email)
 		}
 
-		acct, err := identityBackend.GetAccount(email)
+		acct, err := identityBackend.GetAccount(c, email)
 		if err != nil {
 			log.Err(err).Msg("Error when retrieving account details")
 			if errors.Is(err, storage.ErrAccountNotFound) {
@@ -70,7 +70,7 @@ func GetRecoveryCodeHandler(identityBackend storage.IdentityBackend) gin.Handler
 			return
 		}
 
-		if err = identityBackend.CreateRecoveryCode(rc); err != nil {
+		if err = identityBackend.CreateRecoveryCode(c, rc); err != nil {
 			log.Err(err).Msg("Failed to persist recovery code")
 			_ = c.AbortWithError(http.StatusInternalServerError, err)
 			return
@@ -101,7 +101,7 @@ func RecoverAccountHandler(identityBackend storage.IdentityBackend) gin.HandlerF
 			req.UserID = strings.ToLower(req.UserID)
 		}
 
-		rc, err := identityBackend.GetRecoveryCode(req.RecoveryCode)
+		rc, err := identityBackend.GetRecoveryCode(c, req.RecoveryCode)
 		if err != nil {
 			if errors.Is(err, storage.ErrRecoveryCodeNotFound) {
 				_ = c.AbortWithError(http.StatusBadRequest, err)
@@ -112,7 +112,7 @@ func RecoverAccountHandler(identityBackend storage.IdentityBackend) gin.HandlerF
 			return
 		}
 
-		if err = identityBackend.DeleteRecoveryCode(req.RecoveryCode); err != nil {
+		if err = identityBackend.DeleteRecoveryCode(c, req.RecoveryCode); err != nil {
 			log.Err(err).Msg("Error when deleting recovery code")
 		}
 
@@ -123,7 +123,7 @@ func RecoverAccountHandler(identityBackend storage.IdentityBackend) gin.HandlerF
 			return
 		}
 
-		acct, err := identityBackend.GetAccount(req.UserID)
+		acct, err := identityBackend.GetAccount(c, req.UserID)
 		if err != nil {
 			if errors.Is(err, storage.ErrAccountNotFound) {
 				_ = c.AbortWithError(http.StatusBadRequest, err)
@@ -189,7 +189,7 @@ func RecoverAccountHandler(identityBackend storage.IdentityBackend) gin.HandlerF
 			return
 		}
 
-		err = identityBackend.UpdateAccount(acct)
+		err = identityBackend.UpdateAccount(c, acct)
 		if err != nil {
 			log.Err(err).Msg("Error updating account")
 			apibase.AbortWithError(c, http.StatusInternalServerError, err.Error())

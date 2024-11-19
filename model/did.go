@@ -15,6 +15,7 @@
 package model
 
 import (
+	"context"
 	"crypto/ed25519"
 	"errors"
 	"fmt"
@@ -214,8 +215,8 @@ func ExtractDIDMethod(didID string) (string, error) {
 
 type (
 	DIDProvider interface {
-		CreateDIDDocument(ddoc *DIDDocument) error
-		GetDIDDocument(iid string) (*DIDDocument, error)
+		CreateDIDDocument(ctx context.Context, ddoc *DIDDocument) error
+		GetDIDDocument(ctx context.Context, iid string) (*DIDDocument, error)
 	}
 )
 

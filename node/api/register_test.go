@@ -16,6 +16,7 @@ package api_test
 
 import (
 	"bytes"
+	"context"
 	"crypto/ed25519"
 	"fmt"
 	"net/http"
@@ -222,7 +223,8 @@ func TestRegisterHandler_BadRegistrationCode(t *testing.T) {
 
 func TestRegisterHandler_AccountExists(t *testing.T) {
 	identityBackend, _ := memory.CreateIdentityBackend(nil, nil)
-	err := identityBackend.CreateAccount(&account.Account{ID: "did:piprate:4wfrNwcZhXm5Py9fXVHpNtJhoDGbQGoznV7huqwrMccF"})
+	err := identityBackend.CreateAccount(context.Background(),
+		&account.Account{ID: "did:piprate:4wfrNwcZhXm5Py9fXVHpNtJhoDGbQGoznV7huqwrMccF"})
 	require.NoError(t, err)
 
 	ledgerAPI, dir := createTempLedger(t)

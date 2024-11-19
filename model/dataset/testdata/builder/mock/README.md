@@ -5,7 +5,7 @@
 If you don't have mock/mockgen installed, run the following commands:
 
     go get github.com/golang/mock/gomock
-    go get github.com/golang/mock/mockgen
+    go install github.com/golang/mock/mockgen
 
 ## builder.go:LeaseBuilderBackend
 

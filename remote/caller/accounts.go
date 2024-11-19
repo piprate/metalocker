@@ -15,6 +15,7 @@
 package caller
 
 import (
+	"context"
 	"crypto/ed25519"
 	"errors"
 	"fmt"
@@ -95,7 +96,7 @@ func (c *MetaLockerHTTPCaller) AdminPatchAccount(id string, patch AccountAdminPa
 	return nil
 }
 
-func (c *MetaLockerHTTPCaller) GetOwnAccount() (*account.Account, error) {
+func (c *MetaLockerHTTPCaller) GetOwnAccount(ctx context.Context) (*account.Account, error) {
 	if !c.client.IsAuthenticated() {
 		return nil, errors.New("you need to log in before performing any operations")
 	}
@@ -109,7 +110,7 @@ func (c *MetaLockerHTTPCaller) GetOwnAccount() (*account.Account, error) {
 	return &acct, nil
 }
 
-func (c *MetaLockerHTTPCaller) GetAccount(id string) (*account.Account, error) {
+func (c *MetaLockerHTTPCaller) GetAccount(ctx context.Context, id string) (*account.Account, error) {
 	if !c.client.IsAuthenticated() {
 		return nil, errors.New("you need to log in before performing any operations")
 	}
@@ -123,7 +124,7 @@ func (c *MetaLockerHTTPCaller) GetAccount(id string) (*account.Account, error) {
 	return &acct, nil
 }
 
-func (c *MetaLockerHTTPCaller) UpdateAccount(acc *account.Account) error {
+func (c *MetaLockerHTTPCaller) UpdateAccount(ctx context.Context, acc *account.Account) error {
 	if !c.client.IsAuthenticated() {
 		return errors.New("you need to log in before performing any operations")
 	}
@@ -146,7 +147,7 @@ func (c *MetaLockerHTTPCaller) UpdateAccount(acc *account.Account) error {
 	return nil
 }
 
-func (c *MetaLockerHTTPCaller) PatchAccount(email, oldEncryptedPassword, newEncryptedPassword, name, givenName, familyName string) error {
+func (c *MetaLockerHTTPCaller) PatchAccount(ctx context.Context, email, oldEncryptedPassword, newEncryptedPassword, name, givenName, familyName string) error {
 	if !c.client.IsAuthenticated() {
 		return errors.New("you need to log in before performing any operations")
 	}
@@ -178,7 +179,7 @@ func (c *MetaLockerHTTPCaller) PatchAccount(email, oldEncryptedPassword, newEncr
 	return nil
 }
 
-func (c *MetaLockerHTTPCaller) DeleteAccount(id string) error {
+func (c *MetaLockerHTTPCaller) DeleteAccount(ctx context.Context, id string) error {
 	if !c.client.IsAuthenticated() {
 		return errors.New("you need to log in before performing any operations")
 	}
@@ -203,7 +204,7 @@ func (c *MetaLockerHTTPCaller) DeleteAccount(id string) error {
 	return nil
 }
 
-func (c *MetaLockerHTTPCaller) GetAccountRecoveryCode(username string) (string, error) {
+func (c *MetaLockerHTTPCaller) GetAccountRecoveryCode(ctx context.Context, username string) (string, error) {
 	url := fmt.Sprintf("/v1/recovery-code?email=%s", username)
 	res, err := c.client.SendRequest(http.MethodGet, url, httpsecure.SkipAuthentication())
 	if err != nil {
@@ -255,7 +256,7 @@ func (c *MetaLockerHTTPCaller) RecoverAccount(userID string, privKey ed25519.Pri
 	}
 }
 
-func (c *MetaLockerHTTPCaller) CreateSubAccount(acct *account.Account) (*account.Account, error) {
+func (c *MetaLockerHTTPCaller) CreateSubAccount(ctx context.Context, acct *account.Account) (*account.Account, error) {
 	if !c.client.IsAuthenticated() {
 		return nil, errors.New("you need to log in before performing any operations")
 	}
@@ -282,7 +283,7 @@ func (c *MetaLockerHTTPCaller) CreateSubAccount(acct *account.Account) (*account
 	}
 }
 
-func (c *MetaLockerHTTPCaller) ListSubAccounts(id string) ([]*account.Account, error) {
+func (c *MetaLockerHTTPCaller) ListSubAccounts(ctx context.Context, id string) ([]*account.Account, error) {
 	if !c.client.IsAuthenticated() {
 		return nil, errors.New("you need to log in before performing any operations")
 	}
@@ -296,7 +297,7 @@ func (c *MetaLockerHTTPCaller) ListSubAccounts(id string) ([]*account.Account, e
 	return acctList, nil
 }
 
-func (c *MetaLockerHTTPCaller) CreateAccessKey(key *model.AccessKey) (*model.AccessKey, error) {
+func (c *MetaLockerHTTPCaller) CreateAccessKey(ctx context.Context, key *model.AccessKey) (*model.AccessKey, error) {
 	if !c.client.IsAuthenticated() {
 		return nil, errors.New("you need to log in before performing any operations")
 	}
@@ -325,7 +326,7 @@ func (c *MetaLockerHTTPCaller) CreateAccessKey(key *model.AccessKey) (*model.Acc
 	}
 }
 
-func (c *MetaLockerHTTPCaller) DeleteAccessKey(keyID string) error {
+func (c *MetaLockerHTTPCaller) DeleteAccessKey(ctx context.Context, keyID string) error {
 	if !c.client.IsAuthenticated() {
 		return errors.New("you need to log in before performing any operations")
 	}
@@ -349,7 +350,7 @@ func (c *MetaLockerHTTPCaller) DeleteAccessKey(keyID string) error {
 	return nil
 }
 
-func (c *MetaLockerHTTPCaller) GetAccessKey(keyID string) (*model.AccessKey, error) {
+func (c *MetaLockerHTTPCaller) GetAccessKey(ctx context.Context, keyID string) (*model.AccessKey, error) {
 	if !c.client.IsAuthenticated() {
 		return nil, errors.New("you need to log in before performing any operations")
 	}
@@ -364,7 +365,7 @@ func (c *MetaLockerHTTPCaller) GetAccessKey(keyID string) (*model.AccessKey, err
 	return &key, nil
 }
 
-func (c *MetaLockerHTTPCaller) ListAccessKeys() ([]*model.AccessKey, error) {
+func (c *MetaLockerHTTPCaller) ListAccessKeys(ctx context.Context) ([]*model.AccessKey, error) {
 	if !c.client.IsAuthenticated() {
 		return nil, errors.New("you need to log in before performing any operations")
 	}

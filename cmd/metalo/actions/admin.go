@@ -35,7 +35,7 @@ func ExportAccounts(c *cli.Context) error {
 		return cli.Exit("connection to MetaLocker failed", OperationFailed)
 	}
 
-	err = operations.ExportAccounts(mlc, c.Args().Get(0))
+	err = operations.ExportAccounts(c.Context, mlc, c.Args().Get(0))
 	if err != nil {
 		log.Err(err).Msg("Accounts export failed")
 		return cli.Exit(err, OperationFailed)

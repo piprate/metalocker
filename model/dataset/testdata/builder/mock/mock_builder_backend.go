@@ -5,39 +5,41 @@
 package mock
 
 import (
+	context "context"
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	model "github.com/piprate/metalocker/model"
 	dataset "github.com/piprate/metalocker/model/dataset"
-	reflect "reflect"
 )
 
-// MockLeaseBuilderBackend is a mock of LeaseBuilderBackend interface
+// MockLeaseBuilderBackend is a mock of LeaseBuilderBackend interface.
 type MockLeaseBuilderBackend struct {
 	ctrl     *gomock.Controller
 	recorder *MockLeaseBuilderBackendMockRecorder
 }
 
-// MockLeaseBuilderBackendMockRecorder is the mock recorder for MockLeaseBuilderBackend
+// MockLeaseBuilderBackendMockRecorder is the mock recorder for MockLeaseBuilderBackend.
 type MockLeaseBuilderBackendMockRecorder struct {
 	mock *MockLeaseBuilderBackend
 }
 
-// NewMockLeaseBuilderBackend creates a new mock instance
+// NewMockLeaseBuilderBackend creates a new mock instance.
 func NewMockLeaseBuilderBackend(ctrl *gomock.Controller) *MockLeaseBuilderBackend {
 	mock := &MockLeaseBuilderBackend{ctrl: ctrl}
 	mock.recorder = &MockLeaseBuilderBackendMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockLeaseBuilderBackend) EXPECT() *MockLeaseBuilderBackendMockRecorder {
 	return m.recorder
 }
 
-// Load mocks base method
-func (m *MockLeaseBuilderBackend) Load(id string, opts ...dataset.LoadOption) (model.DataSet, error) {
+// Load mocks base method.
+func (m *MockLeaseBuilderBackend) Load(ctx context.Context, id string, opts ...dataset.LoadOption) (model.DataSet, error) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{id}
+	varargs := []interface{}{ctx, id}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
@@ -47,17 +49,17 @@ func (m *MockLeaseBuilderBackend) Load(id string, opts ...dataset.LoadOption) (m
 	return ret0, ret1
 }
 
-// Load indicates an expected call of Load
-func (mr *MockLeaseBuilderBackendMockRecorder) Load(id interface{}, opts ...interface{}) *gomock.Call {
+// Load indicates an expected call of Load.
+func (mr *MockLeaseBuilderBackendMockRecorder) Load(ctx, id interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{id}, opts...)
+	varargs := append([]interface{}{ctx, id}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Load", reflect.TypeOf((*MockLeaseBuilderBackend)(nil).Load), varargs...)
 }
 
-// Submit mocks base method
-func (m *MockLeaseBuilderBackend) Submit(lease *model.Lease, cleartext bool, lockerID string, sender *model.LockerParticipant, headName ...string) dataset.RecordFuture {
+// Submit mocks base method.
+func (m *MockLeaseBuilderBackend) Submit(ctx context.Context, lease *model.Lease, cleartext bool, lockerID string, sender *model.LockerParticipant, headName ...string) dataset.RecordFuture {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{lease, cleartext, lockerID, sender}
+	varargs := []interface{}{ctx, lease, cleartext, lockerID, sender}
 	for _, a := range headName {
 		varargs = append(varargs, a)
 	}
@@ -66,9 +68,9 @@ func (m *MockLeaseBuilderBackend) Submit(lease *model.Lease, cleartext bool, loc
 	return ret0
 }
 
-// Submit indicates an expected call of Submit
-func (mr *MockLeaseBuilderBackendMockRecorder) Submit(lease, cleartext, lockerID, sender interface{}, headName ...interface{}) *gomock.Call {
+// Submit indicates an expected call of Submit.
+func (mr *MockLeaseBuilderBackendMockRecorder) Submit(ctx, lease, cleartext, lockerID, sender interface{}, headName ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{lease, cleartext, lockerID, sender}, headName...)
+	varargs := append([]interface{}{ctx, lease, cleartext, lockerID, sender}, headName...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Submit", reflect.TypeOf((*MockLeaseBuilderBackend)(nil).Submit), varargs...)
 }

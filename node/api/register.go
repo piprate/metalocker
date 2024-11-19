@@ -116,7 +116,8 @@ func RegisterHandler(registrationCodes []string, defaultVault string, secondLeve
 		if acct.AccessLevel == model.AccessLevelManaged {
 			var recDetails *wallet.RecoveryDetails
 			var dw wallet.DataWallet
-			dw, recDetails, err = factory.RegisterAccount(acct,
+			dw, recDetails, err = factory.RegisterAccount(c,
+				acct,
 				account.WithHashedPassphraseAuth(acct.EncryptedPassword),
 				account.WithCustomEntropy(entropyFunc),
 				account.WithSLRK(secondLevelRecoveryKey),
@@ -127,7 +128,7 @@ func RegisterHandler(registrationCodes []string, defaultVault string, secondLeve
 				acct = dw.Account()
 			}
 		} else {
-			_, err = factory.SaveAccount(acct)
+			_, err = factory.SaveAccount(c, acct)
 		}
 		if err != nil {
 			log.Err(err).Msg("Error when registering account")

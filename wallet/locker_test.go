@@ -32,16 +32,19 @@ func TestLockerWrapper_Store(t *testing.T) {
 
 	dw := testHostedAccount(t, env, true)
 
-	idy, err := dw.NewIdentity(model.AccessLevelHosted, "John XXX")
+	ctx := env.Ctx
+
+	idy, err := dw.NewIdentity(ctx, model.AccessLevelHosted, "John XXX")
 	require.NoError(t, err)
 
-	locker, err := idy.NewLocker(idy.Name())
+	locker, err := idy.NewLocker(ctx, idy.Name())
 	require.NoError(t, err)
 
-	f := locker.Store(map[string]string{
-		"type": "Map",
-		"name": "Test Dataset",
-	}, expiry.FromNow("1h"), dataset.WithVault(testbase.TestVaultName))
+	f := locker.Store(ctx,
+		map[string]string{
+			"type": "Map",
+			"name": "Test Dataset",
+		}, expiry.FromNow("1h"), dataset.WithVault(testbase.TestVaultName))
 	require.NoError(t, f.Wait(time.Second*10))
 
 	var res map[string]string

@@ -112,7 +112,7 @@ func RunServer(c *cli.Context) error {
 		return err
 	}
 
-	if err = srv.InitAuthentication(cfg); err != nil {
+	if err = srv.InitAuthentication(c.Context, cfg); err != nil {
 		return err
 	}
 
