@@ -139,7 +139,7 @@ func TestScanner_Scan(t *testing.T) {
 	_ = sub2.AddLockers(LockerEntry{Locker: sharedLocker2.Raw()})
 	_ = ledgerScanner.AddSubscription(sub2)
 
-	complete, err := ledgerScanner.Scan()
+	complete, err := ledgerScanner.Scan(env.Ctx)
 	require.NoError(t, err)
 	assert.True(t, complete)
 
@@ -253,7 +253,7 @@ func TestScanner_Scan_TwoIterations(t *testing.T) {
 	_ = sub2.AddLockers(LockerEntry{Locker: sharedLocker2.Raw()})
 	_ = ledgerScanner.AddSubscription(sub2)
 
-	complete, err := ledgerScanner.Scan()
+	complete, err := ledgerScanner.Scan(env.Ctx)
 	require.NoError(t, err)
 	assert.True(t, complete)
 
@@ -299,7 +299,7 @@ func TestScanner_Scan_TwoIterations(t *testing.T) {
 	}
 	consumer2.Counter = 0
 
-	complete, err = ledgerScanner.Scan()
+	complete, err = ledgerScanner.Scan(env.Ctx)
 	require.NoError(t, err)
 	assert.True(t, complete)
 
@@ -388,7 +388,7 @@ func TestScanner_RemoveSubscription(t *testing.T) {
 	_ = sub2.AddLockers(LockerEntry{Locker: sharedLocker2.Raw()})
 	_ = ledgerScanner.AddSubscription(sub2)
 
-	complete, err := ledgerScanner.Scan()
+	complete, err := ledgerScanner.Scan(env.Ctx)
 	require.NoError(t, err)
 	assert.True(t, complete)
 
@@ -428,7 +428,7 @@ func TestScanner_RemoveSubscription(t *testing.T) {
 	consumer2.ExpectedMatches = []map[string]any{}
 	consumer2.Reset()
 
-	complete, err = ledgerScanner.Scan()
+	complete, err = ledgerScanner.Scan(env.Ctx)
 	require.NoError(t, err)
 	assert.True(t, complete)
 

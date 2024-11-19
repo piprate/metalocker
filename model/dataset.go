@@ -15,6 +15,7 @@
 package model
 
 import (
+	"context"
 	"errors"
 	"io"
 )
@@ -31,15 +32,15 @@ type DataSet interface {
 	// ID returns the dataset's record ID.
 	ID() string
 	// MetaResource returns a reader for the dataset's meta resource.
-	MetaResource() (io.ReadCloser, error)
+	MetaResource(ctx context.Context) (io.ReadCloser, error)
 	// DecodeMetaResource is a convenience function that unmarshals the dataset's metadata into the given structure.
-	DecodeMetaResource(obj any) error
+	DecodeMetaResource(ctx context.Context, obj any) error
 	// Resources returns a list of resource IDs that belong to the dataset.
 	Resources() []string
 	// Resource returns a reader for the given resource within the dataset.
-	Resource(id string) (io.ReadCloser, error)
+	Resource(ctx context.Context, id string) (io.ReadCloser, error)
 	// DecodeResource is a convenience function that unmarshals the requested resource into the given structure.
-	DecodeResource(id string, obj any) error
+	DecodeResource(ctx context.Context, id string, obj any) error
 	// Lease returns the dataset's lease document
 	Lease() *Lease
 	// Impression returns the dataset's impression document (also available through Lease() )

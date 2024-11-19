@@ -31,7 +31,7 @@ import (
 
 func TestIndexUpdater(t *testing.T) {
 	env := testbase.SetUpTestEnvironment(t)
-	defer env.Close()
+	defer func() { _ = env.Close() }()
 
 	dw := env.CreateTestManagedAccount(t)
 
@@ -71,7 +71,7 @@ func TestIndexUpdater(t *testing.T) {
 	sleepTime := time.Millisecond * 10
 	var totalWaitingTime time.Duration
 	for totalWaitingTime < time.Second {
-		rec, err := rootIndex.GetRecord(f.ID())
+		rec, err := rootIndex.GetRecord(ctx, f.ID())
 		require.NoError(t, err)
 
 		if rec != nil {
@@ -88,7 +88,7 @@ func TestIndexUpdater(t *testing.T) {
 
 func TestIndexUpdater_PublicRecord(t *testing.T) {
 	env := testbase.SetUpTestEnvironment(t)
-	defer env.Close()
+	defer func() { _ = env.Close() }()
 
 	dw := env.CreateTestManagedAccount(t)
 
@@ -131,7 +131,7 @@ func TestIndexUpdater_PublicRecord(t *testing.T) {
 	sleepTime := time.Millisecond * 10
 	var totalWaitingTime time.Duration
 	for totalWaitingTime < time.Second {
-		rec, err := rootIndex.GetRecord(f.ID())
+		rec, err := rootIndex.GetRecord(ctx, f.ID())
 		require.NoError(t, err)
 
 		if rec != nil {
@@ -148,7 +148,7 @@ func TestIndexUpdater_PublicRecord(t *testing.T) {
 
 func TestUpdater_MultipleIndexes(t *testing.T) {
 	env := testbase.SetUpTestEnvironment(t)
-	defer env.Close()
+	defer func() { _ = env.Close() }()
 
 	ctx := env.Ctx
 
@@ -206,26 +206,26 @@ func TestUpdater_MultipleIndexes(t *testing.T) {
 
 	rid2 := f.ID()
 
-	_, err = env.IndexStore.CreateIndex(dataWallet1.ID(), index.TypeRoot, model.AccessLevelManaged)
+	_, err = env.IndexStore.CreateIndex(ctx, dataWallet1.ID(), index.TypeRoot, model.AccessLevelManaged)
 	require.NoError(t, err)
 
-	index1, err := env.IndexStore.RootIndex(dataWallet1.ID(), model.AccessLevelManaged)
+	index1, err := env.IndexStore.RootIndex(ctx, dataWallet1.ID(), model.AccessLevelManaged)
 	require.NoError(t, err)
 
 	iw1, _ := index1.Writer()
-	err = iw1.AddLockerState(dataWallet1.ID(), uniLocker.ID(), uniLocker.Raw().FirstBlock)
+	err = iw1.AddLockerState(ctx, dataWallet1.ID(), uniLocker.ID(), uniLocker.Raw().FirstBlock)
 	require.NoError(t, err)
-	err = iw1.AddLockerState(dataWallet1.ID(), sharedLocker.ID(), sharedLocker.Raw().FirstBlock)
-	require.NoError(t, err)
-
-	_, err = env.IndexStore.CreateIndex(dataWallet2.ID(), index.TypeRoot, model.AccessLevelManaged)
+	err = iw1.AddLockerState(ctx, dataWallet1.ID(), sharedLocker.ID(), sharedLocker.Raw().FirstBlock)
 	require.NoError(t, err)
 
-	index2, err := env.IndexStore.RootIndex(dataWallet2.ID(), model.AccessLevelManaged)
+	_, err = env.IndexStore.CreateIndex(ctx, dataWallet2.ID(), index.TypeRoot, model.AccessLevelManaged)
+	require.NoError(t, err)
+
+	index2, err := env.IndexStore.RootIndex(ctx, dataWallet2.ID(), model.AccessLevelManaged)
 	require.NoError(t, err)
 
 	iw2, _ := index2.Writer()
-	err = iw2.AddLockerState(dataWallet2.ID(), sharedLocker.ID(), sharedLocker.Raw().FirstBlock)
+	err = iw2.AddLockerState(ctx, dataWallet2.ID(), sharedLocker.ID(), sharedLocker.Raw().FirstBlock)
 	require.NoError(t, err)
 
 	updater := NewIndexUpdater(env.Ledger)
@@ -235,35 +235,35 @@ func TestUpdater_MultipleIndexes(t *testing.T) {
 	err = updater.AddIndexes(ctx, dataWallet2, index2)
 	require.NoError(t, err)
 
-	err = updater.Sync()
+	err = updater.Sync(ctx)
 	require.NoError(t, err)
 
 	// check if records were added into relevant Indexes
 
-	resRec1, err := index1.GetRecord(rid1)
+	resRec1, err := index1.GetRecord(ctx, rid1)
 	require.NoError(t, err)
 	require.NotEmpty(t, resRec1)
 	assert.Equal(t, uniLocker.ID(), resRec1.LockerID)
 
-	resRec2, err := index1.GetRecord(rid2)
+	resRec2, err := index1.GetRecord(ctx, rid2)
 	require.NoError(t, err)
 	require.NotEmpty(t, resRec2)
 	assert.Equal(t, sharedLocker.ID(), resRec2.LockerID)
 
-	resRec2, err = index2.GetRecord(rid2)
+	resRec2, err = index2.GetRecord(ctx, rid2)
 	require.NoError(t, err)
 	require.NotEmpty(t, resRec2)
 	assert.Equal(t, sharedLocker.ID(), resRec2.LockerID)
 
 	// check that Index statistics were updated
 
-	topBlock, _ := env.Ledger.GetTopBlock()
-	states, _ := iw1.LockerStates()
+	topBlock, _ := env.Ledger.GetTopBlock(ctx)
+	states, _ := iw1.LockerStates(ctx)
 	for _, ls := range states {
 		assert.Equal(t, topBlock.Number, ls.TopBlock)
 	}
 
-	states, _ = iw2.LockerStates()
+	states, _ = iw2.LockerStates(ctx)
 	for _, ls := range states {
 		assert.Equal(t, topBlock.Number, ls.TopBlock)
 	}
@@ -276,7 +276,7 @@ func TestIndexUpdater_StaggeredLockers(t *testing.T) {
 	// again. The sync should pick up the second locker.
 
 	env := testbase.SetUpTestEnvironment(t)
-	defer env.Close()
+	defer func() { _ = env.Close() }()
 
 	ctx := env.Ctx
 
@@ -294,7 +294,7 @@ func TestIndexUpdater_StaggeredLockers(t *testing.T) {
 	require.NoError(t, err)
 
 	iw, _ := rootIndex.Writer()
-	states, err := iw.LockerStates()
+	states, err := iw.LockerStates(ctx)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(states))
 
@@ -316,10 +316,10 @@ func TestIndexUpdater_StaggeredLockers(t *testing.T) {
 	err = f.Wait(time.Second * 5)
 	require.NoError(t, err)
 
-	err = updater.Sync()
+	err = updater.Sync(ctx)
 	require.NoError(t, err)
 
-	rec, err := rootIndex.GetRecord(f.ID())
+	rec, err := rootIndex.GetRecord(ctx, f.ID())
 	require.NoError(t, err)
 	require.NotEmpty(t, rec)
 
@@ -343,14 +343,14 @@ func TestIndexUpdater_StaggeredLockers(t *testing.T) {
 	err = f.Wait(time.Second * 5)
 	require.NoError(t, err)
 
-	err = updater.Sync()
+	err = updater.Sync(ctx)
 	require.NoError(t, err)
 
-	states, err = iw.LockerStates()
+	states, err = iw.LockerStates(ctx)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(states))
 
-	rec, err = rootIndex.GetRecord(f.ID())
+	rec, err = rootIndex.GetRecord(ctx, f.ID())
 	require.NoError(t, err)
 	require.NotEmpty(t, rec)
 }
@@ -363,7 +363,7 @@ func TestIndexUpdater_SubAccounts(t *testing.T) {
 	// and the dataset in it.
 
 	env := testbase.SetUpTestEnvironment(t)
-	defer env.Close()
+	defer func() { _ = env.Close() }()
 
 	dw := env.CreateTestManagedAccount(t)
 
@@ -381,7 +381,7 @@ func TestIndexUpdater_SubAccounts(t *testing.T) {
 	require.NoError(t, err)
 
 	iw, _ := rootIndex.Writer()
-	states, err := iw.LockerStates()
+	states, err := iw.LockerStates(ctx)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(states))
 
@@ -403,10 +403,10 @@ func TestIndexUpdater_SubAccounts(t *testing.T) {
 	err = f.Wait(time.Second * 5)
 	require.NoError(t, err)
 
-	err = updater.Sync()
+	err = updater.Sync(ctx)
 	require.NoError(t, err)
 
-	rec, err := rootIndex.GetRecord(f.ID())
+	rec, err := rootIndex.GetRecord(ctx, f.ID())
 	require.NoError(t, err)
 	require.NotEmpty(t, rec)
 
@@ -433,17 +433,17 @@ func TestIndexUpdater_SubAccounts(t *testing.T) {
 	err = f.Wait(time.Second * 5)
 	require.NoError(t, err)
 
-	_, err = iw.LockerStates()
+	_, err = iw.LockerStates(ctx)
 	require.NoError(t, err)
 
-	err = updater.Sync()
+	err = updater.Sync(ctx)
 	require.NoError(t, err)
 
-	states, err = iw.LockerStates()
+	states, err = iw.LockerStates(ctx)
 	require.NoError(t, err)
 	require.Equal(t, 3, len(states))
 
-	rec, err = rootIndex.GetRecord(f.ID())
+	rec, err = rootIndex.GetRecord(ctx, f.ID())
 	require.NoError(t, err)
 	require.NotEmpty(t, rec)
 
@@ -468,10 +468,10 @@ func TestIndexUpdater_SubAccounts(t *testing.T) {
 	err = f.Wait(time.Second * 5)
 	require.NoError(t, err)
 
-	err = secondUpdater.Sync()
+	err = secondUpdater.Sync(ctx)
 	require.NoError(t, err)
 
-	rec, err = rootIndex.GetRecord(f.ID())
+	rec, err = rootIndex.GetRecord(ctx, f.ID())
 	require.NoError(t, err)
 	require.NotEmpty(t, rec)
 }
@@ -485,7 +485,7 @@ func TestForceSyncRootIndex_LockerStateExists(t *testing.T) {
 	// and the Sync() process should complete without errors.
 
 	env := testbase.SetUpTestEnvironment(t)
-	defer env.Close()
+	defer func() { _ = env.Close() }()
 
 	dw := env.CreateTestManagedAccount(t)
 
@@ -500,7 +500,7 @@ func TestForceSyncRootIndex_LockerStateExists(t *testing.T) {
 	require.NoError(t, err)
 	defer updater.Close()
 
-	err = updater.Sync()
+	err = updater.Sync(ctx)
 	require.NoError(t, err)
 
 	idy1, err := dw.NewIdentity(ctx, model.AccessLevelManaged, "Second Identity")
@@ -512,13 +512,13 @@ func TestForceSyncRootIndex_LockerStateExists(t *testing.T) {
 	err = ForceSyncRootIndex(dw)
 	require.NoError(t, err)
 
-	err = updater.Sync()
+	err = updater.Sync(ctx)
 	require.NoError(t, err)
 }
 
 func TestIndexUpdater_RemoveIndex(t *testing.T) {
 	env := testbase.SetUpTestEnvironment(t)
-	defer env.Close()
+	defer func() { _ = env.Close() }()
 
 	dw := env.CreateTestManagedAccount(t)
 
@@ -559,7 +559,7 @@ func TestIndexUpdater_RemoveIndex(t *testing.T) {
 	var totalWaitingTime time.Duration
 	received := false
 	for totalWaitingTime < time.Second {
-		rec, err := rootIndex.GetRecord(f.ID())
+		rec, err := rootIndex.GetRecord(ctx, f.ID())
 		require.NoError(t, err)
 
 		if rec != nil {
@@ -591,7 +591,7 @@ func TestIndexUpdater_RemoveIndex(t *testing.T) {
 	totalWaitingTime = 0
 	received = false
 	for totalWaitingTime < time.Second {
-		rec, err := rootIndex.GetRecord(f.ID())
+		rec, err := rootIndex.GetRecord(ctx, f.ID())
 		require.NoError(t, err)
 
 		if rec != nil {

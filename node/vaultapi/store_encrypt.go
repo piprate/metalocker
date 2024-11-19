@@ -82,7 +82,7 @@ func PostStoreEncrypt(vaultAPI vaults.Vault) func(c *gin.Context) {
 				return
 			}
 
-			res, err = vaultAPI.CreateBlob(bytes.NewReader(encryptedData))
+			res, err = vaultAPI.CreateBlob(c, bytes.NewReader(encryptedData))
 			if err != nil {
 				apibase.AbortWithInternalServerError(c, err)
 				return
@@ -91,7 +91,7 @@ func PostStoreEncrypt(vaultAPI vaults.Vault) func(c *gin.Context) {
 			res.EncryptionKey = base64.StdEncoding.EncodeToString(encKey[:])
 		} else {
 			var err error
-			res, err = vaultAPI.CreateBlob(pr)
+			res, err = vaultAPI.CreateBlob(c, pr)
 			if err != nil {
 				apibase.AbortWithInternalServerError(c, err)
 				return

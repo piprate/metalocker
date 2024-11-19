@@ -79,11 +79,13 @@ fAX1YBBXUb3XGJNZlQIDAQAB
 
 	srv := node.NewMetaLockerServer(serverDir)
 
-	if err := srv.InitServices(cfg, debugMode); err != nil {
+	ctx := context.Background()
+
+	if err := srv.InitServices(ctx, cfg, debugMode); err != nil {
 		return nil, "", err
 	}
 
-	if err := srv.InitAuthentication(context.Background(), cfg); err != nil {
+	if err := srv.InitAuthentication(ctx, cfg); err != nil {
 		return nil, "", err
 	}
 

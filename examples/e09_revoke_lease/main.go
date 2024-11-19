@@ -168,7 +168,7 @@ func main() {
 	}
 	defer updater.Close()
 
-	err = updater.Sync()
+	err = updater.Sync(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -187,7 +187,7 @@ func main() {
 		panic(err)
 	}
 
-	_, err = ds.MetaResource()
+	_, err = ds.MetaResource(ctx)
 	if err == nil {
 		panic("revocation didn't work!")
 	} else {

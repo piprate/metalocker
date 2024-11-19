@@ -251,7 +251,7 @@ func NewLocalFactory(ledger model.Ledger, offChainStorage model.OffChainStorage,
 }
 
 func (lf *LocalFactory) RegisterAccount(ctx context.Context, acctTemplate *account.Account, opts ...account.Option) (DataWallet, *RecoveryDetails, error) {
-	tb, err := lf.ledger.GetTopBlock()
+	tb, err := lf.ledger.GetTopBlock(ctx)
 	if err != nil {
 		return nil, nil, err
 	}

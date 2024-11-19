@@ -15,6 +15,7 @@
 package operations
 
 import (
+	"context"
 	"os"
 	"path"
 	"path/filepath"
@@ -29,7 +30,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func ImportLedger(ledger model.Ledger, offChainStorage model.OffChainStorage, ns notification.Service, dest string, importOperations, waitForConfirmation bool) error {
+func ImportLedger(ctx context.Context, ledger model.Ledger, offChainStorage model.OffChainStorage, ns notification.Service, dest string, importOperations, waitForConfirmation bool) error {
 	tbBytes, err := os.ReadFile(path.Join(dest, "_top.json"))
 	if err != nil {
 		return err
@@ -62,7 +63,7 @@ func ImportLedger(ledger model.Ledger, offChainStorage model.OffChainStorage, ns
 					return err
 				}
 
-				opid, err := offChainStorage.SendOperation(opBytes)
+				opid, err := offChainStorage.SendOperation(ctx, opBytes)
 				if err != nil {
 					return err
 				}
@@ -90,7 +91,7 @@ func ImportLedger(ledger model.Ledger, offChainStorage model.OffChainStorage, ns
 		for _, r = range recs {
 			log.Info().Str("rid", r.ID).Msg("Importing record")
 
-			if err = ledger.SubmitRecord(r); err != nil {
+			if err = ledger.SubmitRecord(ctx, r); err != nil {
 				return err
 			}
 		}
@@ -98,7 +99,7 @@ func ImportLedger(ledger model.Ledger, offChainStorage model.OffChainStorage, ns
 		if r != nil && waitForConfirmation {
 			// wait for the last record in the block
 
-			if _, err = dataset.WaitForConfirmation(ledger, nil, time.Second, 60*time.Second, r.ID); err != nil {
+			if _, err = dataset.WaitForConfirmation(ctx, ledger, nil, time.Second, 60*time.Second, r.ID); err != nil {
 				return err
 			}
 		}

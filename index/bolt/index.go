@@ -15,6 +15,7 @@
 package bolt
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -73,7 +74,7 @@ func (dwi *Index) indexBucket(tx *bbolt.Tx, bucketID string) *bbolt.Bucket {
 	return b
 }
 
-func (dwi *Index) AddLease(ds model.DataSet, effectiveBlockNumber int64) error {
+func (dwi *Index) AddLease(ctx context.Context, ds model.DataSet, effectiveBlockNumber int64) error {
 	defer measure.ExecTime("index.AddLease")()
 
 	r := ds.Record()
@@ -265,7 +266,7 @@ func (dwi *Index) AddLease(ds model.DataSet, effectiveBlockNumber int64) error {
 	return nil
 }
 
-func (dwi *Index) AddLeaseRevocation(ds model.DataSet) error {
+func (dwi *Index) AddLeaseRevocation(ctx context.Context, ds model.DataSet) error {
 	defer measure.ExecTime("index.AddLeaseRevocation")()
 
 	r := ds.Record()
@@ -396,7 +397,7 @@ func (dwi *Index) AddLeaseRevocation(ds model.DataSet) error {
 	return nil
 }
 
-func (dwi *Index) UpdateTopBlock(blockNumber int64) error {
+func (dwi *Index) UpdateTopBlock(ctx context.Context, blockNumber int64) error {
 	if blockNumber <= 0 {
 		return errors.New("no block ID provided when updating locker stats " +
 			"(maybe there were no new blocks processed?)")
@@ -426,7 +427,7 @@ func (dwi *Index) UpdateTopBlock(blockNumber int64) error {
 	})
 }
 
-func (dwi *Index) GetRecord(recordID string) (*index.RecordState, error) {
+func (dwi *Index) GetRecord(ctx context.Context, recordID string) (*index.RecordState, error) {
 	var val []byte
 	var rs index.RecordState
 	found := false
@@ -456,7 +457,7 @@ func (dwi *Index) GetRecord(recordID string) (*index.RecordState, error) {
 	}
 }
 
-func (dwi *Index) TraverseRecords(lockerFilter, participantFilter string, vFunc index.RecordVisitor, maxRecords uint64) error {
+func (dwi *Index) TraverseRecords(ctx context.Context, lockerFilter, participantFilter string, vFunc index.RecordVisitor, maxRecords uint64) error {
 	err := dwi.client.DB.View(func(tx *bbolt.Tx) error {
 		lb := dwi.indexBucket(tx, RecordsKey)
 		if lb == nil {
@@ -501,7 +502,7 @@ func (dwi *Index) TraverseRecords(lockerFilter, participantFilter string, vFunc 
 	return err
 }
 
-func (dwi *Index) TraverseAssetRecords(assetID string, vFunc index.AssetRecordVisitor, maxRecords uint64) error {
+func (dwi *Index) TraverseAssetRecords(ctx context.Context, assetID string, vFunc index.AssetRecordVisitor, maxRecords uint64) error {
 	err := dwi.client.DB.View(func(tx *bbolt.Tx) error {
 		rb := dwi.indexBucket(tx, AssetLookupKey)
 		if rb == nil {
@@ -535,7 +536,7 @@ func (dwi *Index) TraverseAssetRecords(assetID string, vFunc index.AssetRecordVi
 	return err
 }
 
-func (dwi *Index) TraverseVariants(lockerFilter, participantFilter string, vFunc index.VariantVisitor, includeHistory bool, maxVariants uint64) error {
+func (dwi *Index) TraverseVariants(ctx context.Context, lockerFilter, participantFilter string, vFunc index.VariantVisitor, includeHistory bool, maxVariants uint64) error {
 	err := dwi.client.DB.View(func(tx *bbolt.Tx) error {
 		vb := dwi.indexBucket(tx, VariantsKey)
 		if vb == nil {
@@ -590,7 +591,7 @@ func (dwi *Index) TraverseVariants(lockerFilter, participantFilter string, vFunc
 	return err
 }
 
-func (dwi *Index) GetVariant(variantID string, includeHistory bool) (*index.VariantRecordState,
+func (dwi *Index) GetVariant(ctx context.Context, variantID string, includeHistory bool) (*index.VariantRecordState,
 	[]*index.VariantRecordState, error) {
 
 	// WARNING: if there are multiple instances of the same impression in the index, this function
@@ -643,7 +644,7 @@ func (dwi *Index) GetVariant(variantID string, includeHistory bool) (*index.Vari
 	return masterRec, hist, nil
 }
 
-func (dwi *Index) GetRecordsByResourceID(resourceID string, lockerFilter map[string]bool) ([]string, error) {
+func (dwi *Index) GetRecordsByResourceID(ctx context.Context, resourceID string, lockerFilter map[string]bool) ([]string, error) {
 	recordIDs := make([]string, 0)
 	err := dwi.client.DB.View(func(tx *bbolt.Tx) error {
 		rb := dwi.indexBucket(tx, ResourceLookupKey)
@@ -677,7 +678,7 @@ func (dwi *Index) GetRecordsByResourceID(resourceID string, lockerFilter map[str
 	return recordIDs, nil
 }
 
-func (dwi *Index) GetRecordsByImpressionID(impID string, lockerFilter map[string]bool) ([]string, error) {
+func (dwi *Index) GetRecordsByImpressionID(ctx context.Context, impID string, lockerFilter map[string]bool) ([]string, error) {
 	recordIDs := make([]string, 0)
 	err := dwi.client.DB.View(func(tx *bbolt.Tx) error {
 		rb := dwi.indexBucket(tx, ImpressionLookupKey)
@@ -719,7 +720,7 @@ func (dwi *Index) Writer() (index.Writer, error) {
 	return dwi, nil
 }
 
-func (dwi *Index) LockerStates() ([]index.LockerState, error) {
+func (dwi *Index) LockerStates(ctx context.Context) ([]index.LockerState, error) {
 	defer measure.ExecTime("index.LockerStates")()
 
 	states := make([]index.LockerState, 0)
@@ -748,7 +749,7 @@ func (dwi *Index) LockerStates() ([]index.LockerState, error) {
 	return states, nil
 }
 
-func (dwi *Index) AddLockerState(accountID, lockerID string, firstBlock int64) error {
+func (dwi *Index) AddLockerState(ctx context.Context, accountID, lockerID string, firstBlock int64) error {
 	defer measure.ExecTime("index.AddLockerState")()
 
 	found := false

@@ -180,7 +180,7 @@ func main() {
 	}
 
 	var dataset1 map[string]any
-	_ = ds1.DecodeMetaResource(&dataset1)
+	_ = ds1.DecodeMetaResource(ctx, &dataset1)
 
 	ld.PrintDocument("What Jack did", dataset1)
 
@@ -192,7 +192,7 @@ func main() {
 	}
 
 	var dataset2 map[string]any
-	_ = ds2.DecodeMetaResource(&dataset2)
+	_ = ds2.DecodeMetaResource(ctx, &dataset2)
 
 	ld.PrintDocument("What Jill did", dataset2)
 }

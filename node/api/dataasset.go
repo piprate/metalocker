@@ -26,7 +26,7 @@ import (
 func (h *LedgerHandler) GetDataAssetStateHandler(c *gin.Context) {
 	id := c.Params.ByName("id")
 
-	state, err := h.ledger.GetDataAssetState(id)
+	state, err := h.ledger.GetDataAssetState(c, id)
 	if err != nil {
 		if errors.Is(err, model.ErrDataAssetNotFound) {
 			c.AbortWithStatus(http.StatusNotFound)

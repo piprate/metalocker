@@ -670,13 +670,15 @@ func TestLeaseBuilder_WithProvenance_SharingFirst(t *testing.T) {
 	file, err := os.Open("testdata/builder/prov_document/file1.txt")
 	require.NoError(t, err)
 
-	_, err = bm.SendBlob(file, false, "memory")
+	ctx := context.Background()
+
+	_, err = bm.SendBlob(ctx, file, false, "memory")
 	require.NoError(t, err)
 
 	file, err = os.Open("testdata/builder/prov_document/meta.json")
 	require.NoError(t, err)
 
-	_, err = bm.SendBlob(file, false, "memory")
+	_, err = bm.SendBlob(ctx, file, false, "memory")
 	require.NoError(t, err)
 
 	ts := time.Unix(100000, 0).UTC()
@@ -716,13 +718,15 @@ func TestLeaseBuilder_WithProvenance_SharingSecond(t *testing.T) {
 	file, err := os.Open("testdata/builder/prov_document/file1.txt")
 	require.NoError(t, err)
 
-	_, err = bm.SendBlob(file, false, "memory")
+	ctx := context.Background()
+
+	_, err = bm.SendBlob(ctx, file, false, "memory")
 	require.NoError(t, err)
 
 	file, err = os.Open("testdata/builder/prov_document/meta.json")
 	require.NoError(t, err)
 
-	_, err = bm.SendBlob(file, false, "memory")
+	_, err = bm.SendBlob(ctx, file, false, "memory")
 	require.NoError(t, err)
 
 	ts := time.Unix(100000, 0).UTC()

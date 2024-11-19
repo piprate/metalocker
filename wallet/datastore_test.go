@@ -103,12 +103,12 @@ func TestLocalStoreImpl_AssetHead_SetAssetHead(t *testing.T) {
 	require.NoError(t, err)
 
 	var headResource map[string]string
-	err = headDataSet.DecodeMetaResource(&headResource)
+	err = headDataSet.DecodeMetaResource(ctx, &headResource)
 	require.NoError(t, err)
 
 	assert.Equal(t, "TestDataset1", headResource["type"])
 
-	rs, err := dataWallet1.Services().Ledger().GetRecordState(headFuture.ID())
+	rs, err := dataWallet1.Services().Ledger().GetRecordState(ctx, headFuture.ID())
 	require.NoError(t, err)
 	assert.Equal(t, model.StatusPublished, rs.Status)
 
@@ -139,12 +139,12 @@ func TestLocalStoreImpl_AssetHead_SetAssetHead(t *testing.T) {
 	require.NoError(t, err)
 
 	var headResource2 map[string]string
-	err = headDataSet2.DecodeMetaResource(&headResource2)
+	err = headDataSet2.DecodeMetaResource(ctx, &headResource2)
 	require.NoError(t, err)
 
 	assert.Equal(t, "TestDataset2", headResource2["type"])
 
-	rs, err = dataWallet1.Services().Ledger().GetRecordState(headFuture.ID())
+	rs, err = dataWallet1.Services().Ledger().GetRecordState(ctx, headFuture.ID())
 	require.NoError(t, err)
 	assert.Equal(t, model.StatusRevoked, rs.Status)
 
@@ -154,7 +154,7 @@ func TestLocalStoreImpl_AssetHead_SetAssetHead(t *testing.T) {
 	require.NoError(t, err)
 
 	var headResource3 map[string]string
-	err = headDataSet3.DecodeMetaResource(&headResource3)
+	err = headDataSet3.DecodeMetaResource(ctx, &headResource3)
 	require.NoError(t, err)
 
 	assert.Equal(t, "TestDataset2", headResource3["type"])
@@ -196,14 +196,14 @@ func TestLocalStoreImpl_Submit_SetHeads(t *testing.T) {
 	require.NoError(t, err)
 
 	var headResource map[string]string
-	err = headDataSet.DecodeMetaResource(&headResource)
+	err = headDataSet.DecodeMetaResource(ctx, &headResource)
 	require.NoError(t, err)
 
 	assert.Equal(t, "TestDataset1", headResource["type"])
 
 	headRecord1 := f.Heads()[headID]
 
-	rs, err := dw.Services().Ledger().GetRecordState(headRecord1)
+	rs, err := dw.Services().Ledger().GetRecordState(ctx, headRecord1)
 	require.NoError(t, err)
 	assert.Equal(t, model.StatusPublished, rs.Status)
 
@@ -227,12 +227,12 @@ func TestLocalStoreImpl_Submit_SetHeads(t *testing.T) {
 	require.NoError(t, err)
 
 	var headResource2 map[string]string
-	err = headDataSet2.DecodeMetaResource(&headResource2)
+	err = headDataSet2.DecodeMetaResource(ctx, &headResource2)
 	require.NoError(t, err)
 
 	assert.Equal(t, "TestDataset2", headResource2["type"])
 
-	rs, err = dw.Services().Ledger().GetRecordState(headRecord1)
+	rs, err = dw.Services().Ledger().GetRecordState(ctx, headRecord1)
 	require.NoError(t, err)
 	assert.Equal(t, model.StatusRevoked, rs.Status)
 }
@@ -278,13 +278,13 @@ func TestLocalStoreImpl_Submit_Public(t *testing.T) {
 	require.NoError(t, err)
 
 	var resource map[string]string
-	err = ds.DecodeMetaResource(&resource)
+	err = ds.DecodeMetaResource(ctx, &resource)
 	require.NoError(t, err)
 	assert.Equal(t, "TestDataset1", resource["type"])
 
 	// check the lease is not encrypted
 
-	opBytes, err := env.OffChainStorage.GetOperation(ds.Record().OperationAddress)
+	opBytes, err := env.OffChainStorage.GetOperation(ctx, ds.Record().OperationAddress)
 	require.NoError(t, err)
 
 	var lease model.Lease
@@ -295,7 +295,7 @@ func TestLocalStoreImpl_Submit_Public(t *testing.T) {
 
 	// check the meta resource is not encrypted
 
-	rdr, err := vault.ServeBlob(lease.MetaResource().ID, nil, accessToken)
+	rdr, err := vault.ServeBlob(ctx, lease.MetaResource().ID, nil, accessToken)
 	require.NoError(t, err)
 	metaBytes, err := io.ReadAll(rdr)
 	require.NoError(t, err)
@@ -304,13 +304,13 @@ func TestLocalStoreImpl_Submit_Public(t *testing.T) {
 
 	// check the attachment is not encrypted
 
-	rdr, err = ds.Resource(attachmentID)
+	rdr, err = ds.Resource(ctx, attachmentID)
 	require.NoError(t, err)
 	attBytes, err := io.ReadAll(rdr)
 	require.NoError(t, err)
 	assert.Equal(t, "attachment", string(attBytes))
 
-	rdr, err = vault.ServeBlob(lease.Resource(attachmentID).ID, nil, accessToken)
+	rdr, err = vault.ServeBlob(ctx, lease.Resource(attachmentID).ID, nil, accessToken)
 	require.NoError(t, err)
 	attBytes, err = io.ReadAll(rdr)
 	require.NoError(t, err)
@@ -407,7 +407,7 @@ func TestLocalStoreImpl_Load_PublicFromForeignLocker(t *testing.T) {
 	require.NoError(t, err)
 
 	var resource map[string]string
-	err = ds.DecodeMetaResource(&resource)
+	err = ds.DecodeMetaResource(ctx, &resource)
 	require.NoError(t, err)
 	assert.Equal(t, "TestDataset1", resource["type"])
 }
@@ -484,7 +484,7 @@ func TestLocalStoreImpl_Share(t *testing.T) {
 			return
 		}
 
-		rdr, err := ds.MetaResource()
+		rdr, err := ds.MetaResource(ctx)
 		if canAccess {
 			require.NoError(t, err)
 
@@ -500,8 +500,8 @@ func TestLocalStoreImpl_Share(t *testing.T) {
 	checkAccess(dataWallet1, recordID, true)
 	checkAccess(dataWallet2, recordID, false)
 
-	require.NoError(t, updater1.Sync())
-	require.NoError(t, updater2.Sync())
+	require.NoError(t, updater1.Sync(ctx))
+	require.NoError(t, updater2.Sync(ctx))
 
 	// try sharing a non-existent record
 
@@ -514,8 +514,8 @@ func TestLocalStoreImpl_Share(t *testing.T) {
 
 	sharedRecordID := f.ID()
 
-	require.NoError(t, updater1.Sync())
-	require.NoError(t, updater2.Sync())
+	require.NoError(t, updater1.Sync(ctx))
+	require.NoError(t, updater2.Sync(ctx))
 
 	checkAccess(dataWallet1, sharedRecordID, true)
 	checkAccess(dataWallet2, recordID, false)
@@ -582,7 +582,7 @@ func TestLocalStoreImpl_Revoke(t *testing.T) {
 			return
 		}
 
-		rdr, err := ds.MetaResource()
+		rdr, err := ds.MetaResource(ctx)
 		if canAccess {
 			require.NoError(t, err)
 
@@ -598,7 +598,7 @@ func TestLocalStoreImpl_Revoke(t *testing.T) {
 	checkAccess(dataWallet1, true)
 	checkAccess(dataWallet2, true)
 
-	require.NoError(t, updater.Sync())
+	require.NoError(t, updater.Sync(ctx))
 
 	// revocation of somebody else's lease should fail
 	f = dataWallet2.DataStore().Revoke(ctx, recordID)
@@ -617,7 +617,7 @@ func TestLocalStoreImpl_Revoke(t *testing.T) {
 	checkAccess(dataWallet1, false)
 	checkAccess(dataWallet2, false)
 
-	require.NoError(t, updater.Sync())
+	require.NoError(t, updater.Sync(ctx))
 
 	// check access again after index refresh
 	checkAccess(dataWallet1, false)

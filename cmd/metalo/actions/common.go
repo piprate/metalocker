@@ -16,6 +16,7 @@ package actions
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -46,8 +47,8 @@ const (
 )
 
 func WithPersonalIndexStore() remote.IndexClientSourceFn {
-	return func(userID string, mlc *caller.MetaLockerHTTPCaller) (index.Client, error) {
-		gb, err := mlc.GetGenesisBlock()
+	return func(ctx context.Context, userID string, mlc *caller.MetaLockerHTTPCaller) (index.Client, error) {
+		gb, err := mlc.GetGenesisBlock(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -57,7 +58,7 @@ func WithPersonalIndexStore() remote.IndexClientSourceFn {
 		if err != nil {
 			return nil, err
 		}
-		return index.NewLocalIndexClient([]*index.StoreConfig{
+		return index.NewLocalIndexClient(ctx, []*index.StoreConfig{
 			{
 				ID:   LocalIndexStoreID,
 				Name: LocalIndexStoreName,
@@ -118,7 +119,7 @@ func LoadRemoteDataWallet(c *cli.Context, syncIndexOnStart bool) (wallet.DataWal
 			return nil, err
 		}
 
-		if err = ixUpdater.Sync(); err != nil {
+		if err = ixUpdater.Sync(c.Context); err != nil {
 			return nil, err
 		}
 	}

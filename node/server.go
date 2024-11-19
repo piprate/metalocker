@@ -83,7 +83,7 @@ func NewMetaLockerServer(configDir string) *MetaLockerServer {
 	return mls
 }
 
-func (mls *MetaLockerServer) InitServices(cfg *koanf.Koanf, debugMode bool) error {
+func (mls *MetaLockerServer) InitServices(ctx context.Context, cfg *koanf.Koanf, debugMode bool) error {
 	mls.Warden = utils.NewGracefulWarden(120)
 
 	prodMode := cfg.Bool("production") && !debugMode
@@ -143,7 +143,7 @@ func (mls *MetaLockerServer) InitServices(cfg *koanf.Koanf, debugMode bool) erro
 
 	// initialise ledger connector
 
-	mls.Ledger, err = InitLedger(cfg, mls.Resolver, mls.NS)
+	mls.Ledger, err = InitLedger(ctx, cfg, mls.Resolver, mls.NS)
 	if err != nil {
 		return err
 	}
@@ -353,7 +353,7 @@ func InitOffChainStorage(cfg *koanf.Koanf, resolver cmdbase.ParameterResolver) (
 	return offchainAPI, nil
 }
 
-func InitLedger(cfg *koanf.Koanf, resolver cmdbase.ParameterResolver, ns notification.Service) (model.Ledger, error) {
+func InitLedger(ctx context.Context, cfg *koanf.Koanf, resolver cmdbase.ParameterResolver, ns notification.Service) (model.Ledger, error) {
 	var ledgerAPI model.Ledger
 	if cfg.Exists("ledger") {
 		var ledgerCfg ledger.Config
@@ -363,7 +363,7 @@ func InitLedger(cfg *koanf.Koanf, resolver cmdbase.ParameterResolver, ns notific
 			return nil, cli.Exit(err, 1)
 		}
 
-		ledgerAPI, err = ledger.CreateLedgerConnector(&ledgerCfg, ns, resolver)
+		ledgerAPI, err = ledger.CreateLedgerConnector(ctx, &ledgerCfg, ns, resolver)
 		if err != nil {
 			log.Err(err).Msg("Failed to create ledger connector")
 			return nil, cli.Exit(err, 1)

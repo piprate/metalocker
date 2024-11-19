@@ -16,6 +16,7 @@ package node
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 
@@ -35,8 +36,8 @@ func NewOffChainStorageProxy(v vaults.Vault) *OffChainStorageProxy {
 	}
 }
 
-func (p *OffChainStorageProxy) GetOperation(opAddr string) ([]byte, error) {
-	rdr, err := p.offChainVault.ServeBlob(opAddr, nil, "")
+func (p *OffChainStorageProxy) GetOperation(ctx context.Context, opAddr string) ([]byte, error) {
+	rdr, err := p.offChainVault.ServeBlob(ctx, opAddr, nil, "")
 	if err != nil {
 		if errors.Is(err, model.ErrBlobNotFound) {
 			return nil, model.ErrOperationNotFound
@@ -48,14 +49,14 @@ func (p *OffChainStorageProxy) GetOperation(opAddr string) ([]byte, error) {
 	return io.ReadAll(rdr)
 }
 
-func (p *OffChainStorageProxy) SendOperation(opData []byte) (string, error) {
-	res, err := p.offChainVault.CreateBlob(bytes.NewReader(opData))
+func (p *OffChainStorageProxy) SendOperation(ctx context.Context, opData []byte) (string, error) {
+	res, err := p.offChainVault.CreateBlob(ctx, bytes.NewReader(opData))
 	if err != nil {
 		return "", err
 	}
 	return res.ID, nil
 }
 
-func (p *OffChainStorageProxy) PurgeOperation(opAddr string) error {
-	return p.offChainVault.PurgeBlob(opAddr, nil)
+func (p *OffChainStorageProxy) PurgeOperation(ctx context.Context, opAddr string) error {
+	return p.offChainVault.PurgeBlob(ctx, opAddr, nil)
 }

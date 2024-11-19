@@ -301,14 +301,14 @@ func (b *LeaseBuilder) AddResource(r io.Reader, opts ...BuilderOption) (string, 
 
 	// save blob
 
-	res, err := b.blobManager.SendBlob(r, b.cleartext, vaultName)
+	res, err := b.blobManager.SendBlob(b.ctx, r, b.cleartext, vaultName)
 	if err != nil {
 		return "", err
 	}
 
 	if _, found := b.resources[res.Asset]; found {
 		// resource already saved, purge the latest copy
-		if err = b.blobManager.PurgeBlob(res); err != nil {
+		if err = b.blobManager.PurgeBlob(b.ctx, res); err != nil {
 			return "", err
 		}
 	} else {
@@ -462,7 +462,7 @@ NEXT:
 				return err
 			}
 		case CopyModeDeep:
-			r, err := b.blobManager.GetBlob(res, at)
+			r, err := b.blobManager.GetBlob(b.ctx, res, at)
 			if err != nil {
 				return err
 			}

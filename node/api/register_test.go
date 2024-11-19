@@ -103,7 +103,7 @@ func createTempLedger(t *testing.T) (model.Ledger, string) {
 	dir, err := os.MkdirTemp(".", "tempdir_")
 	require.NoError(t, err)
 	dbFilepath := filepath.Join(dir, "ledger.bolt")
-	ledgerAPI, err := local.NewBoltLedger(dbFilepath, nil, 10, 0)
+	ledgerAPI, err := local.NewBoltLedger(context.Background(), dbFilepath, nil, 10, 0)
 	require.NoError(t, err)
 
 	return ledgerAPI, dir

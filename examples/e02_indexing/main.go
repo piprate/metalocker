@@ -151,7 +151,7 @@ func main() {
 	}
 	defer updater.Close()
 
-	err = updater.Sync()
+	err = updater.Sync(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -163,7 +163,7 @@ func main() {
 	table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
 	table.SetCenterSeparator("|")
 
-	err = rootIndex.TraverseRecords("", "", func(r *index.RecordState) error {
+	err = rootIndex.TraverseRecords(ctx, "", "", func(r *index.RecordState) error {
 		table.Append([]string{r.ID, r.ContentType, string(r.Status)})
 		return nil
 	}, 0)

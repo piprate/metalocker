@@ -32,7 +32,7 @@ func GetDataSet(ctx context.Context, dw wallet.DataWallet, rid, dest string, exp
 		return err
 	}
 
-	fl, err := datatypes.NewRenderer(ds)
+	fl, err := datatypes.NewRenderer(ctx, ds)
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,7 @@ func GetDataSet(ctx context.Context, dw wallet.DataWallet, rid, dest string, exp
 	lease := ds.Lease()
 
 	if dest != "" {
-		err = fl.ExportToDisk(dest, exportMetaData)
+		err = fl.ExportToDisk(ctx, dest, exportMetaData)
 		if err != nil {
 			return err
 		}

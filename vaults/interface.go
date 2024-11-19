@@ -15,6 +15,7 @@
 package vaults
 
 import (
+	"context"
 	"io"
 
 	"github.com/piprate/metalocker/model"
@@ -57,14 +58,14 @@ type (
 		// for off-chain operation storage to use content-addressable IDs.
 		CAS() bool
 		// CreateBlob stores a blob in the vault and returns a resource definition.
-		CreateBlob(blob io.Reader) (*model.StoredResource, error)
+		CreateBlob(ctx context.Context, blob io.Reader) (*model.StoredResource, error)
 		// ServeBlob returns a binary stream for the stored resource. Depending on the vault's
 		// SSE property, it may be in cleartext or encrypted. The vault will check if
 		// the caller can access the resource by checking the provided accessToken
 		// against the ledger and other sources.
-		ServeBlob(id string, params map[string]any, accessToken string) (io.ReadCloser, error)
+		ServeBlob(ctx context.Context, id string, params map[string]any, accessToken string) (io.ReadCloser, error)
 		// PurgeBlob permanently purges the given resource from the vault. If will only
 		// succeed in the resource is related to a revoked lease.
-		PurgeBlob(id string, params map[string]any) error
+		PurgeBlob(ctx context.Context, id string, params map[string]any) error
 	}
 )

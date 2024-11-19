@@ -1153,7 +1153,7 @@ func (dw *LocalDataWallet) CreateSubAccount(ctx context.Context, accessLevel mod
 		name = fmt.Sprintf("Sub-Account #%d", derivationIndex)
 	}
 
-	tb, err := dw.nodeClient.Ledger().GetTopBlock()
+	tb, err := dw.nodeClient.Ledger().GetTopBlock(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -1448,7 +1448,7 @@ func (dw *LocalDataWallet) CreateIndex(ctx context.Context, indexStoreName, inde
 		return nil, ErrInsufficientLockLevel
 	}
 
-	indexStore, err := dw.indexClient.IndexStore(indexStoreName)
+	indexStore, err := dw.indexClient.IndexStore(ctx, indexStoreName)
 	if err != nil {
 		return nil, err
 	}
@@ -1467,7 +1467,7 @@ func (dw *LocalDataWallet) CreateIndex(ctx context.Context, indexStoreName, inde
 		opts = append(opts, index.WithEncryption(key[:]))
 	}
 
-	ix, err := indexStore.CreateIndex(dw.acct.ID, indexType, dw.lockLevel, opts...)
+	ix, err := indexStore.CreateIndex(ctx, dw.acct.ID, indexType, dw.lockLevel, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1480,7 +1480,7 @@ func (dw *LocalDataWallet) CreateIndex(ctx context.Context, indexStoreName, inde
 	if err != nil {
 		return nil, err
 	}
-	if err = iw.AddLockerState(dw.ID(), l.ID(), l.Raw().FirstBlock); err != nil {
+	if err = iw.AddLockerState(ctx, dw.ID(), l.ID(), l.Raw().FirstBlock); err != nil {
 		return nil, err
 	}
 
@@ -1489,7 +1489,7 @@ func (dw *LocalDataWallet) CreateIndex(ctx context.Context, indexStoreName, inde
 		if err != nil {
 			return nil, err
 		}
-		if err = iw.AddLockerState(dw.ID(), l.ID(), l.Raw().FirstBlock); err != nil {
+		if err = iw.AddLockerState(ctx, dw.ID(), l.ID(), l.Raw().FirstBlock); err != nil {
 			return nil, err
 		}
 	}
@@ -1535,7 +1535,7 @@ func (dw *LocalDataWallet) RootIndex(ctx context.Context) (index.RootIndex, erro
 		return nil, ErrInsufficientLockLevel
 	}
 
-	ix, err := dw.indexClient.RootIndex(dw.acct.ID, dw.acct.AccessLevel)
+	ix, err := dw.indexClient.RootIndex(ctx, dw.acct.ID, dw.acct.AccessLevel)
 	if err != nil {
 		return nil, err
 	}
@@ -1562,7 +1562,7 @@ func (dw *LocalDataWallet) Index(ctx context.Context, id string) (index.Index, e
 		return nil, ErrInsufficientLockLevel
 	}
 
-	ix, err := dw.indexClient.Index(dw.acct.ID, id)
+	ix, err := dw.indexClient.Index(ctx, dw.acct.ID, id)
 	if err != nil {
 		return nil, err
 	}

@@ -16,6 +16,7 @@ package testbase
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"os"
@@ -61,7 +62,7 @@ func (d *MockDataSet) ID() string {
 	return d.record.ID
 }
 
-func (d *MockDataSet) MetaResource() (io.ReadCloser, error) {
+func (d *MockDataSet) MetaResource(ctx context.Context) (io.ReadCloser, error) {
 	if d.meta == nil {
 		return nil, errors.New("no meta resource in mock dataset")
 	}
@@ -69,8 +70,8 @@ func (d *MockDataSet) MetaResource() (io.ReadCloser, error) {
 	return io.NopCloser(bytes.NewReader(d.meta)), nil
 }
 
-func (d *MockDataSet) DecodeMetaResource(obj any) error {
-	r, err := d.MetaResource()
+func (d *MockDataSet) DecodeMetaResource(ctx context.Context, obj any) error {
+	r, err := d.MetaResource(ctx)
 	if err != nil {
 		return err
 	}
@@ -81,12 +82,12 @@ func (d *MockDataSet) Resources() []string {
 	return []string{}
 }
 
-func (d *MockDataSet) Resource(id string) (io.ReadCloser, error) {
+func (d *MockDataSet) Resource(ctx context.Context, id string) (io.ReadCloser, error) {
 	return nil, errors.New("resource retrieval not supported in mock dataset")
 }
 
-func (d *MockDataSet) DecodeResource(id string, obj any) error {
-	r, err := d.Resource(id)
+func (d *MockDataSet) DecodeResource(ctx context.Context, id string, obj any) error {
+	r, err := d.Resource(ctx, id)
 	if err != nil {
 		return err
 	}

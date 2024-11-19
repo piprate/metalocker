@@ -63,7 +63,7 @@ func InitLedgerRoutes(rg *gin.RouterGroup, ledger model.Ledger, offChainVault va
 func (h *LedgerHandler) GetLedgerGenesisHandler(c *gin.Context) {
 	log := apibase.CtxLogger(c)
 
-	b, err := h.ledger.GetGenesisBlock()
+	b, err := h.ledger.GetGenesisBlock(c)
 	if err != nil {
 		log.Err(err).Msg("Error when getting genesis block state")
 		_ = c.AbortWithError(http.StatusInternalServerError, err)
@@ -76,7 +76,7 @@ func (h *LedgerHandler) GetLedgerGenesisHandler(c *gin.Context) {
 func (h *LedgerHandler) GetLedgerTopHandler(c *gin.Context) {
 	log := apibase.CtxLogger(c)
 
-	b, err := h.ledger.GetTopBlock()
+	b, err := h.ledger.GetTopBlock(c)
 	if err != nil {
 		log.Err(err).Msg("Error when getting top block state")
 		_ = c.AbortWithError(http.StatusInternalServerError, err)
@@ -118,7 +118,7 @@ func (h *LedgerHandler) GetLedgerChainHandler(c *gin.Context) {
 		return
 	}
 
-	chain, err := h.ledger.GetChain(startBlockNumber, depth)
+	chain, err := h.ledger.GetChain(c, startBlockNumber, depth)
 	if err != nil {
 		log.Err(err).Msg("Error when getting block chain")
 		_ = c.AbortWithError(http.StatusInternalServerError, err)
@@ -150,7 +150,7 @@ func (h *LedgerHandler) GetLedgerBlockHandler(c *gin.Context) {
 		return
 	}
 
-	b, err := h.ledger.GetBlock(blockNumber)
+	b, err := h.ledger.GetBlock(c, blockNumber)
 	if err != nil {
 		log.Err(err).Msg("Error when reading a block")
 		_ = c.AbortWithError(http.StatusInternalServerError, err)
@@ -177,7 +177,7 @@ func (h *LedgerHandler) GetLedgerBlockRecordsHandler(c *gin.Context) {
 		return
 	}
 
-	recs, err := h.ledger.GetBlockRecords(blockNumber)
+	recs, err := h.ledger.GetBlockRecords(c, blockNumber)
 	if err != nil {
 		log.Err(err).Msg("Error when reading block records")
 		_ = c.AbortWithError(http.StatusInternalServerError, err)

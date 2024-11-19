@@ -15,6 +15,7 @@
 package model_test
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
@@ -34,7 +35,7 @@ type MockLedger struct {
 	errorAtGetRecord         error
 }
 
-func (ml *MockLedger) GetRecord(rid string) (*Record, error) {
+func (ml *MockLedger) GetRecord(ctx context.Context, rid string) (*Record, error) {
 	if ml.errorAtGetRecord != nil {
 		return nil, ml.errorAtGetRecord
 	} else {
@@ -42,7 +43,7 @@ func (ml *MockLedger) GetRecord(rid string) (*Record, error) {
 	}
 }
 
-func (ml *MockLedger) GetDataAssetState(id string) (DataAssetState, error) {
+func (ml *MockLedger) GetDataAssetState(ctx context.Context, id string) (DataAssetState, error) {
 	if ml.errorAtGetDataAssetState != nil {
 		return 0, ml.errorAtGetDataAssetState
 	} else {
@@ -50,7 +51,7 @@ func (ml *MockLedger) GetDataAssetState(id string) (DataAssetState, error) {
 	}
 }
 
-func (ml *MockLedger) GetRecordState(rid string) (*RecordState, error) {
+func (ml *MockLedger) GetRecordState(ctx context.Context, rid string) (*RecordState, error) {
 	return &RecordState{
 		Status: ml.status,
 	}, nil
@@ -77,7 +78,9 @@ func TestVerifyAccessToken(t *testing.T) {
 		errorAtGetDataAssetState: errors.New("some error"),
 	}
 
-	assert.False(t, VerifyAccessToken("", "asset-id", time.Now().Unix(), 30, verifier))
+	ctx := context.Background()
+
+	assert.False(t, VerifyAccessToken(ctx, "", "asset-id", time.Now().Unix(), 30, verifier))
 
 	// test empty access token, data asset state not found
 
@@ -85,11 +88,11 @@ func TestVerifyAccessToken(t *testing.T) {
 		dataAssetState: DataAssetStateNotFound,
 	}
 
-	assert.True(t, VerifyAccessToken("", "asset-id", time.Now().Unix(), 30, verifier))
+	assert.True(t, VerifyAccessToken(ctx, "", "asset-id", time.Now().Unix(), 30, verifier))
 
 	// bad asset token
 
-	assert.False(t, VerifyAccessToken("bad.format", "asset-id", time.Now().Unix(), 30, verifier))
+	assert.False(t, VerifyAccessToken(ctx, "bad.format", "asset-id", time.Now().Unix(), 30, verifier))
 
 	// build requesting commitment
 
@@ -122,12 +125,12 @@ func TestVerifyAccessToken(t *testing.T) {
 
 	now := time.Unix(1020, 0).UTC().Unix()
 
-	res := VerifyAccessToken(at, dataAssetID, now, 30, verifier)
+	res := VerifyAccessToken(ctx, at, dataAssetID, now, 30, verifier)
 	assert.True(t, res)
 
 	// verify token (token expired)
 
-	res = VerifyAccessToken(at, dataAssetID, now, 10, verifier)
+	res = VerifyAccessToken(ctx, at, dataAssetID, now, 10, verifier)
 	assert.False(t, res)
 
 	// verify token (bad public key)
@@ -135,7 +138,7 @@ func TestVerifyAccessToken(t *testing.T) {
 	s := strings.Split(at, ".")
 	s[2] = "bad_key"
 
-	res = VerifyAccessToken(strings.Join(s, "."), dataAssetID, now, 30, verifier)
+	res = VerifyAccessToken(ctx, strings.Join(s, "."), dataAssetID, now, 30, verifier)
 	assert.False(t, res)
 
 	// verify token (bad signature format)
@@ -143,7 +146,7 @@ func TestVerifyAccessToken(t *testing.T) {
 	s = strings.Split(at, ".")
 	s[4] = "bad_sig"
 
-	res = VerifyAccessToken(strings.Join(s, "."), dataAssetID, now, 30, verifier)
+	res = VerifyAccessToken(ctx, strings.Join(s, "."), dataAssetID, now, 30, verifier)
 	assert.False(t, res)
 
 	// verify token (invalid signature)
@@ -151,19 +154,19 @@ func TestVerifyAccessToken(t *testing.T) {
 	s = strings.Split(at, ".")
 	s[4] = base64.StdEncoding.EncodeToString([]byte("bad_sig"))
 
-	res = VerifyAccessToken(strings.Join(s, "."), dataAssetID, now, 30, verifier)
+	res = VerifyAccessToken(ctx, strings.Join(s, "."), dataAssetID, now, 30, verifier)
 	assert.False(t, res)
 
 	// verify token (failed to read the record)
 
 	verifier.errorAtGetRecord = errors.New("some error")
 
-	res = VerifyAccessToken(at, dataAssetID, now, 30, verifier)
+	res = VerifyAccessToken(ctx, at, dataAssetID, now, 30, verifier)
 	assert.False(t, res)
 
 	verifier.errorAtGetRecord = ErrRecordNotFound
 
-	res = VerifyAccessToken(at, dataAssetID, now, 30, verifier)
+	res = VerifyAccessToken(ctx, at, dataAssetID, now, 30, verifier)
 	assert.False(t, res)
 
 	verifier.errorAtGetRecord = nil
@@ -172,7 +175,7 @@ func TestVerifyAccessToken(t *testing.T) {
 
 	now = time.Unix(1027, 0).UTC().Unix()
 
-	res = VerifyAccessToken(at, dataAssetID, now, 30, verifier)
+	res = VerifyAccessToken(ctx, at, dataAssetID, now, 30, verifier)
 	assert.False(t, res)
 
 	// verify token (status == revoked)
@@ -180,7 +183,7 @@ func TestVerifyAccessToken(t *testing.T) {
 	now = time.Unix(1020, 0).UTC().Unix()
 	verifier.rec.Status = StatusRevoked
 
-	res = VerifyAccessToken(at, dataAssetID, now, 30, verifier)
+	res = VerifyAccessToken(ctx, at, dataAssetID, now, 30, verifier)
 	assert.False(t, res)
 
 	verifier.rec.Status = StatusPublished
@@ -189,13 +192,13 @@ func TestVerifyAccessToken(t *testing.T) {
 
 	badToken := GenerateAccessToken(recordID, leaseID, tokenTime, leaseExpiryTime.Unix()+1)
 
-	res = VerifyAccessToken(badToken, dataAssetID, now, 30, verifier)
+	res = VerifyAccessToken(ctx, badToken, dataAssetID, now, 30, verifier)
 	assert.False(t, res)
 
 	// verify token (asset not found)
 
 	verifier.rec.DataAssets[0] = "123"
 
-	res = VerifyAccessToken(at, dataAssetID, now, 30, verifier)
+	res = VerifyAccessToken(ctx, at, dataAssetID, now, 30, verifier)
 	assert.False(t, res)
 }

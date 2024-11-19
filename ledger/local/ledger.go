@@ -16,6 +16,7 @@ package local
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
@@ -83,7 +84,7 @@ func (b *LocalBlock) Seal() error {
 	return nil
 }
 
-func NewBoltLedger(dbFilepath string, ns notification.Service, maxRecordsPerBlock int, blockCheckInterval uint64) (*BoltLedger, error) {
+func NewBoltLedger(ctx context.Context, dbFilepath string, ns notification.Service, maxRecordsPerBlock int, blockCheckInterval uint64) (*BoltLedger, error) {
 	log.Info().Str("db", dbFilepath).Uint64("interval", blockCheckInterval).Msg("Initialising local ledger")
 
 	// open Bolt DB
@@ -104,9 +105,9 @@ func NewBoltLedger(dbFilepath string, ns notification.Service, maxRecordsPerBloc
 	}
 
 	// generate genesis block, if it doesn't exist
-	if _, err = bl.GetGenesisBlock(); err != nil {
+	if _, err = bl.GetGenesisBlock(ctx); err != nil {
 		if errors.Is(err, model.ErrBlockNotFound) {
-			if err = generateNewBlock(bl, ""); err != nil {
+			if err = generateNewBlock(ctx, bl, ""); err != nil {
 				return nil, err
 			}
 		} else {
@@ -145,7 +146,7 @@ func NewBoltLedger(dbFilepath string, ns notification.Service, maxRecordsPerBloc
 	return bl, nil
 }
 
-func (bl *BoltLedger) SubmitRecord(r *model.Record) error {
+func (bl *BoltLedger) SubmitRecord(ctx context.Context, r *model.Record) error {
 
 	if err := r.Validate(); err != nil {
 		return err
@@ -156,7 +157,7 @@ func (bl *BoltLedger) SubmitRecord(r *model.Record) error {
 	return nil
 }
 
-func (bl *BoltLedger) GetRecord(rid string) (*model.Record, error) {
+func (bl *BoltLedger) GetRecord(ctx context.Context, rid string) (*model.Record, error) {
 
 	var recordBytes []byte
 	var r model.Record
@@ -207,7 +208,7 @@ func (bl *BoltLedger) GetRecord(rid string) (*model.Record, error) {
 	}
 }
 
-func (bl *BoltLedger) GetRecordState(rid string) (*model.RecordState, error) {
+func (bl *BoltLedger) GetRecordState(ctx context.Context, rid string) (*model.RecordState, error) {
 	b, err := bl.client.FetchBytes(RecordStatesKey, rid)
 	if err != nil {
 		return nil, err
@@ -225,7 +226,7 @@ func (bl *BoltLedger) GetRecordState(rid string) (*model.RecordState, error) {
 	}
 }
 
-func (bl *BoltLedger) GetBlock(bn int64) (*model.Block, error) {
+func (bl *BoltLedger) GetBlock(ctx context.Context, bn int64) (*model.Block, error) {
 	blockKey := utils.Int64ToString(bn)
 	b, err := bl.client.FetchBytes(BlocksKey, blockKey)
 	if err != nil {
@@ -244,7 +245,7 @@ func (bl *BoltLedger) GetBlock(bn int64) (*model.Block, error) {
 	return &bb, nil
 }
 
-func (bl *BoltLedger) GetBlockRecords(bn int64) ([][]string, error) {
+func (bl *BoltLedger) GetBlockRecords(ctx context.Context, bn int64) ([][]string, error) {
 	blockKey := utils.Int64ToString(bn)
 	resMap := make(map[int][]string)
 	err := bl.client.DB.View(func(tx *bbolt.Tx) error {
@@ -282,11 +283,11 @@ func (bl *BoltLedger) GetBlockRecords(bn int64) ([][]string, error) {
 	return res, nil
 }
 
-func (bl *BoltLedger) GetGenesisBlock() (*model.Block, error) {
-	return bl.GetBlock(0)
+func (bl *BoltLedger) GetGenesisBlock(ctx context.Context) (*model.Block, error) {
+	return bl.GetBlock(ctx, 0)
 }
 
-func (bl *BoltLedger) GetTopBlock() (*model.Block, error) {
+func (bl *BoltLedger) GetTopBlock(ctx context.Context) (*model.Block, error) {
 	var blockBytes []byte
 	err := bl.client.DB.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(ControlsKey))
@@ -325,7 +326,7 @@ func (bl *BoltLedger) GetTopBlock() (*model.Block, error) {
 	return &bb, nil
 }
 
-func (bl *BoltLedger) GetChain(startNumber int64, depth int) ([]*model.Block, error) {
+func (bl *BoltLedger) GetChain(ctx context.Context, startNumber int64, depth int) ([]*model.Block, error) {
 	result := make([]*model.Block, 0)
 	var i int64 = 0
 	err := bl.client.DB.View(func(tx *bbolt.Tx) error {
@@ -359,7 +360,7 @@ func (bl *BoltLedger) GetChain(startNumber int64, depth int) ([]*model.Block, er
 	return result, nil
 }
 
-func (bl *BoltLedger) GetDataAssetState(id string) (model.DataAssetState, error) {
+func (bl *BoltLedger) GetDataAssetState(ctx context.Context, id string) (model.DataAssetState, error) {
 
 	res := model.DataAssetStateKeep
 	err := bl.client.DB.View(func(tx *bbolt.Tx) error {
@@ -382,7 +383,7 @@ func (bl *BoltLedger) GetDataAssetState(id string) (model.DataAssetState, error)
 	return res, nil
 }
 
-func (bl *BoltLedger) GetAssetHead(headID string) (*model.Record, error) {
+func (bl *BoltLedger) GetAssetHead(ctx context.Context, headID string) (*model.Record, error) {
 	var recordBytes []byte
 	var r model.Record
 	found := false
@@ -541,6 +542,7 @@ func (bl *BoltLedger) startLoop(blockCheckInterval uint64) {
 			bl.control = nil
 		}()
 
+		ctx := context.Background()
 		sampledLog := log.Sample(&zerolog.BasicSampler{N: 10})
 	STOP:
 		for {
@@ -558,14 +560,14 @@ func (bl *BoltLedger) startLoop(blockCheckInterval uint64) {
 				}
 
 				if bl.instantMode || len(bl.pendingRecords) >= bl.maxRecordsPerBlock {
-					if err := generateNewBlock(bl, ""); err != nil {
+					if err := generateNewBlock(ctx, bl, ""); err != nil {
 						log.Err(err).Msg("Failed to generate new block")
 					}
 				}
 			case <-bl.ticks:
 				sampledLog.Debug().Msg("Block generation check")
 				if len(bl.pendingRecords) > 0 {
-					if err := generateNewBlock(bl, ""); err != nil {
+					if err := generateNewBlock(ctx, bl, ""); err != nil {
 						log.Err(err).Msg("Failed to generate new block")
 					}
 				}
@@ -842,11 +844,11 @@ func generateNonce(seed string, size int) ([]byte, error) {
 	return nonce, nil
 }
 
-func generateNewBlock(bl *BoltLedger, seed string) error {
+func generateNewBlock(ctx context.Context, bl *BoltLedger, seed string) error {
 
 	records := make([]*model.Record, 0)
 	for _, id := range bl.pendingRecords {
-		r, err := bl.GetRecord(id)
+		r, err := bl.GetRecord(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -854,7 +856,7 @@ func generateNewBlock(bl *BoltLedger, seed string) error {
 		// validate record
 
 		if r.Operation == model.OpTypeLeaseRevocation {
-			subj, err := bl.GetRecord(r.SubjectRecord)
+			subj, err := bl.GetRecord(ctx, r.SubjectRecord)
 			if err != nil {
 				return err
 			}
@@ -876,7 +878,7 @@ func generateNewBlock(bl *BoltLedger, seed string) error {
 	// find the top block
 
 	prevBlockHash := ""
-	prevBlock, err := bl.GetTopBlock()
+	prevBlock, err := bl.GetTopBlock(ctx)
 	if err != nil && !errors.Is(err, model.ErrBlockNotFound) {
 		return err
 	}
@@ -922,13 +924,13 @@ func generateNewBlock(bl *BoltLedger, seed string) error {
 	return nil
 }
 
-func CreateLedgerConnector(params ledger.Parameters, ns notification.Service, resolver cmdbase.ParameterResolver) (model.Ledger, error) {
+func CreateLedgerConnector(ctx context.Context, params ledger.Parameters, ns notification.Service, resolver cmdbase.ParameterResolver) (model.Ledger, error) {
 	dbFilepath, ok := params["dbFile"].(string)
 	if !ok {
 		return nil, errors.New("parameter not found: dbfile. Can't start ledger connector")
 	}
 	blockCheckInterval, _ := params["interval"].(float64)
 
-	bl, err := NewBoltLedger(dbFilepath, ns, 1000, uint64(blockCheckInterval))
+	bl, err := NewBoltLedger(ctx, dbFilepath, ns, 1000, uint64(blockCheckInterval))
 	return bl, err
 }

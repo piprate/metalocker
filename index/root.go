@@ -15,6 +15,7 @@
 package index
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -72,12 +73,12 @@ type (
 	RootIndex interface {
 		Index
 
-		GetRecord(recordID string) (*RecordState, error)
-		TraverseRecords(lockerFilter, participantFilter string, vFunc RecordVisitor, maxRecords uint64) error
-		TraverseVariants(lockerFilter, participantFilter string, vFunc VariantVisitor, includeHistory bool, maxVariants uint64) error
-		TraverseAssetRecords(assetID string, vFunc AssetRecordVisitor, maxRecords uint64) error
-		GetRecordsByImpressionID(impID string, lockerFilter map[string]bool) ([]string, error)
-		GetVariant(variantID string, includeHistory bool) (*VariantRecordState, []*VariantRecordState, error)
+		GetRecord(ctx context.Context, recordID string) (*RecordState, error)
+		TraverseRecords(ctx context.Context, lockerFilter, participantFilter string, vFunc RecordVisitor, maxRecords uint64) error
+		TraverseVariants(ctx context.Context, lockerFilter, participantFilter string, vFunc VariantVisitor, includeHistory bool, maxVariants uint64) error
+		TraverseAssetRecords(ctx context.Context, assetID string, vFunc AssetRecordVisitor, maxRecords uint64) error
+		GetRecordsByImpressionID(ctx context.Context, impID string, lockerFilter map[string]bool) ([]string, error)
+		GetVariant(ctx context.Context, variantID string, includeHistory bool) (*VariantRecordState, []*VariantRecordState, error)
 	}
 
 	RootIndexParameters struct {

@@ -15,6 +15,7 @@
 package caller
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,7 +27,7 @@ import (
 	"github.com/piprate/metalocker/vaults"
 )
 
-func (c *MetaLockerHTTPCaller) GetBlob(res *model.StoredResource, accessToken string) (io.ReadCloser, error) {
+func (c *MetaLockerHTTPCaller) GetBlob(ctx context.Context, res *model.StoredResource, accessToken string) (io.ReadCloser, error) {
 	return vaults.ReceiveBlob(res, accessToken, func(res *model.StoredResource, accessToken string) (io.ReadCloser, error) {
 		url := fmt.Sprintf("/v1/vault/%s/serve", res.Vault)
 
@@ -59,7 +60,7 @@ func (c *MetaLockerHTTPCaller) GetBlob(res *model.StoredResource, accessToken st
 	})
 }
 
-func (c *MetaLockerHTTPCaller) PurgeBlob(res *model.StoredResource) error {
+func (c *MetaLockerHTTPCaller) PurgeBlob(ctx context.Context, res *model.StoredResource) error {
 	url := fmt.Sprintf("/v1/vault/%s/purge", res.Vault)
 
 	truncatedRes := model.StoredResource{
@@ -86,7 +87,7 @@ func (c *MetaLockerHTTPCaller) PurgeBlob(res *model.StoredResource) error {
 	}
 }
 
-func (c *MetaLockerHTTPCaller) SendBlob(data io.Reader, cleartext bool, vaultName string) (*model.StoredResource, error) {
+func (c *MetaLockerHTTPCaller) SendBlob(ctx context.Context, data io.Reader, cleartext bool, vaultName string) (*model.StoredResource, error) {
 	vaultMap, err := c.GetVaultMap()
 	if err != nil {
 		return nil, err
@@ -128,7 +129,7 @@ func (c *MetaLockerHTTPCaller) SendBlob(data io.Reader, cleartext bool, vaultNam
 	})
 }
 
-func (c *MetaLockerHTTPCaller) GetDataAssetState(id string) (model.DataAssetState, error) {
+func (c *MetaLockerHTTPCaller) GetDataAssetState(ctx context.Context, id string) (model.DataAssetState, error) {
 	var rsp map[string]model.DataAssetState
 	err := c.client.LoadContents(http.MethodGet, fmt.Sprintf("/v1/ledger/data-asset/%s/state", id), nil, &rsp)
 	if err != nil {

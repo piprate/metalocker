@@ -15,6 +15,7 @@
 package model
 
 import (
+	"context"
 	"errors"
 	"io"
 )
@@ -45,15 +46,15 @@ type (
 	AccessVerifier interface {
 		// GetRecord returns a ledger record by its ID. Returns ErrRecordNotFound error
 		// if record was not found.
-		GetRecord(rid string) (*Record, error)
+		GetRecord(ctx context.Context, rid string) (*Record, error)
 		// GetDataAssetState returns the state of the given data asset. Returns
 		// ErrDataAssetNotFound error if data asset not found.
-		GetDataAssetState(id string) (DataAssetState, error)
+		GetDataAssetState(ctx context.Context, id string) (DataAssetState, error)
 		// GetRecordState returns ledger record state for the given
 		// record ID. It's useful to identify if the record
 		// was published on the ledger (and its block ID) or if the lease
 		// behind the record was revoked.
-		GetRecordState(rid string) (*RecordState, error)
+		GetRecordState(ctx context.Context, rid string) (*RecordState, error)
 	}
 
 	// Ledger is an interface to a MetaLocker ledger.
@@ -62,36 +63,36 @@ type (
 
 		// SubmitRecord adds a ledger records into the queue to be
 		// included into the next block.
-		SubmitRecord(r *Record) error
+		SubmitRecord(ctx context.Context, r *Record) error
 		// GetRecord returns a ledger record by its ID. Returns ErrRecordNotFound error
 		// if record was not found.
-		GetRecord(rid string) (*Record, error)
+		GetRecord(ctx context.Context, rid string) (*Record, error)
 		// GetRecordState returns ledger record state for the given
 		// record ID. It's useful to identify if the record
 		// was published on the ledger (and its block ID) or if the lease
 		// behind the record was revoked.
-		GetRecordState(rid string) (*RecordState, error)
+		GetRecordState(ctx context.Context, rid string) (*RecordState, error)
 		// GetBlock returns a block definition for the given block number.
-		GetBlock(bn int64) (*Block, error)
+		GetBlock(ctx context.Context, bn int64) (*Block, error)
 		// GetBlockRecords returns a list of all ledger records included
 		// in the block as an array of arrays of strings:
 		//     [record_id, routing_key, key_index]*
 		// Returns ErrBlockNotFound error if block was not found.
-		GetBlockRecords(bn int64) ([][]string, error)
+		GetBlockRecords(ctx context.Context, bn int64) ([][]string, error)
 		// GetGenesisBlock returns the definition of the genesis block.
 		// If there is no genesis block yet, it will return nil as a block.
-		GetGenesisBlock() (*Block, error)
+		GetGenesisBlock(ctx context.Context) (*Block, error)
 		// GetTopBlock returns the definition of the top (latest) block.
 		// If there are no blocks yet, it will return nil as a block.
-		GetTopBlock() (*Block, error)
+		GetTopBlock(ctx context.Context) (*Block, error)
 		// GetChain returns a sequence of block definitions of
 		// the given length (depth), starting from the given block id
-		GetChain(startNumber int64, depth int) ([]*Block, error)
+		GetChain(ctx context.Context, startNumber int64, depth int) ([]*Block, error)
 		// GetDataAssetState returns the state of the given data asset. Returns
 		// ErrDataAssetNotFound error if data asset not found.
-		GetDataAssetState(id string) (DataAssetState, error)
+		GetDataAssetState(ctx context.Context, id string) (DataAssetState, error)
 		// GetAssetHead returns the record of type = head that defines the current asset head for the given ID.
-		GetAssetHead(headID string) (*Record, error)
+		GetAssetHead(ctx context.Context, headID string) (*Record, error)
 	}
 )
 

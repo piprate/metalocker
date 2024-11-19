@@ -38,7 +38,7 @@ func ExportWallet(ctx context.Context, dw wallet.DataWallet, destDir, lockerID, 
 		return err
 	}
 
-	err = rootIndex.TraverseRecords(lockerID, participantID, func(r *index.RecordState) error {
+	err = rootIndex.TraverseRecords(ctx, lockerID, participantID, func(r *index.RecordState) error {
 		if r.Status == model.StatusRevoked {
 			// skip revoked records
 			return nil
@@ -84,12 +84,12 @@ func ExportWallet(ctx context.Context, dw wallet.DataWallet, destDir, lockerID, 
 			return err
 		}
 
-		fl, err := datatypes.NewRenderer(ds)
+		fl, err := datatypes.NewRenderer(ctx, ds)
 		if err != nil {
 			return err
 		}
 
-		err = fl.ExportToDisk(dest, true)
+		err = fl.ExportToDisk(ctx, dest, true)
 		if err != nil {
 			return err
 		}

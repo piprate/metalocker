@@ -70,7 +70,7 @@ func (ixf *IndexUpdater) AddIndexes(ctx context.Context, dw DataWallet, indexes 
 
 		sub := scanner.NewIndexSubscription(iw.ID(), recordConsumer)
 
-		lockerStates, err := iw.LockerStates()
+		lockerStates, err := iw.LockerStates(ctx)
 		if err != nil {
 			return err
 		}
@@ -115,7 +115,7 @@ func (ixf *IndexUpdater) RemoveIndex(indexID string) error {
 
 func (ixf *IndexUpdater) StartSyncOnEvents(ns notification.Service, syncOnStart bool, forceSyncInterval time.Duration) error {
 	if syncOnStart {
-		if err := ixf.Sync(); err != nil {
+		if err := ixf.Sync(context.Background()); err != nil {
 			return err
 		}
 	}
@@ -130,6 +130,7 @@ func (ixf *IndexUpdater) StartSyncOnEvents(ns notification.Service, syncOnStart 
 		defer func() {
 			ixf.controlCh = nil
 		}()
+		ctx := context.Background()
 	STOP:
 		for {
 			select {
@@ -138,7 +139,7 @@ func (ixf *IndexUpdater) StartSyncOnEvents(ns notification.Service, syncOnStart 
 					log.Warn().Msg("Attempted to sync an index updater in a closing state. Quitting...")
 					break STOP
 				}
-				if err := ixf.Sync(); err != nil {
+				if err := ixf.Sync(ctx); err != nil {
 					log.Err(err).Msg("Error when pulling latest records into the local wallet index")
 				}
 			case <-ixf.controlCh:
@@ -233,7 +234,7 @@ func (ixf *IndexUpdater) Close() error {
 	return nil
 }
 
-func (ixf *IndexUpdater) Sync() error {
+func (ixf *IndexUpdater) Sync(ctx context.Context) error {
 	ixf.syncMutex.Lock()
 	defer ixf.syncMutex.Unlock()
 
@@ -241,7 +242,7 @@ func (ixf *IndexUpdater) Sync() error {
 
 	log.Debug().Msg("Sync indexes in Index Updater")
 
-	_, err := ixf.scanner.Scan()
+	_, err := ixf.scanner.Scan(ctx)
 
 	return err
 }
@@ -304,7 +305,7 @@ func (c *consumer) ConsumeBlock(ctx context.Context, indexID string, partyLookup
 		if r.Operation == model.OpTypeLease {
 			if r.Status == model.StatusPublished {
 
-				opRecBytes, err := c.offChainStorage.GetOperation(r.OperationAddress)
+				opRecBytes, err := c.offChainStorage.GetOperation(ctx, r.OperationAddress)
 				if err != nil {
 					log.Error().Str("rid", r.ID).Err(err).Msg("Failed to read ledger operation")
 					return err
@@ -334,7 +335,7 @@ func (c *consumer) ConsumeBlock(ctx context.Context, indexID string, partyLookup
 				ds := dataset.NewDataSetImpl(r, lease, n.Block, lockerID, participantID, c.blobManager)
 
 				if lease.Impression.MetaResource.ContentType == AccountUpdateType {
-					err = c.processAccountUpdateMessage(ds)
+					err = c.processAccountUpdateMessage(ctx, ds)
 					if err != nil {
 						if errors.Is(err, scanner.ErrIndexResultPending) {
 							returnError = err
@@ -344,19 +345,19 @@ func (c *consumer) ConsumeBlock(ctx context.Context, indexID string, partyLookup
 					}
 				}
 
-				if err = iw.AddLease(ds, effectiveBlock); err != nil {
+				if err = iw.AddLease(ctx, ds, effectiveBlock); err != nil {
 					return err
 				}
 			} else if r.Status == model.StatusRevoked {
 				// we want to add revoked leases for the record
 				ds := dataset.NewRevokedDataSetImpl(r, n.Block, lockerID, participantID)
-				if err := iw.AddLease(ds, effectiveBlock); err != nil {
+				if err := iw.AddLease(ctx, ds, effectiveBlock); err != nil {
 					return err
 				}
 			}
 		} else if r.Operation == model.OpTypeLeaseRevocation {
 			ds := dataset.NewRevokedDataSetImpl(r, n.Block, lockerID, participantID)
-			if err := iw.AddLeaseRevocation(ds); err != nil {
+			if err := iw.AddLeaseRevocation(ctx, ds); err != nil {
 				return err
 			}
 		}
@@ -371,7 +372,7 @@ func (c *consumer) addLocker(ctx context.Context, dw DataWallet, lockerID string
 	if err != nil {
 		return err
 	}
-	if err = c.index.AddLockerState(dw.ID(), l.ID(), l.Raw().FirstBlock); err != nil {
+	if err = c.index.AddLockerState(ctx, dw.ID(), l.ID(), l.Raw().FirstBlock); err != nil {
 		if errors.Is(err, index.ErrLockerStateExists) {
 			log.Warn().Str("lid", lockerID).Msg("Attempted to add a locker state that already exists in the index")
 		} else {
@@ -408,7 +409,7 @@ func (c *consumer) NotifyScanCompleted(topBlock int64) error {
 
 	if topBlock > 0 {
 		// top block was updated
-		if err := c.index.UpdateTopBlock(topBlock); err != nil {
+		if err := c.index.UpdateTopBlock(ctx, topBlock); err != nil {
 			return err
 		}
 	}
@@ -487,10 +488,10 @@ func (c *consumer) SetSubscription(sub scanner.Subscription) {
 	c.sub = sub.(*scanner.IndexSubscription)
 }
 
-func (c *consumer) processAccountUpdateMessage(ds model.DataSet) error {
+func (c *consumer) processAccountUpdateMessage(ctx context.Context, ds model.DataSet) error {
 
 	var msg AccountUpdate
-	if err := ds.DecodeMetaResource(&msg); err != nil {
+	if err := ds.DecodeMetaResource(ctx, &msg); err != nil {
 		return err
 	}
 
@@ -523,7 +524,7 @@ func ForceSyncRootIndex(dw DataWallet) error {
 
 	// find new lockers
 
-	walletLockerStates, err := iw.LockerStates()
+	walletLockerStates, err := iw.LockerStates(ctx)
 	if err != nil {
 		return err
 	}
@@ -539,7 +540,7 @@ func ForceSyncRootIndex(dw DataWallet) error {
 
 	for _, l := range lockerList {
 		if _, found := walletLockerMap[l.ID]; !found {
-			if err = iw.AddLockerState(dw.ID(), l.ID, l.FirstBlock); err != nil {
+			if err = iw.AddLockerState(ctx, dw.ID(), l.ID, l.FirstBlock); err != nil {
 				return err
 			}
 		}
@@ -550,7 +551,7 @@ func ForceSyncRootIndex(dw DataWallet) error {
 		return err
 	}
 
-	err = updated.Sync()
+	err = updated.Sync(ctx)
 	if err != nil {
 		return err
 	}

@@ -15,6 +15,7 @@
 package model
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -31,9 +32,9 @@ var (
 // dataset lease expired, or it was revoked, or for any other reason that prohibits access to the given
 // operation.
 type OffChainStorage interface {
-	GetOperation(opAddr string) ([]byte, error)
-	SendOperation(opData []byte) (string, error)
-	PurgeOperation(opAddr string) error
+	GetOperation(ctx context.Context, opAddr string) ([]byte, error)
+	SendOperation(ctx context.Context, opData []byte) (string, error)
+	PurgeOperation(ctx context.Context, opAddr string) error
 }
 
 // Lease is a dataset lease as a MetaLocker operation. This lease is stored in OffChainStorage.

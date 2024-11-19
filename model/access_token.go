@@ -16,6 +16,7 @@ package model
 
 import (
 	"bytes"
+	"context"
 	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/base64"
@@ -45,12 +46,12 @@ var (
 	DefaultMaxDistanceSeconds int64 = 5 * 60
 )
 
-func VerifyAccessToken(at, dataAssetID string, now, maxDistanceSeconds int64, ledger AccessVerifier) bool {
+func VerifyAccessToken(ctx context.Context, at, dataAssetID string, now, maxDistanceSeconds int64, ledger AccessVerifier) bool {
 	if at == "" {
 
 		// check if this data asset isn't attached to any leases yet
 
-		state, err := ledger.GetDataAssetState(dataAssetID)
+		state, err := ledger.GetDataAssetState(ctx, dataAssetID)
 		if err != nil {
 			log.Err(err).Str("daid", dataAssetID).Msg("Error when reading data asset state from ledger")
 			return false
@@ -110,7 +111,7 @@ func VerifyAccessToken(at, dataAssetID string, now, maxDistanceSeconds int64, le
 
 	// verify that the requester has access to the relevant record
 
-	rec, err := ledger.GetRecord(recordID)
+	rec, err := ledger.GetRecord(ctx, recordID)
 	if err != nil {
 		if !errors.Is(err, ErrRecordNotFound) {
 			log.Err(err).Str("rid", recordID).Msg("Error when reading record from ledger")

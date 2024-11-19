@@ -15,6 +15,7 @@
 package vaults
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -46,27 +47,27 @@ func (lbm *LocalBlobManager) AddVault(v Vault, cfg *Config) {
 	}
 }
 
-func (lbm *LocalBlobManager) GetBlob(res *model.StoredResource, accessToken string) (io.ReadCloser, error) {
+func (lbm *LocalBlobManager) GetBlob(ctx context.Context, res *model.StoredResource, accessToken string) (io.ReadCloser, error) {
 	v, found := lbm.vaultMap[res.Vault]
 	if !found {
 		return nil, fmt.Errorf("vault not found: %s", res.Vault)
 	}
 
 	return ReceiveBlob(res, accessToken, func(res *model.StoredResource, accessToken string) (io.ReadCloser, error) {
-		return v.ServeBlob(res.StorageID(), res.Params, accessToken)
+		return v.ServeBlob(ctx, res.StorageID(), res.Params, accessToken)
 	})
 }
 
-func (lbm *LocalBlobManager) PurgeBlob(res *model.StoredResource) error {
+func (lbm *LocalBlobManager) PurgeBlob(ctx context.Context, res *model.StoredResource) error {
 	v, found := lbm.vaultMap[res.Vault]
 	if !found {
 		return fmt.Errorf("vault not found: %s", res.Vault)
 	}
 
-	return v.PurgeBlob(res.ID, res.Params)
+	return v.PurgeBlob(ctx, res.ID, res.Params)
 }
 
-func (lbm *LocalBlobManager) SendBlob(data io.Reader, cleartext bool, vaultName string) (*model.StoredResource, error) {
+func (lbm *LocalBlobManager) SendBlob(ctx context.Context, data io.Reader, cleartext bool, vaultName string) (*model.StoredResource, error) {
 	props, found := lbm.propMap[vaultName]
 	if !found {
 		return nil, fmt.Errorf("vault not found: %s", vaultName)
@@ -78,7 +79,7 @@ func (lbm *LocalBlobManager) SendBlob(data io.Reader, cleartext bool, vaultName 
 	}
 
 	return SendBlob(data, v.ID(), v.SSE() || cleartext, func(data io.Reader, vaultID string) (*model.StoredResource, error) {
-		return v.CreateBlob(data)
+		return v.CreateBlob(ctx, data)
 	})
 }
 

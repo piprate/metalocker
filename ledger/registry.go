@@ -15,6 +15,7 @@
 package ledger
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/piprate/metalocker/model"
@@ -23,7 +24,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type constructor func(Parameters, notification.Service, cmdbase.ParameterResolver) (model.Ledger, error)
+type constructor func(context.Context, Parameters, notification.Service, cmdbase.ParameterResolver) (model.Ledger, error)
 
 var ledgerConstructors = make(map[string]constructor)
 
@@ -35,7 +36,7 @@ func Register(ledgerType string, ctor constructor) {
 	ledgerConstructors[ledgerType] = ctor
 }
 
-func CreateLedgerConnector(cfg *Config, ns notification.Service, resolver cmdbase.ParameterResolver) (model.Ledger, error) {
+func CreateLedgerConnector(ctx context.Context, cfg *Config, ns notification.Service, resolver cmdbase.ParameterResolver) (model.Ledger, error) {
 
 	log.Info().Str("type", cfg.Type).Interface("params", cfg.Params).Msg("Creating ledger connector")
 
@@ -44,5 +45,5 @@ func CreateLedgerConnector(cfg *Config, ns notification.Service, resolver cmdbas
 		return nil, fmt.Errorf("ledger connector %q not known or loaded", cfg.Type)
 	}
 
-	return ctor(cfg.Params, ns, resolver)
+	return ctor(ctx, cfg.Params, ns, resolver)
 }

@@ -234,7 +234,7 @@ func NewIdentity(c *cli.Context) error {
 	}
 
 	if c.Bool("unilocker") {
-		tb, err := dataWallet.Services().Ledger().GetTopBlock()
+		tb, err := dataWallet.Services().Ledger().GetTopBlock(c.Context)
 		if err != nil {
 			return cli.Exit(err, OperationFailed)
 		}
@@ -528,7 +528,7 @@ func RecoverAccount(c *cli.Context) error {
 		return err
 	}
 
-	indexClient, err := WithPersonalIndexStore()(acct.ID, mlc)
+	indexClient, err := WithPersonalIndexStore()(c.Context, acct.ID, mlc)
 	if err != nil {
 		return err
 	}
@@ -615,7 +615,7 @@ func RecoverAccountSecondLevel(c *cli.Context) error {
 		return err
 	}
 
-	indexClient, err := WithPersonalIndexStore()(acct.ID, mlc)
+	indexClient, err := WithPersonalIndexStore()(c.Context, acct.ID, mlc)
 	if err != nil {
 		return err
 	}
@@ -730,7 +730,7 @@ func PurgeDeletedDataAssets(c *cli.Context) error {
 		return err
 	}
 
-	err = rootIndex.TraverseRecords(locker, "", func(r *index.RecordState) error {
+	err = rootIndex.TraverseRecords(c.Context, locker, "", func(r *index.RecordState) error {
 		if r.Status == model.StatusRevoked {
 			if err = dw.DataStore().PurgeDataAssets(c.Context, r.ID); err != nil {
 				if errors.Is(err, model.ErrBlobNotFound) {
@@ -792,7 +792,7 @@ func ListRecords(c *cli.Context) error {
 
 	data := make([][]string, 0)
 
-	err = rootIndex.TraverseRecords(locker, "", func(r *index.RecordState) error {
+	err = rootIndex.TraverseRecords(c.Context, locker, "", func(r *index.RecordState) error {
 		if r.Status == model.StatusPublished || includeRevokedLeases {
 			data = append(data, []string{r.LockerID, r.ParticipantID, r.ID, strconv.Itoa(int(r.Operation)), r.ImpressionID, r.ContentType, string(r.Status)})
 		}

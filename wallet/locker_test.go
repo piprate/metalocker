@@ -48,6 +48,6 @@ func TestLockerWrapper_Store(t *testing.T) {
 	require.NoError(t, f.Wait(time.Second*10))
 
 	var res map[string]string
-	require.NoError(t, f.DataSet().DecodeMetaResource(&res))
+	require.NoError(t, f.DataSet().DecodeMetaResource(ctx, &res))
 	assert.Equal(t, "Test Dataset", res["name"])
 }

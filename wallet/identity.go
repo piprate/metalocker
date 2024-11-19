@@ -99,7 +99,7 @@ func (iw *identityWrapper) NewLocker(ctx context.Context, name string, options .
 
 	opts.parties = append(opts.parties, model.Us(iw.DID(), opts.ourSeed))
 
-	tb, err := iw.wallet.nodeClient.Ledger().GetTopBlock()
+	tb, err := iw.wallet.nodeClient.Ledger().GetTopBlock(ctx)
 	if err != nil {
 		return nil, err
 	}

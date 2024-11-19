@@ -28,16 +28,16 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type IndexClientSourceFn func(userID string, httpCaller *caller.MetaLockerHTTPCaller) (index.Client, error)
+type IndexClientSourceFn func(ctx context.Context, userID string, httpCaller *caller.MetaLockerHTTPCaller) (index.Client, error)
 
 func WithIndexClient(indexClient index.Client) IndexClientSourceFn {
-	return func(userID string, httpCaller *caller.MetaLockerHTTPCaller) (index.Client, error) {
-		gb, err := httpCaller.GetGenesisBlock()
+	return func(ctx context.Context, userID string, httpCaller *caller.MetaLockerHTTPCaller) (index.Client, error) {
+		gb, err := httpCaller.GetGenesisBlock(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		if err = indexClient.Bind(gb.Hash); err != nil {
+		if err = indexClient.Bind(ctx, gb.Hash); err != nil {
 			return nil, err
 		}
 
@@ -162,7 +162,7 @@ func (rf *Factory) RegisterAccount(ctx context.Context, acctTemplate *account.Ac
 	}
 
 	if rf.indexClient == nil {
-		rf.indexClient, err = rf.indexClientSourceFn(acct.ID, httpCaller)
+		rf.indexClient, err = rf.indexClientSourceFn(ctx, acct.ID, httpCaller)
 		if err != nil {
 			return nil, recDetails, err
 		}
@@ -264,7 +264,7 @@ func (rf *Factory) loadRemoteWallet(ctx context.Context, authFn func(mlc *caller
 	}
 
 	if rf.indexClient == nil {
-		rf.indexClient, err = rf.indexClientSourceFn(acct.ID, httpCaller)
+		rf.indexClient, err = rf.indexClientSourceFn(ctx, acct.ID, httpCaller)
 		if err != nil {
 			return nil, err
 		}

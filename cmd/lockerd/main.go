@@ -108,7 +108,7 @@ func RunServer(c *cli.Context) error {
 	// start MetaLocker server
 
 	srv := node.NewMetaLockerServer(configDir)
-	if err = srv.InitServices(cfg, c.Bool("debug")); err != nil {
+	if err = srv.InitServices(c.Context, cfg, c.Bool("debug")); err != nil {
 		return err
 	}
 

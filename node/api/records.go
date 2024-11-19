@@ -26,7 +26,7 @@ import (
 func (h *LedgerHandler) GetLedgerRecordHandler(c *gin.Context) {
 	rid := c.Params.ByName("id")
 
-	rec, err := h.ledger.GetRecord(rid)
+	rec, err := h.ledger.GetRecord(c, rid)
 	if err != nil {
 		if errors.Is(err, model.ErrRecordNotFound) {
 			c.AbortWithStatus(http.StatusNotFound)
@@ -52,7 +52,7 @@ func (h *LedgerHandler) PostLedgerRecordHandler(c *gin.Context) {
 		return
 	}
 
-	err = h.ledger.SubmitRecord(&r)
+	err = h.ledger.SubmitRecord(c, &r)
 	if err != nil {
 		log.Err(err).Msg("Error when submitting ledger record")
 		_ = c.AbortWithError(http.StatusInternalServerError, err)
@@ -73,7 +73,7 @@ func (h *LedgerHandler) PostLedgerRecordHandler(c *gin.Context) {
 func (h *LedgerHandler) GetLedgerRecordStateHandler(c *gin.Context) {
 	rid := c.Params.ByName("id")
 
-	rs, err := h.ledger.GetRecordState(rid)
+	rs, err := h.ledger.GetRecordState(c, rid)
 	if err != nil {
 		log := apibase.CtxLogger(c)
 		log.Err(err).Msg("Error when getting ledger record state")
@@ -91,7 +91,7 @@ func (h *LedgerHandler) GetLedgerRecordStateHandler(c *gin.Context) {
 func (h *LedgerHandler) GetAssetHeadHandler(c *gin.Context) {
 	rid := c.Params.ByName("id")
 
-	head, err := h.ledger.GetAssetHead(rid)
+	head, err := h.ledger.GetAssetHead(c, rid)
 	if err != nil {
 		if errors.Is(err, model.ErrAssetHeadNotFound) {
 			c.AbortWithStatus(http.StatusNotFound)

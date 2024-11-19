@@ -198,12 +198,12 @@ func SetUpTestEnvironment(t *testing.T) *TestMetaLockerEnvironment {
 
 	env.NS = notification.NewLocalNotificationService(100)
 
-	ledgerAPI, err := local.NewBoltLedger(dbFilepath, env.NS, 10, 0)
+	ledgerAPI, err := local.NewBoltLedger(env.Ctx, dbFilepath, env.NS, 10, 0)
 	require.NoError(t, err)
 
 	env.BlobManager = TestBlobManager(t, false, ledgerAPI)
 
-	gb, err := ledgerAPI.GetGenesisBlock()
+	gb, err := ledgerAPI.GetGenesisBlock(env.Ctx)
 	require.NoError(t, err)
 
 	env.Ledger = ledgerAPI
@@ -211,7 +211,7 @@ func SetUpTestEnvironment(t *testing.T) *TestMetaLockerEnvironment {
 	ocVault, _ := NewInMemoryVault(t, TestOffChainStorageID, "offchain", false, true, nil)
 	env.OffChainStorage = node.NewOffChainStorageProxy(ocVault)
 
-	env.IndexClient, err = index.NewLocalIndexClient([]*index.StoreConfig{
+	env.IndexClient, err = index.NewLocalIndexClient(env.Ctx, []*index.StoreConfig{
 		{
 			ID:   IndexStoreID,
 			Name: IndexStoreName,
@@ -223,7 +223,7 @@ func SetUpTestEnvironment(t *testing.T) *TestMetaLockerEnvironment {
 	}, nil, gb.Hash)
 	require.NoError(t, err)
 
-	env.IndexStore, err = env.IndexClient.IndexStore(IndexStoreName)
+	env.IndexStore, err = env.IndexClient.IndexStore(env.Ctx, IndexStoreName)
 	require.NoError(t, err)
 
 	// create wallet factory

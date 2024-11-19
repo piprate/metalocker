@@ -33,7 +33,7 @@ func ExportLedger(c *cli.Context) error {
 		return err
 	}
 
-	err = operations.ExportLedger(dw.Services().Ledger(), dw.Services().OffChainStorage(), c.Args().Get(0))
+	err = operations.ExportLedger(c.Context, dw.Services().Ledger(), dw.Services().OffChainStorage(), c.Args().Get(0))
 	if err != nil {
 		log.Err(err).Msg("Ledger export failed")
 		return cli.Exit(err, OperationFailed)
@@ -60,7 +60,7 @@ func ImportLedger(c *cli.Context) error {
 		return err
 	}
 
-	err = operations.ImportLedger(dw.Services().Ledger(), dw.Services().OffChainStorage(), ns, c.Args().Get(0), importOperations, waitForConfirmation)
+	err = operations.ImportLedger(c.Context, dw.Services().Ledger(), dw.Services().OffChainStorage(), ns, c.Args().Get(0), importOperations, waitForConfirmation)
 	if err != nil {
 		log.Err(err).Msg("Ledger import failed")
 		return cli.Exit(err, OperationFailed)
