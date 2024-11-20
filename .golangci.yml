@@ -30,7 +30,9 @@ linters-settings:
       - unnecessaryBlock
       - whyNoLint
   govet:
-    check-shadowing: false
+    enable:
+      # report about shadowed variables
+      - shadowing
   nolintlint:
     require-explanation: false
     require-specific: true
@@ -51,6 +53,7 @@ linters:
     - bodyclose
     - containedctx
     - contextcheck
+    - copyloopvar
 #   - depguard
     - dogsled
 #   - dupl
@@ -92,5 +95,7 @@ linters:
 
 run:
   issues-exit-code: 1
-  skip-dirs:
+  go: '1.22'
+issues:
+  exclude-dirs:
     - contexts
