@@ -168,14 +168,15 @@ func (mls *MetaLockerServer) InitServices(ctx context.Context, cfg *koanf.Koanf,
 }
 
 func (mls *MetaLockerServer) InitAuthentication(ctx context.Context, cfg *koanf.Koanf) error {
-	authMiddleware, publicKeyBytes, err := InitAuthMiddleware(cfg, "MetaLocker", mls.Resolver, mls.ConfigDir, mls.IdentityBackend)
+	authMiddleware, publicKeyBytes, err := InitAuthMiddleware(cfg, "MetaLocker", //nolint:contextcheck
+		mls.Resolver, mls.ConfigDir, mls.IdentityBackend)
 	if err != nil {
 		return err
 	}
 	mls.JWTMiddleware = authMiddleware
 	mls.ServerControls.JWTPublicKey = string(publicKeyBytes)
 
-	mls.Level1AuthFn = apibase.AccessKeyMiddleware(mls.IdentityBackend, authMiddleware.MiddlewareFunc())
+	mls.Level1AuthFn = apibase.AccessKeyMiddleware(mls.IdentityBackend, authMiddleware.MiddlewareFunc()) //nolint:contextcheck
 
 	if cfg.Exists("apiKeys") {
 		mls.Level2AuthFn, err = apibase.NewStaticAPIKeyAuthenticationHandler(ctx, cfg, "apiKeys", mls.Level1AuthFn,

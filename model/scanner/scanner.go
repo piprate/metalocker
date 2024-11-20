@@ -108,12 +108,10 @@ func NewScanner(ledgerAPI model.Ledger) *Scanner {
 	}
 }
 
-func (isu *Scanner) scanLedger(scannerList []*LockerConfig, startBlockNumber int64, endBlockNumber int64, blockBatchSize int) (int64, bool, error) {
+func (isu *Scanner) scanLedger(ctx context.Context, scannerList []*LockerConfig, startBlockNumber int64, endBlockNumber int64, blockBatchSize int) (int64, bool, error) {
 	currentBlockNumber := startBlockNumber
 	firstBlockIndex := 0
 	earlyExit := false
-
-	ctx := context.Background()
 
 AllBlocks:
 	for {
@@ -384,7 +382,7 @@ func (isu *Scanner) scanOneRound(ctx context.Context) (bool, bool, error) {
 		log.Debug().Int("idx", idx).Int64("start", startBlockNumber).Int64("end", endBlockNumber).
 			Int("lockerCount", len(accumulatedLockers)).Msg("Initiating new scanning round")
 
-		topBlockNumber, exitedEarly, err = isu.scanLedger(accumulatedLockers, startBlockNumber, endBlockNumber, blockBatchSize)
+		topBlockNumber, exitedEarly, err = isu.scanLedger(ctx, accumulatedLockers, startBlockNumber, endBlockNumber, blockBatchSize)
 		if err != nil {
 			return false, false, err
 		}

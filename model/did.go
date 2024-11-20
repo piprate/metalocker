@@ -249,7 +249,7 @@ func (d *DIDDocument) Verify(key ed25519.PublicKey) (bool, error) {
 }
 
 func (d *DIDDocument) ExtractIndyStyleDID() (*DID, error) {
-	if d.PublicKey != nil && len(d.PublicKey) > 0 {
+	if len(d.PublicKey) > 0 {
 		for _, k := range d.PublicKey {
 			switch val := k.(type) {
 			case *Ed25519VerificationKey2018:

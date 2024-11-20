@@ -29,6 +29,9 @@ linters-settings:
       - unnamedResult
       - unnecessaryBlock
       - whyNoLint
+  gosec:
+    excludes:
+      - G115  # Potential integer overflow when converting between integer types
   govet:
     enable:
       # report about shadowed variables
@@ -51,7 +54,7 @@ linters:
     - asciicheck
     - bidichk
     - bodyclose
-    - containedctx
+#    - containedctx
     - contextcheck
     - copyloopvar
 #   - depguard
@@ -61,7 +64,6 @@ linters:
     - errcheck
     - errname
     - errorlint
-    - exportloopref
     - exhaustive
     - goconst
     - gocritic

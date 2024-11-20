@@ -141,7 +141,7 @@ func NewBoltLedger(ctx context.Context, dbFilepath string, ns notification.Servi
 
 	}
 
-	bl.startLoop(blockCheckInterval)
+	bl.startLoop(blockCheckInterval) //nolint:contextcheck
 
 	return bl, nil
 }
