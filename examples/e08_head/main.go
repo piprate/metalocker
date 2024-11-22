@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -57,11 +58,14 @@ func main() {
 		panic(err)
 	}
 
+	ctx := context.Background()
+
 	// create an account
 
 	passPhrase := "passw0rd!"
 
 	dataWallet, _, err := factory.RegisterAccount(
+		ctx,
 		&account.Account{
 			Email:       "jeditemple@example.com",
 			Name:        "Jedi Temple",
@@ -75,21 +79,21 @@ func main() {
 
 	// the wallet needs to be unlocked before use
 
-	err = dataWallet.Unlock(passPhrase)
+	err = dataWallet.Unlock(ctx, passPhrase)
 	if err != nil {
 		panic(err)
 	}
 
 	// create an identity
 
-	kenobi, err := dataWallet.NewIdentity(model.AccessLevelHosted, "Obi-Wan Kenobi")
+	kenobi, err := dataWallet.NewIdentity(ctx, model.AccessLevelHosted, "Obi-Wan Kenobi")
 	if err != nil {
 		panic(err)
 	}
 
 	// create a locker
 
-	locker, err := kenobi.NewLocker("Quotes")
+	locker, err := kenobi.NewLocker(ctx, "Quotes")
 	if err != nil {
 		panic(err)
 	}
@@ -99,6 +103,7 @@ func main() {
 	assetID := model.NewAssetID("example")
 
 	lb, err := locker.NewDataSetBuilder(
+		ctx,
 		dataset.WithVault("local"),
 		dataset.WithAsset(assetID))
 	if err != nil {
@@ -121,7 +126,7 @@ func main() {
 
 	// point a 'head' for the given asset with a name 'wrong-quotes' to the published dataset
 
-	err = locker.SetAssetHead(assetID, "wrong-quotes", future1.ID()).Wait(time.Second)
+	err = locker.SetAssetHead(ctx, assetID, "wrong-quotes", future1.ID()).Wait(time.Second)
 	if err != nil {
 		panic(err)
 	}
@@ -131,6 +136,7 @@ func main() {
 	// the dataset and setting the head.
 
 	lb, err = locker.NewDataSetBuilder(
+		ctx,
 		dataset.WithVault("local"),
 		dataset.WithAsset(assetID),
 		dataset.SetHeads("good-quotes"))
@@ -154,14 +160,14 @@ func main() {
 
 	printHeads := func(checkpoint string) {
 		// head IDs are unique and exist only within a specific locker
-		badQuotesHeadID := locker.HeadID(assetID, "wrong-quotes")
-		goodQuotesHeadID := locker.HeadID(assetID, "good-quotes")
+		badQuotesHeadID := locker.HeadID(ctx, assetID, "wrong-quotes")
+		goodQuotesHeadID := locker.HeadID(ctx, assetID, "good-quotes")
 
-		badQuotesHead, err := dataWallet.DataStore().AssetHead(badQuotesHeadID)
+		badQuotesHead, err := dataWallet.DataStore().AssetHead(ctx, badQuotesHeadID)
 		if err != nil {
 			panic(err)
 		}
-		goodQuotesHead, err := dataWallet.DataStore().AssetHead(goodQuotesHeadID)
+		goodQuotesHead, err := dataWallet.DataStore().AssetHead(ctx, goodQuotesHeadID)
 		if err != nil {
 			panic(err)
 		}
@@ -180,6 +186,7 @@ func main() {
 	// create a new revision of the last version and update the head
 
 	lb, err = locker.NewDataSetBuilder(
+		ctx,
 		dataset.WithParent(future3.ID(),
 			"",
 			dataset.CopyModeNone,

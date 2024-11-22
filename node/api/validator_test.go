@@ -16,6 +16,7 @@ package api_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
@@ -69,7 +70,7 @@ func TestValidateRequestSignatureHandler_HappyPath(t *testing.T) {
 	body := []byte("test")
 	bodyHash := model.HashRequestBody(body)
 
-	err := identityBackend.StoreAccessKey(key)
+	err := identityBackend.StoreAccessKey(context.Background(), key)
 	require.NoError(t, err)
 
 	req := &apibase.SignatureValidationRequest{
@@ -113,7 +114,7 @@ func TestValidateRequestSignatureHandler_ExpiredSignature(t *testing.T) {
 	body := []byte("test")
 	bodyHash := model.HashRequestBody(body)
 
-	err := identityBackend.StoreAccessKey(key)
+	err := identityBackend.StoreAccessKey(context.Background(), key)
 	require.NoError(t, err)
 
 	req := &apibase.SignatureValidationRequest{

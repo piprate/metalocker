@@ -32,7 +32,7 @@ type ServerControls struct {
 
 func GetStatusHandler(controls *ServerControls, ledger model.Ledger) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		gb, err := ledger.GetGenesisBlock()
+		gb, err := ledger.GetGenesisBlock(c)
 		if err != nil {
 			log := apibase.CtxLogger(c)
 			log.Err(err).Msg("Error when getting genesis block")
@@ -40,7 +40,7 @@ func GetStatusHandler(controls *ServerControls, ledger model.Ledger) func(c *gin
 			return
 		}
 
-		b, err := ledger.GetTopBlock()
+		b, err := ledger.GetTopBlock(c)
 		if err != nil {
 			log := apibase.CtxLogger(c)
 			log.Err(err).Msg("Error when getting top block")

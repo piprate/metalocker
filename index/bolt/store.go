@@ -15,6 +15,7 @@
 package bolt
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -101,7 +102,7 @@ func (s *IndexStore) Properties() *index.StoreProperties {
 	return s.props
 }
 
-func (s *IndexStore) CreateIndex(userID string, indexType string, accessLevel model.AccessLevel, opts ...index.Option) (index.Index, error) {
+func (s *IndexStore) CreateIndex(ctx context.Context, userID string, indexType string, accessLevel model.AccessLevel, opts ...index.Option) (index.Index, error) {
 
 	if indexType != index.TypeRoot {
 		return nil, fmt.Errorf("index type not supported in index store %s (%s): %s", s.ID(), Type, indexType)
@@ -161,7 +162,7 @@ func (s *IndexStore) CreateIndex(userID string, indexType string, accessLevel mo
 	}, nil
 }
 
-func (s *IndexStore) Index(userID string, id string) (index.Index, error) {
+func (s *IndexStore) Index(ctx context.Context, userID string, id string) (index.Index, error) {
 	props, err := loadProperties(id, s.client)
 	if err != nil {
 		return nil, err
@@ -175,24 +176,24 @@ func (s *IndexStore) Index(userID string, id string) (index.Index, error) {
 	}, nil
 }
 
-func (s *IndexStore) ListIndexes(userID string) ([]*index.Properties, error) {
+func (s *IndexStore) ListIndexes(ctx context.Context, userID string) ([]*index.Properties, error) {
 	panic("operation boltIndex::ListIndexes not implemented")
 }
 
-func (s *IndexStore) DeleteIndex(userID, id string) error {
+func (s *IndexStore) DeleteIndex(ctx context.Context, userID, id string) error {
 	panic("operation boltIndex::DeleteIndex not implemented")
 }
 
-func (s *IndexStore) RootIndex(userID string, lvl model.AccessLevel) (index.RootIndex, error) {
+func (s *IndexStore) RootIndex(ctx context.Context, userID string, lvl model.AccessLevel) (index.RootIndex, error) {
 	indexID := index.RootIndexID(userID, lvl)
-	ix, err := s.Index(userID, indexID)
+	ix, err := s.Index(ctx, userID, indexID)
 	if err != nil {
 		return nil, err
 	}
 	return ix.(index.RootIndex), nil
 }
 
-func (s *IndexStore) Bind(gbHash string) error {
+func (s *IndexStore) Bind(ctx context.Context, gbHash string) error {
 	walletBlockHash, err := s.fetchGenesisBlockHash()
 	if err != nil {
 		return err
@@ -214,7 +215,7 @@ func (s *IndexStore) Bind(gbHash string) error {
 	return nil
 }
 
-func (s *IndexStore) GenesisBlockHash() string {
+func (s *IndexStore) GenesisBlockHash(ctx context.Context) string {
 	return s.genesisBlockHash
 }
 

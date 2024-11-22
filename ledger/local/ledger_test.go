@@ -15,6 +15,7 @@
 package local_test
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -59,7 +60,7 @@ func NewTestBoltLedger(t *testing.T, blockCheckInterval uint64) (*BoltLedger, va
 
 	ns := notification.NewLocalNotificationService(100)
 
-	bl, err := NewBoltLedger(dbFilepath, ns, 1000, blockCheckInterval)
+	bl, err := NewBoltLedger(context.Background(), dbFilepath, ns, 1000, blockCheckInterval)
 	require.NoError(t, err)
 
 	return bl, offchainAPI, dir
@@ -70,7 +71,7 @@ func TestBoltLedger_GetGenesisBlock(t *testing.T) {
 	defer os.RemoveAll(dir) // clean up
 	defer bl.Close()
 
-	gb, err := bl.GetGenesisBlock()
+	gb, err := bl.GetGenesisBlock(context.Background())
 	require.NoError(t, err)
 	assert.NotNil(t, gb)
 }
@@ -90,11 +91,13 @@ func TestBoltLedger_SaveRecord(t *testing.T) {
 	err = bl.SaveRecord(rec)
 	require.NoError(t, err)
 
-	r, err := bl.GetRecord("xx")
+	ctx := context.Background()
+
+	r, err := bl.GetRecord(ctx, "xx")
 	require.NoError(t, err)
 	assert.Equal(t, "xx", r.ID)
 
-	rs, err := bl.GetRecordState("xx")
+	rs, err := bl.GetRecordState(ctx, "xx")
 	require.NoError(t, err)
 	assert.Equal(t, model.StatusPending, rs.Status)
 	assert.Equal(t, int64(0), rs.BlockNumber)

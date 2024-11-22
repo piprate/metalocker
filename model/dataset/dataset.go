@@ -15,6 +15,7 @@
 package dataset
 
 import (
+	"context"
 	"errors"
 	"io"
 
@@ -93,7 +94,7 @@ func (d *DataSetImpl) getAccessToken() string {
 	return d.accessToken
 }
 
-func (d *DataSetImpl) MetaResource() (io.ReadCloser, error) {
+func (d *DataSetImpl) MetaResource(ctx context.Context) (io.ReadCloser, error) {
 	if d.lease == nil {
 		return nil, errors.New("data access forbidden for revoked records")
 	}
@@ -103,7 +104,7 @@ func (d *DataSetImpl) MetaResource() (io.ReadCloser, error) {
 		return nil, model.ErrResourceNotFound
 	}
 
-	r, err := d.blobManager.GetBlob(metaRes, d.getAccessToken())
+	r, err := d.blobManager.GetBlob(ctx, metaRes, d.getAccessToken())
 	if err != nil {
 		log.Err(err).Str("id", metaRes.ID).Interface("params", metaRes.Params).Msg("Error serving blob")
 	}
@@ -111,8 +112,8 @@ func (d *DataSetImpl) MetaResource() (io.ReadCloser, error) {
 	return r, err
 }
 
-func (d *DataSetImpl) DecodeMetaResource(obj any) error {
-	r, err := d.MetaResource()
+func (d *DataSetImpl) DecodeMetaResource(ctx context.Context, obj any) error {
+	r, err := d.MetaResource(ctx)
 	if err != nil {
 		return err
 	}
@@ -135,7 +136,7 @@ func (d *DataSetImpl) Resources() []string {
 	return resList
 }
 
-func (d *DataSetImpl) Resource(id string) (io.ReadCloser, error) {
+func (d *DataSetImpl) Resource(ctx context.Context, id string) (io.ReadCloser, error) {
 	if d.lease == nil {
 		return nil, errors.New("data access forbidden for revoked records")
 	}
@@ -153,7 +154,7 @@ func (d *DataSetImpl) Resource(id string) (io.ReadCloser, error) {
 		return nil, model.ErrResourceNotFound
 	}
 
-	r, err := d.blobManager.GetBlob(requestedResource, d.getAccessToken())
+	r, err := d.blobManager.GetBlob(ctx, requestedResource, d.getAccessToken())
 	if err != nil {
 		log.Err(err).Str("id", requestedResource.ID).Interface("params", requestedResource.Params).Msg("Error serving blob")
 	}
@@ -161,8 +162,8 @@ func (d *DataSetImpl) Resource(id string) (io.ReadCloser, error) {
 	return r, err
 }
 
-func (d *DataSetImpl) DecodeResource(id string, obj any) error {
-	r, err := d.Resource(id)
+func (d *DataSetImpl) DecodeResource(ctx context.Context, id string, obj any) error {
+	r, err := d.Resource(ctx, id)
 	if err != nil {
 		return err
 	}

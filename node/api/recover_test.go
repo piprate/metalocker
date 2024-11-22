@@ -66,7 +66,7 @@ func TestGetRecoveryCodeHandler(t *testing.T) {
 
 	assert.NotEmpty(t, rsp.Code)
 
-	c, err := env.IdentityBackend.GetRecoveryCode(rsp.Code)
+	c, err := env.IdentityBackend.GetRecoveryCode(env.Ctx, rsp.Code)
 	require.NoError(t, err)
 	assert.Equal(t, acct.ID, c.UserID)
 }
@@ -76,6 +76,7 @@ func TestRecoverAccountHandler(t *testing.T) {
 	defer func() { _ = env.Close() }()
 
 	dw, recDetails, err := env.Factory.RegisterAccount(
+		env.Ctx,
 		&account.Account{
 			Email:        "test@example.com",
 			Name:         "John Doe",
@@ -118,10 +119,10 @@ func TestRecoverAccountHandler(t *testing.T) {
 	rc, err := account.NewRecoveryCode("test@example.com", 5*60)
 	require.NoError(t, err)
 
-	err = env.IdentityBackend.CreateRecoveryCode(rc)
+	err = env.IdentityBackend.CreateRecoveryCode(env.Ctx, rc)
 	require.NoError(t, err)
 
-	_, err = env.IdentityBackend.GetRecoveryCode(rc.Code)
+	_, err = env.IdentityBackend.GetRecoveryCode(env.Ctx, rc.Code)
 	require.NoError(t, err)
 
 	reqBytes, _ := jsonw.Marshal(&account.RecoveryRequest{
@@ -132,7 +133,7 @@ func TestRecoverAccountHandler(t *testing.T) {
 	require.Equal(t, http.StatusBadRequest, rec.Code)
 
 	// confirm the code is deleted
-	_, err = env.IdentityBackend.GetRecoveryCode(rc.Code)
+	_, err = env.IdentityBackend.GetRecoveryCode(env.Ctx, rc.Code)
 	require.Error(t, err)
 
 	// happy path
@@ -140,7 +141,7 @@ func TestRecoverAccountHandler(t *testing.T) {
 	rc, err = account.NewRecoveryCode("test@example.com", 5*60)
 	require.NoError(t, err)
 
-	err = env.IdentityBackend.CreateRecoveryCode(rc)
+	err = env.IdentityBackend.CreateRecoveryCode(env.Ctx, rc)
 	require.NoError(t, err)
 
 	cryptoKey, _, privKey, err := account.GenerateKeysFromRecoveryPhrase(recDetails.RecoveryPhrase)
@@ -163,30 +164,30 @@ func TestRecoverAccountHandler(t *testing.T) {
 
 	// check the user can be authenticated using the new passphrase
 
-	storedAcct, err := env.IdentityBackend.GetAccount(acct.ID)
+	storedAcct, err := env.IdentityBackend.GetAccount(env.Ctx, acct.ID)
 	assert.NoError(t, err)
 	assert.NoError(t, bcrypt.CompareHashAndPassword([]byte(storedAcct.EncryptedPassword), []byte(account.HashUserPassword(newPassphrase))))
 
 	// confirm the code is deleted
-	_, err = env.IdentityBackend.GetRecoveryCode(rc.Code)
+	_, err = env.IdentityBackend.GetRecoveryCode(env.Ctx, rc.Code)
 	require.Error(t, err)
 
 	dwToRecover, err := env.Factory.CreateDataWallet(rsp.Account)
 	require.NoError(t, err)
 
-	_, err = dwToRecover.Recover(cryptoKey, newPassphrase)
+	_, err = dwToRecover.Recover(env.Ctx, cryptoKey, newPassphrase)
 	require.NoError(t, err)
 
 	// try recovering an account without recovery key (it would be irrecoverable)
 
 	acct.RecoveryPublicKey = ""
-	err = env.IdentityBackend.UpdateAccount(acct)
+	err = env.IdentityBackend.UpdateAccount(env.Ctx, acct)
 	require.NoError(t, err)
 
 	rc, err = account.NewRecoveryCode("test@example.com", 5*60)
 	require.NoError(t, err)
 
-	err = env.IdentityBackend.CreateRecoveryCode(rc)
+	err = env.IdentityBackend.CreateRecoveryCode(env.Ctx, rc)
 	require.NoError(t, err)
 
 	_, _, privKey, err = account.GenerateKeysFromRecoveryPhrase(recDetails.RecoveryPhrase)
@@ -227,6 +228,7 @@ func TestRecoverAccountHandler_ManagedWorkflow(t *testing.T) {
 	// should fail for hosted accounts
 
 	_, recDetails, err := env.Factory.RegisterAccount(
+		env.Ctx,
 		&account.Account{
 			Email:        "hosted@example.com",
 			Name:         "John Doe",
@@ -239,7 +241,7 @@ func TestRecoverAccountHandler_ManagedWorkflow(t *testing.T) {
 	rc, err := account.NewRecoveryCode("hosted@example.com", 5*60)
 	require.NoError(t, err)
 
-	err = env.IdentityBackend.CreateRecoveryCode(rc)
+	err = env.IdentityBackend.CreateRecoveryCode(env.Ctx, rc)
 	require.NoError(t, err)
 
 	cryptoKey, _, privKey, err := account.GenerateKeysFromRecoveryPhrase(recDetails.RecoveryPhrase)
@@ -256,6 +258,7 @@ func TestRecoverAccountHandler_ManagedWorkflow(t *testing.T) {
 	// happy path
 
 	dw, recDetails, err := env.Factory.RegisterAccount(
+		env.Ctx,
 		&account.Account{
 			Email:        "managed@example.com",
 			Name:         "John Doe",
@@ -270,7 +273,7 @@ func TestRecoverAccountHandler_ManagedWorkflow(t *testing.T) {
 	rc, err = account.NewRecoveryCode("managed@example.com", 5*60)
 	require.NoError(t, err)
 
-	err = env.IdentityBackend.CreateRecoveryCode(rc)
+	err = env.IdentityBackend.CreateRecoveryCode(env.Ctx, rc)
 	require.NoError(t, err)
 
 	cryptoKey, _, privKey, err = account.GenerateKeysFromRecoveryPhrase(recDetails.RecoveryPhrase)
@@ -291,7 +294,7 @@ func TestRecoverAccountHandler_ManagedWorkflow(t *testing.T) {
 
 	// check the user can be authenticated using the new passphrase
 
-	acct, err = env.IdentityBackend.GetAccount(acct.ID)
+	acct, err = env.IdentityBackend.GetAccount(env.Ctx, acct.ID)
 	assert.NoError(t, err)
 	assert.NoError(t, bcrypt.CompareHashAndPassword([]byte(acct.EncryptedPassword), []byte(account.HashUserPassword(newPassphrase))))
 }

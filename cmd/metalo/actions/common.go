@@ -16,6 +16,7 @@ package actions
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -46,8 +47,8 @@ const (
 )
 
 func WithPersonalIndexStore() remote.IndexClientSourceFn {
-	return func(userID string, mlc *caller.MetaLockerHTTPCaller) (index.Client, error) {
-		gb, err := mlc.GetGenesisBlock()
+	return func(ctx context.Context, userID string, mlc *caller.MetaLockerHTTPCaller) (index.Client, error) {
+		gb, err := mlc.GetGenesisBlock(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -57,7 +58,7 @@ func WithPersonalIndexStore() remote.IndexClientSourceFn {
 		if err != nil {
 			return nil, err
 		}
-		return index.NewLocalIndexClient([]*index.StoreConfig{
+		return index.NewLocalIndexClient(ctx, []*index.StoreConfig{
 			{
 				ID:   LocalIndexStoreID,
 				Name: LocalIndexStoreName,
@@ -82,7 +83,7 @@ func LoadRemoteDataWallet(c *cli.Context, syncIndexOnStart bool) (wallet.DataWal
 	if c.String("api-key") != "" {
 		apiKey := c.String("api-key")
 		apiSecret := ReadCredential(c.String("api-secret"), "Enter API Secret: ", true)
-		dw, err = factory.GetWalletWithAccessKey(apiKey, apiSecret)
+		dw, err = factory.GetWalletWithAccessKey(c.Context, apiKey, apiSecret)
 	} else {
 		user := ReadCredential(c.String("user"), "Enter account email: ", false)
 		password := ReadCredential(c.String("password"), "Enter password: ", true)
@@ -90,7 +91,7 @@ func LoadRemoteDataWallet(c *cli.Context, syncIndexOnStart bool) (wallet.DataWal
 		// save the password value read from console for ChangePassphrase call
 		_ = c.Set("password", password)
 
-		dw, err = factory.GetWalletWithCredentials(user, password)
+		dw, err = factory.GetWalletWithCredentials(c.Context, user, password)
 	}
 	if err != nil {
 		if errors.Is(err, caller.ErrLoginFailed) {
@@ -101,10 +102,10 @@ func LoadRemoteDataWallet(c *cli.Context, syncIndexOnStart bool) (wallet.DataWal
 	}
 
 	if syncIndexOnStart {
-		ix, err := dw.RootIndex()
+		ix, err := dw.RootIndex(c.Context)
 		if err != nil {
 			if errors.Is(err, index.ErrIndexNotFound) {
-				ix, err = dw.CreateRootIndex(LocalIndexStoreName)
+				ix, err = dw.CreateRootIndex(c.Context, LocalIndexStoreName)
 				if err != nil {
 					return nil, err
 				}
@@ -113,12 +114,12 @@ func LoadRemoteDataWallet(c *cli.Context, syncIndexOnStart bool) (wallet.DataWal
 			}
 		}
 
-		ixUpdater, err := dw.IndexUpdater(ix)
+		ixUpdater, err := dw.IndexUpdater(c.Context, ix)
 		if err != nil {
 			return nil, err
 		}
 
-		if err = ixUpdater.Sync(); err != nil {
+		if err = ixUpdater.Sync(c.Context); err != nil {
 			return nil, err
 		}
 	}

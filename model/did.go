@@ -15,6 +15,7 @@
 package model
 
 import (
+	"context"
 	"crypto/ed25519"
 	"errors"
 	"fmt"
@@ -214,8 +215,8 @@ func ExtractDIDMethod(didID string) (string, error) {
 
 type (
 	DIDProvider interface {
-		CreateDIDDocument(ddoc *DIDDocument) error
-		GetDIDDocument(iid string) (*DIDDocument, error)
+		CreateDIDDocument(ctx context.Context, ddoc *DIDDocument) error
+		GetDIDDocument(ctx context.Context, iid string) (*DIDDocument, error)
 	}
 )
 
@@ -248,7 +249,7 @@ func (d *DIDDocument) Verify(key ed25519.PublicKey) (bool, error) {
 }
 
 func (d *DIDDocument) ExtractIndyStyleDID() (*DID, error) {
-	if d.PublicKey != nil && len(d.PublicKey) > 0 {
+	if len(d.PublicKey) > 0 {
 		for _, k := range d.PublicKey {
 			switch val := k.(type) {
 			case *Ed25519VerificationKey2018:

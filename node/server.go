@@ -15,6 +15,7 @@
 package node
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -82,7 +83,7 @@ func NewMetaLockerServer(configDir string) *MetaLockerServer {
 	return mls
 }
 
-func (mls *MetaLockerServer) InitServices(cfg *koanf.Koanf, debugMode bool) error {
+func (mls *MetaLockerServer) InitServices(ctx context.Context, cfg *koanf.Koanf, debugMode bool) error {
 	mls.Warden = utils.NewGracefulWarden(120)
 
 	prodMode := cfg.Bool("production") && !debugMode
@@ -142,7 +143,7 @@ func (mls *MetaLockerServer) InitServices(cfg *koanf.Koanf, debugMode bool) erro
 
 	// initialise ledger connector
 
-	mls.Ledger, err = InitLedger(cfg, mls.Resolver, mls.NS)
+	mls.Ledger, err = InitLedger(ctx, cfg, mls.Resolver, mls.NS)
 	if err != nil {
 		return err
 	}
@@ -166,18 +167,19 @@ func (mls *MetaLockerServer) InitServices(cfg *koanf.Koanf, debugMode bool) erro
 	return nil
 }
 
-func (mls *MetaLockerServer) InitAuthentication(cfg *koanf.Koanf) error {
-	authMiddleware, publicKeyBytes, err := InitAuthMiddleware(cfg, "MetaLocker", mls.Resolver, mls.ConfigDir, mls.IdentityBackend)
+func (mls *MetaLockerServer) InitAuthentication(ctx context.Context, cfg *koanf.Koanf) error {
+	authMiddleware, publicKeyBytes, err := InitAuthMiddleware(cfg, "MetaLocker", //nolint:contextcheck
+		mls.Resolver, mls.ConfigDir, mls.IdentityBackend)
 	if err != nil {
 		return err
 	}
 	mls.JWTMiddleware = authMiddleware
 	mls.ServerControls.JWTPublicKey = string(publicKeyBytes)
 
-	mls.Level1AuthFn = apibase.AccessKeyMiddleware(mls.IdentityBackend, authMiddleware.MiddlewareFunc())
+	mls.Level1AuthFn = apibase.AccessKeyMiddleware(mls.IdentityBackend, authMiddleware.MiddlewareFunc()) //nolint:contextcheck
 
 	if cfg.Exists("apiKeys") {
-		mls.Level2AuthFn, err = apibase.NewStaticAPIKeyAuthenticationHandler(cfg, "apiKeys", mls.Level1AuthFn,
+		mls.Level2AuthFn, err = apibase.NewStaticAPIKeyAuthenticationHandler(ctx, cfg, "apiKeys", mls.Level1AuthFn,
 			mls.Resolver, mls.IdentityBackend)
 		if err != nil {
 			return cli.Exit(err, 1)
@@ -189,7 +191,7 @@ func (mls *MetaLockerServer) InitAuthentication(cfg *koanf.Koanf) error {
 	return nil
 }
 
-func (mls *MetaLockerServer) InitStandardRoutes(cfg *koanf.Koanf) error {
+func (mls *MetaLockerServer) InitStandardRoutes(ctx context.Context, cfg *koanf.Koanf) error {
 	r := mls.Router
 
 	if cfg.Exists("administration") {
@@ -227,7 +229,7 @@ func (mls *MetaLockerServer) InitStandardRoutes(cfg *koanf.Koanf) error {
 	vaultGrp.Use(mls.Level2AuthFn)
 	vaultGrp.Use(apibase.ContextLoggerHandler)
 
-	vaultapi.InitRoutes(vaultGrp, mls.BlobManager)
+	vaultapi.InitRoutes(ctx, vaultGrp, mls.BlobManager)
 
 	// serve JSON-LD contexts which are compatible with the current MetaLocker implementation.
 	// This includes third-party contexts to avoid unexpected changes and round-trips over network.
@@ -352,7 +354,7 @@ func InitOffChainStorage(cfg *koanf.Koanf, resolver cmdbase.ParameterResolver) (
 	return offchainAPI, nil
 }
 
-func InitLedger(cfg *koanf.Koanf, resolver cmdbase.ParameterResolver, ns notification.Service) (model.Ledger, error) {
+func InitLedger(ctx context.Context, cfg *koanf.Koanf, resolver cmdbase.ParameterResolver, ns notification.Service) (model.Ledger, error) {
 	var ledgerAPI model.Ledger
 	if cfg.Exists("ledger") {
 		var ledgerCfg ledger.Config
@@ -362,7 +364,7 @@ func InitLedger(cfg *koanf.Koanf, resolver cmdbase.ParameterResolver, ns notific
 			return nil, cli.Exit(err, 1)
 		}
 
-		ledgerAPI, err = ledger.CreateLedgerConnector(&ledgerCfg, ns, resolver)
+		ledgerAPI, err = ledger.CreateLedgerConnector(ctx, &ledgerCfg, ns, resolver)
 		if err != nil {
 			log.Err(err).Msg("Failed to create ledger connector")
 			return nil, cli.Exit(err, 1)

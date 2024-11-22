@@ -38,7 +38,7 @@ func (h *AccountHandler) GetPropertyListHandler(c *gin.Context) {
 		return
 	}
 
-	propList, err := h.identityBackend.ListProperties(accountID, model.AccessLevel(accessLevel))
+	propList, err := h.identityBackend.ListProperties(c, accountID, model.AccessLevel(accessLevel))
 	if err != nil {
 		log := apibase.CtxLogger(c)
 		log.Err(err).Msg("Error when reading property list")
@@ -75,7 +75,7 @@ func (h *AccountHandler) PostPropertyHandler(c *gin.Context) {
 		return
 	}
 
-	err = h.identityBackend.StoreProperty(accountID, &propEnv)
+	err = h.identityBackend.StoreProperty(c, accountID, &propEnv)
 
 	if err != nil {
 		apibase.AbortWithError(c, http.StatusInternalServerError, "Property creation failed")
@@ -104,7 +104,7 @@ func (h *AccountHandler) GetPropertyHandler(c *gin.Context) {
 
 	hash := c.Params.ByName("hash")
 
-	propEnv, err := h.identityBackend.GetProperty(accountID, hash)
+	propEnv, err := h.identityBackend.GetProperty(c, accountID, hash)
 	if err != nil {
 		if errors.Is(err, storage.ErrPropertyNotFound) {
 			c.AbortWithStatus(http.StatusNotFound)
@@ -129,7 +129,7 @@ func (h *AccountHandler) DeletePropertyHandler(c *gin.Context) {
 
 	hash := c.Params.ByName("hash")
 
-	err := h.identityBackend.DeleteProperty(accountID, hash)
+	err := h.identityBackend.DeleteProperty(c, accountID, hash)
 	if err != nil {
 		if errors.Is(err, storage.ErrPropertyNotFound) {
 			c.AbortWithStatus(http.StatusNotFound)

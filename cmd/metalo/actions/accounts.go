@@ -128,6 +128,7 @@ func RegisterCommand(c *cli.Context) error {
 	registrationCode := c.String("code")
 
 	dw, recDetails, err := factory.RegisterAccount(
+		c.Context,
 		&account.Account{
 			Email:       email,
 			Name:        name,
@@ -142,12 +143,12 @@ func RegisterCommand(c *cli.Context) error {
 		_, _ = fmt.Fprintf(os.Stderr, "\n\tYour secret recovery phrase is: %s\n\n", recDetails.RecoveryPhrase)
 	}
 
-	if err = dw.Unlock(passwd); err != nil {
+	if err = dw.Unlock(c.Context, passwd); err != nil {
 		log.Err(err).Msg("Failed to unlock new wallet")
 		return cli.Exit(err, OperationFailed)
 	}
 
-	if err = dw.AddIdentity(idy); err != nil {
+	if err = dw.AddIdentity(c.Context, idy); err != nil {
 		log.Err(err).Msg("Failed to add an identity to account")
 		return cli.Exit(err, OperationFailed)
 	} else {
@@ -180,7 +181,7 @@ func ImportIdentity(c *cli.Context) error {
 		return err
 	}
 
-	err = dw.AddIdentity(&idy)
+	err = dw.AddIdentity(c.Context, &idy)
 	if err != nil {
 		log.Err(err).Msg("Identity import failed")
 		return cli.Exit(err, OperationFailed)
@@ -233,7 +234,7 @@ func NewIdentity(c *cli.Context) error {
 	}
 
 	if c.Bool("unilocker") {
-		tb, err := dataWallet.Services().Ledger().GetTopBlock()
+		tb, err := dataWallet.Services().Ledger().GetTopBlock(c.Context)
 		if err != nil {
 			return cli.Exit(err, OperationFailed)
 		}
@@ -249,7 +250,7 @@ func NewIdentity(c *cli.Context) error {
 		idy.Lockers = append(idy.Lockers, locker)
 	}
 
-	err = dataWallet.AddIdentity(idy)
+	err = dataWallet.AddIdentity(c.Context, idy)
 	if err != nil {
 		log.Err(err).Msg("Adding new identity failed")
 		return cli.Exit(err, OperationFailed)
@@ -287,7 +288,7 @@ func ImportLocker(c *cli.Context) error {
 
 	var us string
 	for _, p := range locker.Participants {
-		_, err := dataWallet.GetIdentity(p.ID)
+		_, err := dataWallet.GetIdentity(c.Context, p.ID)
 		if err != nil {
 			if errors.Is(err, storage.ErrIdentityNotFound) {
 				continue
@@ -298,7 +299,8 @@ func ImportLocker(c *cli.Context) error {
 		us = p.ID
 		break
 	}
-	_, err = dataWallet.AddLocker(locker.Perspective(us))
+
+	_, err = dataWallet.AddLocker(c.Context, locker.Perspective(us))
 	if err != nil {
 		log.Err(err).Msg("Locker import failed")
 		return cli.Exit(err, OperationFailed)
@@ -331,7 +333,7 @@ func CreateLocker(c *cli.Context) error {
 
 	mlc := CreateHTTPCaller(c)
 
-	controls, err := mlc.GetServerControls()
+	controls, err := mlc.GetServerControls(c.Context)
 	if err != nil {
 		return err
 	}
@@ -355,7 +357,7 @@ func CreateLocker(c *cli.Context) error {
 			return err
 		}
 
-		wrapper, err := dataWallet.AddLocker(locker)
+		wrapper, err := dataWallet.AddLocker(c.Context, locker)
 		if err != nil {
 			log.Err(err).Msg("Locker import failed")
 			return cli.Exit(err, OperationFailed)
@@ -408,7 +410,7 @@ func PrintAccount(c *cli.Context) error {
 
 		// add all identities
 
-		idyMap, err := dataWallet.GetIdentities()
+		idyMap, err := dataWallet.GetIdentities(c.Context)
 		if err != nil {
 			return err
 		}
@@ -421,7 +423,7 @@ func PrintAccount(c *cli.Context) error {
 
 		// add all lockers
 
-		lockers, err := dataWallet.GetLockers()
+		lockers, err := dataWallet.GetLockers(c.Context)
 		if err != nil {
 			return err
 		}
@@ -433,7 +435,7 @@ func PrintAccount(c *cli.Context) error {
 
 		// add all properties
 
-		props, err := dataWallet.GetProperties()
+		props, err := dataWallet.GetProperties(c.Context)
 		if err != nil {
 			return err
 		}
@@ -452,7 +454,7 @@ func PrintAccountChart(c *cli.Context) error {
 		return err
 	}
 
-	return operations.PrintWallet(dw, "")
+	return operations.PrintWallet(c.Context, dw, "")
 }
 
 func ChangePassphrase(c *cli.Context) error {
@@ -471,7 +473,7 @@ func ChangePassphrase(c *cli.Context) error {
 		return cli.Exit("empty new password", OperationFailed)
 	}
 
-	_, err = dataWallet.ChangePassphrase(currentPass, newPass, false)
+	_, err = dataWallet.ChangePassphrase(c.Context, currentPass, newPass, false)
 
 	if err != nil {
 		log.Err(err).Msg("Passphrase change failed")
@@ -488,7 +490,7 @@ func ChangeEmail(c *cli.Context) error {
 
 	newEmail := ReadCredential(c.String("email"), "Enter new account email: ", false)
 
-	err = dataWallet.ChangeEmail(newEmail)
+	err = dataWallet.ChangeEmail(c.Context, newEmail)
 	if err != nil {
 		log.Err(err).Msg("Account email change failed")
 		return cli.Exit(err, OperationFailed)
@@ -504,7 +506,7 @@ func RecoverAccount(c *cli.Context) error {
 	recoveryPhrase := ReadCredential(c.String("rec-phrase"), "Enter recovery phrase: ", true)
 	newPassphrase := ReadCredential(c.String("new-password"), "Enter new account password: ", true)
 
-	recoveryCode, err := mlc.GetAccountRecoveryCode(userID)
+	recoveryCode, err := mlc.GetAccountRecoveryCode(c.Context, userID)
 	if err != nil {
 		return fmt.Errorf("failed to get recovery code from MetaLocker: %w", err)
 	}
@@ -515,18 +517,18 @@ func RecoverAccount(c *cli.Context) error {
 		return err
 	}
 
-	acct, err := mlc.RecoverAccount(userID, privKey, recoveryCode, newPassphrase)
+	acct, err := mlc.RecoverAccount(c.Context, userID, privKey, recoveryCode, newPassphrase)
 	if err != nil {
 		log.Err(err).Msg("Failed to recover account")
 		return fmt.Errorf("failed to recover account: %w", err)
 	}
 
-	err = mlc.LoginWithCredentials(userID, newPassphrase)
+	err = mlc.LoginWithCredentials(c.Context, userID, newPassphrase)
 	if err != nil {
 		return err
 	}
 
-	indexClient, err := WithPersonalIndexStore()(acct.ID, mlc)
+	indexClient, err := WithPersonalIndexStore()(c.Context, acct.ID, mlc)
 	if err != nil {
 		return err
 	}
@@ -537,12 +539,12 @@ func RecoverAccount(c *cli.Context) error {
 		return errors.New("failed to process account")
 	}
 
-	np, err := dataWallet.Recover(cryptoKey, newPassphrase)
+	np, err := dataWallet.Recover(c.Context, cryptoKey, newPassphrase)
 	if err != nil {
 		return err
 	}
 
-	err = mlc.UpdateAccount(np.Account())
+	err = mlc.UpdateAccount(c.Context, np.Account())
 	if err != nil {
 		log.Err(err).Msg("Account recovery failed")
 		return cli.Exit(err, OperationFailed)
@@ -571,7 +573,7 @@ func RecoverAccountSecondLevel(c *cli.Context) error {
 		newPassphrase = ReadCredential(c.String("password"), "Enter new account passphrase: ", true)
 	}
 
-	recoveryCode, err := mlc.GetAccountRecoveryCode(userID)
+	recoveryCode, err := mlc.GetAccountRecoveryCode(c.Context, userID)
 	if err != nil {
 		return fmt.Errorf("failed to get recovery code from MetaLocker: %w", err)
 	}
@@ -585,7 +587,7 @@ func RecoverAccountSecondLevel(c *cli.Context) error {
 
 	privKey := ed25519.PrivateKey(pkBytes)
 
-	acct, err := mlc.RecoverAccount(userID, privKey, recoveryCode, newPassphrase)
+	acct, err := mlc.RecoverAccount(c.Context, userID, privKey, recoveryCode, newPassphrase)
 	if err != nil {
 		log.Err(err).Msg("Failed to recover account")
 		return fmt.Errorf("failed to recover account: %w", err)
@@ -608,12 +610,12 @@ func RecoverAccountSecondLevel(c *cli.Context) error {
 		return err
 	}
 
-	err = mlc.LoginWithCredentials(userID, newPassphrase)
+	err = mlc.LoginWithCredentials(c.Context, userID, newPassphrase)
 	if err != nil {
 		return err
 	}
 
-	indexClient, err := WithPersonalIndexStore()(acct.ID, mlc)
+	indexClient, err := WithPersonalIndexStore()(c.Context, acct.ID, mlc)
 	if err != nil {
 		return err
 	}
@@ -624,12 +626,12 @@ func RecoverAccountSecondLevel(c *cli.Context) error {
 		return errors.New("failed to process account")
 	}
 
-	np, err := dataWallet.Recover(model.NewAESKey(cryptoKeyBytes), newPassphrase)
+	np, err := dataWallet.Recover(c.Context, model.NewAESKey(cryptoKeyBytes), newPassphrase)
 	if err != nil {
 		return err
 	}
 
-	err = mlc.UpdateAccount(np.Account())
+	err = mlc.UpdateAccount(c.Context, np.Account())
 	if err != nil {
 		log.Err(err).Msg("Account recovery failed")
 		return cli.Exit(err, OperationFailed)
@@ -645,13 +647,13 @@ func DeleteAccount(c *cli.Context) error {
 
 	mlc := CreateHTTPCaller(c)
 
-	err := mlc.LoginWithCredentials(user, password)
+	err := mlc.LoginWithCredentials(c.Context, user, password)
 	if err != nil {
 		log.Err(err).Str("user", user).Msg("Authentication failed")
 		return cli.Exit(err, AuthenticationFailed)
 	}
 
-	return mlc.DeleteAccount(mlc.AuthenticatedAccountID())
+	return mlc.DeleteAccount(c.Context, mlc.AuthenticatedAccountID())
 }
 
 func ListLockers(c *cli.Context) error {
@@ -661,7 +663,7 @@ func ListLockers(c *cli.Context) error {
 	}
 
 	lockerIDs := make([]string, 0)
-	lockers, err := dataWallet.GetLockers()
+	lockers, err := dataWallet.GetLockers(c.Context)
 	if err != nil {
 		log.Err(err).Msg("Failed to read locker list")
 		return cli.Exit(err, OperationFailed)
@@ -674,7 +676,7 @@ func ListLockers(c *cli.Context) error {
 	tf := "2006-01-02 15:04:05-07:00"
 	data := make([][]string, 0)
 	for _, lid := range lockerIDs {
-		lw, err := dataWallet.GetLocker(lid)
+		lw, err := dataWallet.GetLocker(c.Context, lid)
 		if err != nil {
 			return err
 		}
@@ -723,14 +725,14 @@ func PurgeDeletedDataAssets(c *cli.Context) error {
 		return err
 	}
 
-	rootIndex, err := dw.RootIndex()
+	rootIndex, err := dw.RootIndex(c.Context)
 	if err != nil {
 		return err
 	}
 
-	err = rootIndex.TraverseRecords(locker, "", func(r *index.RecordState) error {
+	err = rootIndex.TraverseRecords(c.Context, locker, "", func(r *index.RecordState) error {
 		if r.Status == model.StatusRevoked {
-			if err = dw.DataStore().PurgeDataAssets(r.ID); err != nil {
+			if err = dw.DataStore().PurgeDataAssets(c.Context, r.ID); err != nil {
 				if errors.Is(err, model.ErrBlobNotFound) {
 					log.Debug().Str("rid", r.ID).Msg("Data assets already purged")
 				} else {
@@ -764,7 +766,7 @@ func ExportWallet(c *cli.Context) error {
 		return err
 	}
 
-	err = operations.ExportWallet(dw, c.Args().Get(0), lockerID, participantID, userFriendly, forceRewrite)
+	err = operations.ExportWallet(c.Context, dw, c.Args().Get(0), lockerID, participantID, userFriendly, forceRewrite)
 	if err != nil {
 		log.Err(err).Msg("Wallet export failed")
 		return cli.Exit(err, OperationFailed)
@@ -783,14 +785,14 @@ func ListRecords(c *cli.Context) error {
 		return err
 	}
 
-	rootIndex, err := dw.RootIndex()
+	rootIndex, err := dw.RootIndex(c.Context)
 	if err != nil {
 		return err
 	}
 
 	data := make([][]string, 0)
 
-	err = rootIndex.TraverseRecords(locker, "", func(r *index.RecordState) error {
+	err = rootIndex.TraverseRecords(c.Context, locker, "", func(r *index.RecordState) error {
 		if r.Status == model.StatusPublished || includeRevokedLeases {
 			data = append(data, []string{r.LockerID, r.ParticipantID, r.ID, strconv.Itoa(int(r.Operation)), r.ImpressionID, r.ContentType, string(r.Status)})
 		}

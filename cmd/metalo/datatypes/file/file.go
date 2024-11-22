@@ -15,6 +15,7 @@
 package file
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -212,7 +213,7 @@ func (r *Renderer) Print() error {
 	return nil
 }
 
-func (r *Renderer) ExportToDisk(destFolder string, includeMetaData bool) error {
+func (r *Renderer) ExportToDisk(ctx context.Context, destFolder string, includeMetaData bool) error {
 	err := os.MkdirAll(destFolder, 0o700)
 	if err != nil {
 		return err
@@ -224,7 +225,7 @@ func (r *Renderer) ExportToDisk(destFolder string, includeMetaData bool) error {
 		return err
 	}
 
-	reader, err := r.ds.Resource(r.blobID)
+	reader, err := r.ds.Resource(ctx, r.blobID)
 	if err != nil {
 		return err
 	}

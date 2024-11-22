@@ -15,6 +15,7 @@
 package index
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -55,14 +56,14 @@ type clientImpl struct {
 
 var _ Client = (*clientImpl)(nil)
 
-func NewLocalIndexClient(storeConfigs []*StoreConfig, resolver cmdbase.ParameterResolver, genesisBlockHash string) (Client, error) {
+func NewLocalIndexClient(ctx context.Context, storeConfigs []*StoreConfig, resolver cmdbase.ParameterResolver, genesisBlockHash string) (Client, error) {
 	indexClient := &clientImpl{
 		stores:           make(map[string]Store),
 		genesisBlockHash: genesisBlockHash,
 	}
 
 	for _, cfg := range storeConfigs {
-		if err := indexClient.AddIndexStore(cfg, resolver); err != nil {
+		if err := indexClient.AddIndexStore(ctx, cfg, resolver); err != nil {
 			_ = indexClient.Close()
 			return nil, err
 		}
@@ -71,14 +72,14 @@ func NewLocalIndexClient(storeConfigs []*StoreConfig, resolver cmdbase.Parameter
 	return indexClient, nil
 }
 
-func (ic *clientImpl) Bind(gbHash string) error {
+func (ic *clientImpl) Bind(ctx context.Context, gbHash string) error {
 	if ic.genesisBlockHash != "" {
 		if ic.genesisBlockHash != gbHash {
 			return errors.New("genesis block mismatch")
 		}
 	} else {
 		for _, s := range ic.priorityList {
-			if err := s.Bind(gbHash); err != nil {
+			if err := s.Bind(ctx, gbHash); err != nil {
 				return err
 			}
 		}
@@ -88,7 +89,7 @@ func (ic *clientImpl) Bind(gbHash string) error {
 	return nil
 }
 
-func (ic *clientImpl) AddIndexStore(cfg *StoreConfig, resolver cmdbase.ParameterResolver) error {
+func (ic *clientImpl) AddIndexStore(ctx context.Context, cfg *StoreConfig, resolver cmdbase.ParameterResolver) error {
 	store, err := CreateStore(cfg, resolver)
 	if err != nil {
 		return err
@@ -97,7 +98,7 @@ func (ic *clientImpl) AddIndexStore(cfg *StoreConfig, resolver cmdbase.Parameter
 	ic.priorityList = append(ic.priorityList, store)
 
 	if ic.genesisBlockHash != "" {
-		if err = store.Bind(ic.genesisBlockHash); err != nil {
+		if err = store.Bind(ctx, ic.genesisBlockHash); err != nil {
 			return err
 		}
 	}
@@ -105,13 +106,13 @@ func (ic *clientImpl) AddIndexStore(cfg *StoreConfig, resolver cmdbase.Parameter
 	return nil
 }
 
-func (ic *clientImpl) RootIndex(userID string, lvl model.AccessLevel) (RootIndex, error) {
+func (ic *clientImpl) RootIndex(ctx context.Context, userID string, lvl model.AccessLevel) (RootIndex, error) {
 	if len(ic.priorityList) == 0 {
 		return nil, ErrIndexNotFound
 	}
 
 	for _, store := range ic.priorityList {
-		ix, err := store.RootIndex(userID, lvl)
+		ix, err := store.RootIndex(ctx, userID, lvl)
 		if err != nil {
 			if errors.Is(err, ErrIndexNotFound) {
 				continue
@@ -124,13 +125,13 @@ func (ic *clientImpl) RootIndex(userID string, lvl model.AccessLevel) (RootIndex
 	return nil, ErrIndexNotFound
 }
 
-func (ic *clientImpl) Index(userID string, id string) (Index, error) {
+func (ic *clientImpl) Index(ctx context.Context, userID string, id string) (Index, error) {
 	if len(ic.priorityList) == 0 {
 		return nil, ErrIndexNotFound
 	}
 
 	for _, store := range ic.priorityList {
-		ix, err := store.Index(userID, id)
+		ix, err := store.Index(ctx, userID, id)
 		if err != nil {
 			if errors.Is(err, ErrIndexNotFound) {
 				continue
@@ -143,10 +144,10 @@ func (ic *clientImpl) Index(userID string, id string) (Index, error) {
 	return nil, ErrIndexNotFound
 }
 
-func (ic *clientImpl) ListIndexes(userID string) ([]*Properties, error) {
+func (ic *clientImpl) ListIndexes(ctx context.Context, userID string) ([]*Properties, error) {
 	var res []*Properties
 	for _, store := range ic.stores {
-		propsList, err := store.ListIndexes(userID)
+		propsList, err := store.ListIndexes(ctx, userID)
 		if err != nil {
 			return nil, err
 		}
@@ -155,9 +156,9 @@ func (ic *clientImpl) ListIndexes(userID string) ([]*Properties, error) {
 	return res, nil
 }
 
-func (ic *clientImpl) DeleteIndex(userID, id string) error {
+func (ic *clientImpl) DeleteIndex(ctx context.Context, userID, id string) error {
 	for _, store := range ic.stores {
-		_, err := store.Index(userID, id)
+		_, err := store.Index(ctx, userID, id)
 		if err != nil {
 			if errors.Is(err, ErrIndexNotFound) {
 				continue
@@ -165,12 +166,12 @@ func (ic *clientImpl) DeleteIndex(userID, id string) error {
 				return err
 			}
 		}
-		return store.DeleteIndex(userID, id)
+		return store.DeleteIndex(ctx, userID, id)
 	}
 	return ErrIndexNotFound
 }
 
-func (ic *clientImpl) IndexStore(storeName string) (Store, error) {
+func (ic *clientImpl) IndexStore(ctx context.Context, storeName string) (Store, error) {
 	store, found := ic.stores[storeName]
 	if !found {
 		return nil, ErrIndexStoreNotFound
@@ -178,7 +179,7 @@ func (ic *clientImpl) IndexStore(storeName string) (Store, error) {
 	return store, nil
 }
 
-func (ic *clientImpl) IndexStores() []*StoreProperties {
+func (ic *clientImpl) IndexStores(ctx context.Context) []*StoreProperties {
 	res := make([]*StoreProperties, len(ic.priorityList))
 	for i, store := range ic.priorityList {
 		res[i] = store.Properties()

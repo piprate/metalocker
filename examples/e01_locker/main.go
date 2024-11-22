@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"time"
 
@@ -55,11 +56,14 @@ func main() {
 		panic(err)
 	}
 
+	ctx := context.Background()
+
 	// create account 1: Jack
 
 	passPhrase := "passw0rd!"
 
 	jackWallet, _, err := factory.RegisterAccount(
+		ctx,
 		&account.Account{
 			Email:       "jack@example.com",
 			Name:        "Jack",
@@ -73,7 +77,7 @@ func main() {
 
 	// the wallet needs to be unlocked before use
 
-	err = jackWallet.Unlock(passPhrase)
+	err = jackWallet.Unlock(ctx, passPhrase)
 	if err != nil {
 		panic(err)
 	}
@@ -81,6 +85,7 @@ func main() {
 	// create account 2: Jill
 
 	jillWallet, _, err := factory.RegisterAccount(
+		ctx,
 		&account.Account{
 			Email:       "jill@example.com",
 			Name:        "Jill",
@@ -92,19 +97,19 @@ func main() {
 		panic(err)
 	}
 
-	err = jillWallet.Unlock(passPhrase)
+	err = jillWallet.Unlock(ctx, passPhrase)
 	if err != nil {
 		panic(err)
 	}
 
 	// create identities for Jack and Jill. An account can have an unlimited number of identities.
 
-	jack, err := jackWallet.NewIdentity(model.AccessLevelHosted, "Jack")
+	jack, err := jackWallet.NewIdentity(ctx, model.AccessLevelHosted, "Jack")
 	if err != nil {
 		panic(err)
 	}
 
-	jill, err := jillWallet.NewIdentity(model.AccessLevelHosted, "Jill")
+	jill, err := jillWallet.NewIdentity(ctx, model.AccessLevelHosted, "Jill")
 	if err != nil {
 		panic(err)
 	}
@@ -114,19 +119,19 @@ func main() {
 	// 2. Jill imports this locker into her wallet. In real life Jack would need to share the locker with Jill
 	// using a secure communication channel. MetaLocker doesn't prescribe what channel should be used.
 
-	lockerForJack, err := jack.NewLocker("Hill", wallet.Participant(jill.DID(), nil))
+	lockerForJack, err := jack.NewLocker(ctx, "Hill", wallet.Participant(jill.DID(), nil))
 	if err != nil {
 		panic(err)
 	}
 
-	lockerForJill, err := jillWallet.AddLocker(lockerForJack.Raw().Perspective(jill.ID()))
+	lockerForJill, err := jillWallet.AddLocker(ctx, lockerForJack.Raw().Perspective(jill.ID()))
 	if err != nil {
 		panic(err)
 	}
 
 	// send a JSON document from one Jack to Jill
 
-	lb, err := lockerForJack.NewDataSetBuilder(dataset.WithVault("local"))
+	lb, err := lockerForJack.NewDataSetBuilder(ctx, dataset.WithVault("local"))
 	if err != nil {
 		panic(err)
 	}
@@ -148,7 +153,7 @@ func main() {
 
 	// send another document back from Jill to Jack
 
-	lb, err = lockerForJill.NewDataSetBuilder(dataset.WithVault("local"))
+	lb, err = lockerForJill.NewDataSetBuilder(ctx, dataset.WithVault("local"))
 	if err != nil {
 		panic(err)
 	}
@@ -169,25 +174,25 @@ func main() {
 
 	// load the first dataset from Jill's wallet
 
-	ds1, err := jillWallet.DataStore().Load(future1.ID(), dataset.FromLocker(lockerForJill.ID()))
+	ds1, err := jillWallet.DataStore().Load(ctx, future1.ID(), dataset.FromLocker(lockerForJill.ID()))
 	if err != nil {
 		panic(err)
 	}
 
 	var dataset1 map[string]any
-	_ = ds1.DecodeMetaResource(&dataset1)
+	_ = ds1.DecodeMetaResource(ctx, &dataset1)
 
 	ld.PrintDocument("What Jack did", dataset1)
 
 	// load the second dataset from Jack's wallet
 
-	ds2, err := jackWallet.DataStore().Load(future2.ID(), dataset.FromLocker(lockerForJack.ID()))
+	ds2, err := jackWallet.DataStore().Load(ctx, future2.ID(), dataset.FromLocker(lockerForJack.ID()))
 	if err != nil {
 		panic(err)
 	}
 
 	var dataset2 map[string]any
-	_ = ds2.DecodeMetaResource(&dataset2)
+	_ = ds2.DecodeMetaResource(ctx, &dataset2)
 
 	ld.PrintDocument("What Jill did", dataset2)
 }

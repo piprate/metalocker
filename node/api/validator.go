@@ -50,7 +50,7 @@ func ValidateRequestSignatureHandler(identityBackend storage.IdentityBackend) gi
 
 		ts := time.Unix(req.Timestamp, 0)
 
-		key, err := identityBackend.GetAccessKey(req.KeyID)
+		key, err := identityBackend.GetAccessKey(c, req.KeyID)
 		if err != nil {
 			if errors.Is(err, storage.ErrAccessKeyNotFound) {
 				log.Warn().Str("url", req.URL).Str("key", req.KeyID).Msg("Signature validation failed: key not found")

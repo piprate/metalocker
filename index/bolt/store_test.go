@@ -15,6 +15,7 @@
 package bolt_test
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -50,7 +51,7 @@ func newTestIndexStore(t *testing.T) (index.Store, string) {
 		}, nil)
 
 	require.NoError(t, err)
-	require.NoError(t, indexStore.Bind("abc"))
+	require.NoError(t, indexStore.Bind(context.Background(), "abc"))
 	assert.NotNil(t, indexStore)
 
 	return indexStore, dir
@@ -63,7 +64,7 @@ func TestNewIndexStore(t *testing.T) {
 		_ = os.RemoveAll(dir)
 	}()
 
-	hash := store.GenesisBlockHash()
+	hash := store.GenesisBlockHash(context.Background())
 	assert.Equal(t, "abc", hash)
 }
 
@@ -74,11 +75,13 @@ func TestIndexStore_RootIndex(t *testing.T) {
 		_ = os.RemoveAll(dir)
 	}()
 
+	ctx := context.Background()
+
 	userID := "did:piprate:QgH6CZvhjTUFvCbRUw4N6Z"
-	_, err := store.RootIndex(userID, model.AccessLevelHosted)
+	_, err := store.RootIndex(ctx, userID, model.AccessLevelHosted)
 	require.Error(t, index.ErrIndexNotFound, err)
 
-	newIdx, err := store.CreateIndex(userID, index.TypeRoot, model.AccessLevelHosted)
+	newIdx, err := store.CreateIndex(ctx, userID, index.TypeRoot, model.AccessLevelHosted)
 	require.NoError(t, err)
 
 	// check index properties were created correctly
@@ -89,7 +92,7 @@ func TestIndexStore_RootIndex(t *testing.T) {
 	assert.Equal(t, index.TypeRoot, props.IndexType)
 	assert.Equal(t, newIdx.ID(), props.Asset)
 
-	idx, err := store.RootIndex(userID, model.AccessLevelHosted)
+	idx, err := store.RootIndex(ctx, userID, model.AccessLevelHosted)
 	require.NoError(t, err)
 	assert.NotEmpty(t, idx)
 

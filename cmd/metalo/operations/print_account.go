@@ -15,6 +15,7 @@
 package operations
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/piprate/metalocker/model"
@@ -40,10 +41,10 @@ func idWithLevel(lvl model.AccessLevel, id string) string {
 	return " ? " + id + " "
 }
 
-func printAccount(dw wallet.DataWallet, tree treeprint.Tree) error {
+func printAccount(ctx context.Context, dw wallet.DataWallet, tree treeprint.Tree) error {
 	tree = tree.AddMetaBranch(idWithLevel(dw.Account().AccessLevel, dw.ID()), dw.Account().Name)
 
-	subs, err := dw.SubAccounts()
+	subs, err := dw.SubAccounts(ctx)
 	if err != nil {
 		return err
 	}
@@ -51,24 +52,24 @@ func printAccount(dw wallet.DataWallet, tree treeprint.Tree) error {
 	if len(subs) > 0 {
 		subTree := tree.AddBranch("sub-accounts")
 		for _, sub := range subs {
-			subDW, err := dw.GetSubAccountWallet(sub.ID)
+			subDW, err := dw.GetSubAccountWallet(ctx, sub.ID)
 			if err != nil {
 				return err
 			}
 			defer subDW.Close()
-			if err = printAccount(subDW, subTree); err != nil {
+			if err = printAccount(ctx, subDW, subTree); err != nil {
 				return err
 			}
 			_ = subDW.Close()
 		}
 	}
 
-	idList, err := dw.GetIdentities()
+	idList, err := dw.GetIdentities(ctx)
 	if err != nil {
 		return err
 	}
 
-	lockers, err := dw.GetLockers()
+	lockers, err := dw.GetLockers(ctx)
 	if err != nil {
 		return err
 	}
@@ -104,26 +105,26 @@ func printAccount(dw wallet.DataWallet, tree treeprint.Tree) error {
 	return nil
 }
 
-func ChartToString(dw wallet.DataWallet, name string) (string, error) {
+func ChartToString(ctx context.Context, dw wallet.DataWallet, name string) (string, error) {
 	tree := treeprint.New()
 	tree.SetValue(name)
 
-	if err := printAccount(dw, tree); err != nil {
+	if err := printAccount(ctx, dw, tree); err != nil {
 		return "", err
 	}
 
 	return tree.String(), nil
 }
 
-func PrintWallet(dw wallet.DataWallet, name string) error {
+func PrintWallet(ctx context.Context, dw wallet.DataWallet, name string) error {
 	tree := treeprint.New()
 	tree.SetValue(name)
 
-	if err := printAccount(dw, tree); err != nil {
+	if err := printAccount(ctx, dw, tree); err != nil {
 		return err
 	}
 
-	val, err := ChartToString(dw, name)
+	val, err := ChartToString(ctx, dw, name)
 	if err != nil {
 		return err
 	}

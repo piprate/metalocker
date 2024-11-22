@@ -15,6 +15,8 @@
 package datatypes
 
 import (
+	"context"
+
 	"github.com/piprate/metalocker/model/dataset"
 )
 
@@ -31,5 +33,5 @@ type Uploader interface {
 
 type Renderer interface {
 	Print() error
-	ExportToDisk(path string, includeMetaData bool) error
+	ExportToDisk(ctx context.Context, path string, includeMetaData bool) error
 }

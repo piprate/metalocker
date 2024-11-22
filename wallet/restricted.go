@@ -15,6 +15,7 @@
 package wallet
 
 import (
+	"context"
 	"errors"
 
 	"github.com/piprate/metalocker/model"
@@ -52,39 +53,39 @@ func (r *RestrictedNodeClient) Close() error {
 	return r.nodeClient.Close()
 }
 
-func (r *RestrictedNodeClient) CreateAccessKey(key *model.AccessKey) (*model.AccessKey, error) {
+func (r *RestrictedNodeClient) CreateAccessKey(ctx context.Context, key *model.AccessKey) (*model.AccessKey, error) {
 	return nil, ErrForbiddenOperation
 }
 
-func (r *RestrictedNodeClient) GetAccessKey(aid string) (*model.AccessKey, error) {
+func (r *RestrictedNodeClient) GetAccessKey(ctx context.Context, aid string) (*model.AccessKey, error) {
 	return nil, ErrForbiddenOperation
 }
 
-func (r *RestrictedNodeClient) DeleteAccessKey(keyID string) error {
+func (r *RestrictedNodeClient) DeleteAccessKey(ctx context.Context, keyID string) error {
 	return ErrForbiddenOperation
 }
 
-func (r *RestrictedNodeClient) ListAccessKeys() ([]*model.AccessKey, error) {
+func (r *RestrictedNodeClient) ListAccessKeys(ctx context.Context) ([]*model.AccessKey, error) {
 	return nil, ErrForbiddenOperation
 }
 
-func (r *RestrictedNodeClient) CreateSubAccount(acct *account.Account) (*account.Account, error) {
+func (r *RestrictedNodeClient) CreateSubAccount(ctx context.Context, acct *account.Account) (*account.Account, error) {
 	return nil, ErrForbiddenOperation
 }
 
-func (r *RestrictedNodeClient) ListSubAccounts(id string) ([]*account.Account, error) {
+func (r *RestrictedNodeClient) ListSubAccounts(ctx context.Context, id string) ([]*account.Account, error) {
 	return nil, ErrForbiddenOperation
 }
 
-func (r *RestrictedNodeClient) CreateAccount(acct *account.Account, registrationCode string) error {
+func (r *RestrictedNodeClient) CreateAccount(ctx context.Context, acct *account.Account, registrationCode string) error {
 	return ErrForbiddenOperation
 }
 
-func (r *RestrictedNodeClient) GetOwnAccount() (*account.Account, error) {
-	return r.nodeClient.GetOwnAccount()
+func (r *RestrictedNodeClient) GetOwnAccount(ctx context.Context) (*account.Account, error) {
+	return r.nodeClient.GetOwnAccount(ctx)
 }
 
-func (r *RestrictedNodeClient) GetAccount(id string) (*account.Account, error) {
+func (r *RestrictedNodeClient) GetAccount(ctx context.Context, id string) (*account.Account, error) {
 	return nil, ErrForbiddenOperation
 	//acct, err := r.nodeClient.GetAccount(id)
 	//if err != nil {
@@ -93,27 +94,27 @@ func (r *RestrictedNodeClient) GetAccount(id string) (*account.Account, error) {
 	//return acct.RestrictedCopy(), nil
 }
 
-func (r *RestrictedNodeClient) UpdateAccount(acct *account.Account) error {
+func (r *RestrictedNodeClient) UpdateAccount(ctx context.Context, acct *account.Account) error {
 	return ErrForbiddenOperation
 }
 
-func (r *RestrictedNodeClient) PatchAccount(email, oldEncryptedPassword, newEncryptedPassword, name, givenName, familyName string) error {
+func (r *RestrictedNodeClient) PatchAccount(ctx context.Context, email, oldEncryptedPassword, newEncryptedPassword, name, givenName, familyName string) error {
 	return ErrForbiddenOperation
 }
 
-func (r *RestrictedNodeClient) DeleteAccount(id string) error {
+func (r *RestrictedNodeClient) DeleteAccount(ctx context.Context, id string) error {
 	return ErrForbiddenOperation
 }
 
-func (r *RestrictedNodeClient) StoreIdentity(idy *account.DataEnvelope) error {
+func (r *RestrictedNodeClient) StoreIdentity(ctx context.Context, idy *account.DataEnvelope) error {
 	panic("operation not implemented")
 }
 
-func (r *RestrictedNodeClient) GetIdentity(hash string) (*account.DataEnvelope, error) {
+func (r *RestrictedNodeClient) GetIdentity(ctx context.Context, hash string) (*account.DataEnvelope, error) {
 	panic("operation not implemented")
 }
 
-func (r *RestrictedNodeClient) ListIdentities() ([]*account.DataEnvelope, error) {
+func (r *RestrictedNodeClient) ListIdentities(ctx context.Context) ([]*account.DataEnvelope, error) {
 	//idyList, err := r.nodeClient.ListIdentities()
 	//if err != nil {
 	//	return nil, err
@@ -123,35 +124,35 @@ func (r *RestrictedNodeClient) ListIdentities() ([]*account.DataEnvelope, error)
 	panic("operation not implemented")
 }
 
-func (r *RestrictedNodeClient) StoreLocker(l *account.DataEnvelope) error {
+func (r *RestrictedNodeClient) StoreLocker(ctx context.Context, l *account.DataEnvelope) error {
 	panic("operation not implemented")
 }
 
-func (r *RestrictedNodeClient) GetLocker(hash string) (*account.DataEnvelope, error) {
+func (r *RestrictedNodeClient) GetLocker(ctx context.Context, hash string) (*account.DataEnvelope, error) {
 	panic("operation not implemented")
 }
 
-func (r *RestrictedNodeClient) ListLockers() ([]*account.DataEnvelope, error) {
+func (r *RestrictedNodeClient) ListLockers(ctx context.Context) ([]*account.DataEnvelope, error) {
 	panic("operation not implemented")
 }
 
-func (r *RestrictedNodeClient) ListLockerHashes() ([]string, error) {
+func (r *RestrictedNodeClient) ListLockerHashes(ctx context.Context) ([]string, error) {
 	panic("operation not implemented")
 }
 
-func (r *RestrictedNodeClient) StoreProperty(prop *account.DataEnvelope) error {
+func (r *RestrictedNodeClient) StoreProperty(ctx context.Context, prop *account.DataEnvelope) error {
 	panic("operation not implemented")
 }
 
-func (r *RestrictedNodeClient) GetProperty(hash string) (*account.DataEnvelope, error) {
+func (r *RestrictedNodeClient) GetProperty(ctx context.Context, hash string) (*account.DataEnvelope, error) {
 	panic("operation not implemented")
 }
 
-func (r *RestrictedNodeClient) ListProperties() ([]*account.DataEnvelope, error) {
+func (r *RestrictedNodeClient) ListProperties(ctx context.Context) ([]*account.DataEnvelope, error) {
 	panic("operation not implemented")
 }
 
-func (r *RestrictedNodeClient) DeleteProperty(hash string) error {
+func (r *RestrictedNodeClient) DeleteProperty(ctx context.Context, hash string) error {
 	panic("operation not implemented")
 }
 
@@ -173,7 +174,7 @@ func (r *RestrictedNodeClient) BlobManager() model.BlobManager {
 	return r.nodeClient.BlobManager()
 }
 
-func (r *RestrictedNodeClient) NewInstance(email, passphrase string, isHash bool) (NodeClient, error) {
+func (r *RestrictedNodeClient) NewInstance(ctx context.Context, email, passphrase string, isHash bool) (NodeClient, error) {
 	return nil, ErrForbiddenOperation
 }
 
@@ -185,10 +186,10 @@ func (r *RestrictedNodeClient) NotificationService() (notification.Service, erro
 	return r.nodeClient.NotificationService()
 }
 
-func (r restrictedDIDProvider) CreateDIDDocument(ddoc *model.DIDDocument) error {
+func (r restrictedDIDProvider) CreateDIDDocument(ctx context.Context, ddoc *model.DIDDocument) error {
 	return ErrForbiddenOperation
 }
 
-func (r restrictedDIDProvider) GetDIDDocument(iid string) (*model.DIDDocument, error) {
-	return r.backend.GetDIDDocument(iid)
+func (r restrictedDIDProvider) GetDIDDocument(ctx context.Context, iid string) (*model.DIDDocument, error) {
+	return r.backend.GetDIDDocument(ctx, iid)
 }

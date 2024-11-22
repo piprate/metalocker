@@ -23,7 +23,7 @@ import (
 )
 
 func (h *Handler) GetIdentityListHandler(c *gin.Context) {
-	accounts, err := h.identityBackend.ListDIDDocuments()
+	accounts, err := h.identityBackend.ListDIDDocuments(c)
 	if err != nil {
 		log := apibase.CtxLogger(c)
 		log.Err(err).Msg("Error when reading identity list")
@@ -43,7 +43,7 @@ func (h *Handler) PostIdentityHandler(c *gin.Context) {
 		return
 	}
 
-	err = h.identityBackend.CreateDIDDocument(&ddoc)
+	err = h.identityBackend.CreateDIDDocument(c, &ddoc)
 	if err != nil {
 		log.Err(err).Msg("Error when saving identity")
 		_ = c.AbortWithError(http.StatusInternalServerError, err)

@@ -15,6 +15,7 @@
 package graph
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -162,7 +163,7 @@ func (gr *Renderer) Print() error {
 	return nil
 }
 
-func (gr *Renderer) ExportToDisk(destFolder string, includeMetaData bool) error {
+func (gr *Renderer) ExportToDisk(ctx context.Context, destFolder string, includeMetaData bool) error {
 	err := os.MkdirAll(destFolder, 0o700)
 	if err != nil {
 		return err
@@ -179,7 +180,7 @@ func (gr *Renderer) ExportToDisk(destFolder string, includeMetaData bool) error 
 	for _, assetID := range gr.ds.Resources() {
 		fileName := filepath.Join(destFolder, strings.ReplaceAll(assetID, ":", "_"))
 
-		r, err := gr.ds.Resource(assetID)
+		r, err := gr.ds.Resource(ctx, assetID)
 		if err != nil {
 			return err
 		}

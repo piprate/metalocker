@@ -41,30 +41,30 @@ func TestScanner_Scan(t *testing.T) {
 
 	dw1 := env.CreateCustomAccount(t, "test1@example.com", "John Doe 1", model.AccessLevelManaged, model.WithSeed("Acct1"))
 
-	idy1, err := dw1.NewIdentity(model.AccessLevelManaged, "")
+	idy1, err := dw1.NewIdentity(env.Ctx, model.AccessLevelManaged, "")
 	require.NoError(t, err)
 
-	uniLocker, err := idy1.NewLocker("UniLocker")
+	uniLocker, err := idy1.NewLocker(env.Ctx, "UniLocker")
 	require.NoError(t, err)
 
 	// set up Data Wallet 2
 
 	dw2 := env.CreateCustomAccount(t, "test2@example.com", "John Doe 2", model.AccessLevelManaged, model.WithSeed("Acct2"))
 
-	idy2, err := dw2.NewIdentity(model.AccessLevelManaged, "")
+	idy2, err := dw2.NewIdentity(env.Ctx, model.AccessLevelManaged, "")
 	require.NoError(t, err)
 
 	// set up a shared locker
 
-	sharedLocker1, err := idy1.NewLocker("Test Locker", wallet.Participant(idy2.DID(), nil))
+	sharedLocker1, err := idy1.NewLocker(env.Ctx, "Test Locker", wallet.Participant(idy2.DID(), nil))
 	require.NoError(t, err)
 
-	sharedLocker2, err := dw2.AddLocker(sharedLocker1.Raw().Perspective(idy2.ID()))
+	sharedLocker2, err := dw2.AddLocker(env.Ctx, sharedLocker1.Raw().Perspective(idy2.ID()))
 	require.NoError(t, err)
 
 	// publish several records
 
-	lb, err := uniLocker.NewDataSetBuilder(dataset.WithVault(testbase.TestVaultName))
+	lb, err := uniLocker.NewDataSetBuilder(env.Ctx, dataset.WithVault(testbase.TestVaultName))
 	require.NoError(t, err)
 
 	_, err = lb.AddMetaResource(map[string]any{
@@ -78,7 +78,7 @@ func TestScanner_Scan(t *testing.T) {
 
 	rid1 := f.ID()
 
-	lb, err = sharedLocker1.NewDataSetBuilder(dataset.WithVault(testbase.TestVaultName))
+	lb, err = sharedLocker1.NewDataSetBuilder(env.Ctx, dataset.WithVault(testbase.TestVaultName))
 	require.NoError(t, err)
 
 	_, err = lb.AddMetaResource(map[string]any{
@@ -139,7 +139,7 @@ func TestScanner_Scan(t *testing.T) {
 	_ = sub2.AddLockers(LockerEntry{Locker: sharedLocker2.Raw()})
 	_ = ledgerScanner.AddSubscription(sub2)
 
-	complete, err := ledgerScanner.Scan()
+	complete, err := ledgerScanner.Scan(env.Ctx)
 	require.NoError(t, err)
 	assert.True(t, complete)
 
@@ -155,30 +155,30 @@ func TestScanner_Scan_TwoIterations(t *testing.T) {
 
 	dw1 := env.CreateCustomAccount(t, "test1@example.com", "John Doe 1", model.AccessLevelManaged, model.WithSeed("Acct1"))
 
-	idy1, err := dw1.NewIdentity(model.AccessLevelManaged, "")
+	idy1, err := dw1.NewIdentity(env.Ctx, model.AccessLevelManaged, "")
 	require.NoError(t, err)
 
-	uniLocker, err := idy1.NewLocker("UniLocker")
+	uniLocker, err := idy1.NewLocker(env.Ctx, "UniLocker")
 	require.NoError(t, err)
 
 	// set up Data Wallet 2
 
 	dw2 := env.CreateCustomAccount(t, "test2@example.com", "John Doe 2", model.AccessLevelManaged, model.WithSeed("Acct2"))
 
-	idy2, err := dw2.NewIdentity(model.AccessLevelManaged, "")
+	idy2, err := dw2.NewIdentity(env.Ctx, model.AccessLevelManaged, "")
 	require.NoError(t, err)
 
 	// set up a shared locker
 
-	sharedLocker1, err := idy1.NewLocker("Test Locker", wallet.Participant(idy2.DID(), nil))
+	sharedLocker1, err := idy1.NewLocker(env.Ctx, "Test Locker", wallet.Participant(idy2.DID(), nil))
 	require.NoError(t, err)
 
-	sharedLocker2, err := dw2.AddLocker(sharedLocker1.Raw().Perspective(idy2.ID()))
+	sharedLocker2, err := dw2.AddLocker(env.Ctx, sharedLocker1.Raw().Perspective(idy2.ID()))
 	require.NoError(t, err)
 
 	// publish several records
 
-	lb, err := uniLocker.NewDataSetBuilder(dataset.WithVault(testbase.TestVaultName))
+	lb, err := uniLocker.NewDataSetBuilder(env.Ctx, dataset.WithVault(testbase.TestVaultName))
 	require.NoError(t, err)
 
 	_, err = lb.AddMetaResource(map[string]any{
@@ -192,7 +192,7 @@ func TestScanner_Scan_TwoIterations(t *testing.T) {
 
 	rid1 := f.ID()
 
-	lb, err = sharedLocker1.NewDataSetBuilder(dataset.WithVault(testbase.TestVaultName))
+	lb, err = sharedLocker1.NewDataSetBuilder(env.Ctx, dataset.WithVault(testbase.TestVaultName))
 	require.NoError(t, err)
 
 	_, err = lb.AddMetaResource(map[string]any{
@@ -253,14 +253,14 @@ func TestScanner_Scan_TwoIterations(t *testing.T) {
 	_ = sub2.AddLockers(LockerEntry{Locker: sharedLocker2.Raw()})
 	_ = ledgerScanner.AddSubscription(sub2)
 
-	complete, err := ledgerScanner.Scan()
+	complete, err := ledgerScanner.Scan(env.Ctx)
 	require.NoError(t, err)
 	assert.True(t, complete)
 
 	assert.True(t, consumer1.AllRecordsMatched(), "Received less matching records than expected")
 	assert.True(t, consumer2.AllRecordsMatched(), "Received less matching records than expected")
 
-	lb, err = sharedLocker1.NewDataSetBuilder(dataset.WithVault(testbase.TestVaultName))
+	lb, err = sharedLocker1.NewDataSetBuilder(env.Ctx, dataset.WithVault(testbase.TestVaultName))
 	require.NoError(t, err)
 
 	_, err = lb.AddMetaResource(map[string]any{
@@ -299,7 +299,7 @@ func TestScanner_Scan_TwoIterations(t *testing.T) {
 	}
 	consumer2.Counter = 0
 
-	complete, err = ledgerScanner.Scan()
+	complete, err = ledgerScanner.Scan(env.Ctx)
 	require.NoError(t, err)
 	assert.True(t, complete)
 
@@ -315,27 +315,27 @@ func TestScanner_RemoveSubscription(t *testing.T) {
 
 	dw1 := env.CreateCustomAccount(t, "test1@example.com", "John Doe 1", model.AccessLevelManaged, model.WithSeed("Acct1"))
 
-	idy1, err := dw1.NewIdentity(model.AccessLevelManaged, "")
+	idy1, err := dw1.NewIdentity(env.Ctx, model.AccessLevelManaged, "")
 	require.NoError(t, err)
 
 	// set up Data Wallet 2
 
 	dw2 := env.CreateCustomAccount(t, "test2@example.com", "John Doe 2", model.AccessLevelManaged, model.WithSeed("Acct2"))
 
-	idy2, err := dw2.NewIdentity(model.AccessLevelManaged, "")
+	idy2, err := dw2.NewIdentity(env.Ctx, model.AccessLevelManaged, "")
 	require.NoError(t, err)
 
 	// set up a shared locker
 
-	sharedLocker1, err := idy1.NewLocker("Test Locker", wallet.Participant(idy2.DID(), nil))
+	sharedLocker1, err := idy1.NewLocker(env.Ctx, "Test Locker", wallet.Participant(idy2.DID(), nil))
 	require.NoError(t, err)
 
-	sharedLocker2, err := dw2.AddLocker(sharedLocker1.Raw().Perspective(idy2.ID()))
+	sharedLocker2, err := dw2.AddLocker(env.Ctx, sharedLocker1.Raw().Perspective(idy2.ID()))
 	require.NoError(t, err)
 
 	// publish 1 record
 
-	lb, err := sharedLocker1.NewDataSetBuilder(dataset.WithVault(testbase.TestVaultName))
+	lb, err := sharedLocker1.NewDataSetBuilder(env.Ctx, dataset.WithVault(testbase.TestVaultName))
 	require.NoError(t, err)
 
 	_, err = lb.AddMetaResource(map[string]any{
@@ -388,7 +388,7 @@ func TestScanner_RemoveSubscription(t *testing.T) {
 	_ = sub2.AddLockers(LockerEntry{Locker: sharedLocker2.Raw()})
 	_ = ledgerScanner.AddSubscription(sub2)
 
-	complete, err := ledgerScanner.Scan()
+	complete, err := ledgerScanner.Scan(env.Ctx)
 	require.NoError(t, err)
 	assert.True(t, complete)
 
@@ -398,7 +398,7 @@ func TestScanner_RemoveSubscription(t *testing.T) {
 	err = ledgerScanner.RemoveSubscription(dw2.ID())
 	require.NoError(t, err)
 
-	lb, err = sharedLocker1.NewDataSetBuilder(dataset.WithVault(testbase.TestVaultName))
+	lb, err = sharedLocker1.NewDataSetBuilder(env.Ctx, dataset.WithVault(testbase.TestVaultName))
 	require.NoError(t, err)
 
 	_, err = lb.AddMetaResource(map[string]any{
@@ -428,7 +428,7 @@ func TestScanner_RemoveSubscription(t *testing.T) {
 	consumer2.ExpectedMatches = []map[string]any{}
 	consumer2.Reset()
 
-	complete, err = ledgerScanner.Scan()
+	complete, err = ledgerScanner.Scan(env.Ctx)
 	require.NoError(t, err)
 	assert.True(t, complete)
 

@@ -30,7 +30,7 @@ func GenerateAccessKey(c *cli.Context) error {
 		return err
 	}
 
-	ak, err := dataWallet.CreateAccessKey(dataWallet.Account().AccessLevel, time.Hour*24*365)
+	ak, err := dataWallet.CreateAccessKey(c.Context, dataWallet.Account().AccessLevel, time.Hour*24*365)
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func ListAccessKeys(c *cli.Context) error {
 		return err
 	}
 
-	accessKeys, err := dataWallet.AccessKeys()
+	accessKeys, err := dataWallet.AccessKeys(c.Context)
 	if err != nil {
 		return cli.Exit(err.Error(), OperationFailed)
 	}
@@ -87,7 +87,7 @@ func GetAccessKey(c *cli.Context) error {
 		return err
 	}
 
-	ak, err := dw.GetAccessKey(c.Args().Get(0))
+	ak, err := dw.GetAccessKey(c.Context, c.Args().Get(0))
 	if err != nil {
 		return cli.Exit(err.Error(), OperationFailed)
 	}
@@ -107,5 +107,5 @@ func DeleteAccessKey(c *cli.Context) error {
 		return err
 	}
 
-	return dw.RevokeAccessKey(c.Args().Get(0))
+	return dw.RevokeAccessKey(c.Context, c.Args().Get(0))
 }

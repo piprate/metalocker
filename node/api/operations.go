@@ -27,7 +27,7 @@ import (
 func (h *LedgerHandler) GetLedgerOperationHandler(c *gin.Context) {
 	id := c.Params.ByName("id")
 
-	opReader, err := h.offChainVault.ServeBlob(id, nil, "")
+	opReader, err := h.offChainVault.ServeBlob(c, id, nil, "")
 	if err != nil {
 		if errors.Is(err, model.ErrBlobNotFound) {
 			apibase.AbortWithError(c, http.StatusNotFound, "operation not found")
@@ -53,7 +53,7 @@ func (h *LedgerHandler) GetLedgerOperationHandler(c *gin.Context) {
 func (h *LedgerHandler) PostPurgeLedgerOperationHandler(c *gin.Context) {
 	id := c.Params.ByName("id")
 
-	err := h.offChainVault.PurgeBlob(id, nil)
+	err := h.offChainVault.PurgeBlob(c, id, nil)
 	if err != nil {
 		if errors.Is(err, model.ErrBlobNotFound) {
 			c.Status(http.StatusNotFound)
@@ -72,7 +72,7 @@ func (h *LedgerHandler) PostLedgerOperationHandler(c *gin.Context) {
 	defer c.Request.Body.Close()
 
 	// persist operation
-	res, err := h.offChainVault.CreateBlob(c.Request.Body)
+	res, err := h.offChainVault.CreateBlob(c, c.Request.Body)
 	if err != nil {
 		apibase.AbortWithInternalServerError(c, err)
 		return

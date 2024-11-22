@@ -15,6 +15,7 @@
 package model
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"io"
@@ -72,11 +73,11 @@ type (
 	// BlobManager manages client-side encryption for blobs. There is no need to encrypt of decrypt data
 	// that comes from BlobManager.
 	BlobManager interface {
-		GetBlob(res *StoredResource, accessToken string) (io.ReadCloser, error)
-		SendBlob(data io.Reader, cleartext bool, vaultID string) (*StoredResource, error)
-		PurgeBlob(res *StoredResource) error
+		GetBlob(ctx context.Context, res *StoredResource, accessToken string) (io.ReadCloser, error)
+		SendBlob(ctx context.Context, data io.Reader, cleartext bool, vaultID string) (*StoredResource, error)
+		PurgeBlob(ctx context.Context, res *StoredResource) error
 
-		GetVaultMap() (map[string]*VaultProperties, error)
+		GetVaultMap(ctx context.Context) (map[string]*VaultProperties, error)
 	}
 )
 

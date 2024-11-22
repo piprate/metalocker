@@ -167,7 +167,7 @@ func TestPatchAccountHandler(t *testing.T) {
 	rec = invoke(hostedAcct.ID, bytes.NewReader(patchBytes))
 	require.Equal(t, http.StatusOK, rec.Code)
 
-	updatedAcct, err := env.IdentityBackend.GetAccount(hostedAcct.ID)
+	updatedAcct, err := env.IdentityBackend.GetAccount(env.Ctx, hostedAcct.ID)
 	require.NoError(t, err)
 
 	assert.Equal(t, patch.Email, updatedAcct.Email)
@@ -236,7 +236,7 @@ func TestAccountHandler_DeleteAccountHandler(t *testing.T) {
 	rec = invoke(acct.ID, acct.ID)
 	require.Equal(t, http.StatusOK, rec.Code)
 
-	_, err := env.IdentityBackend.GetAccount(acct.ID)
+	_, err := env.IdentityBackend.GetAccount(env.Ctx, acct.ID)
 	require.Error(t, err)
 }
 
@@ -377,6 +377,7 @@ func createTestAccount(t *testing.T, email string, accessLevel model.AccessLevel
 	t.Helper()
 
 	dw, _, err := env.Factory.RegisterAccount(
+		env.Ctx,
 		&account.Account{
 			Email:         email,
 			Name:          "John Doe",

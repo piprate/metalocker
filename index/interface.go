@@ -15,6 +15,7 @@
 package index
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -79,11 +80,11 @@ type (
 
 		ID() string
 
-		LockerStates() ([]LockerState, error)
-		AddLockerState(accountID, lockerID string, firstBlock int64) error
-		AddLease(ds model.DataSet, effectiveBlockNumber int64) error
-		AddLeaseRevocation(ds model.DataSet) error
-		UpdateTopBlock(blockNumber int64) error
+		LockerStates(ctx context.Context) ([]LockerState, error)
+		AddLockerState(ctx context.Context, accountID, lockerID string, firstBlock int64) error
+		AddLease(ctx context.Context, ds model.DataSet, effectiveBlockNumber int64) error
+		AddLeaseRevocation(ctx context.Context, ds model.DataSet) error
+		UpdateTopBlock(ctx context.Context, blockNumber int64) error
 	}
 
 	StoreProperties struct {
@@ -117,19 +118,19 @@ type (
 		Name() string
 		Properties() *StoreProperties
 
-		CreateIndex(userID string, indexType string, accessLevel model.AccessLevel, opts ...Option) (Index, error)
-		RootIndex(userID string, lvl model.AccessLevel) (RootIndex, error)
-		Index(userID string, id string) (Index, error)
-		ListIndexes(userID string) ([]*Properties, error)
-		DeleteIndex(userID, id string) error
+		CreateIndex(ctx context.Context, userID string, indexType string, accessLevel model.AccessLevel, opts ...Option) (Index, error)
+		RootIndex(ctx context.Context, userID string, lvl model.AccessLevel) (RootIndex, error)
+		Index(ctx context.Context, userID string, id string) (Index, error)
+		ListIndexes(ctx context.Context, userID string) ([]*Properties, error)
+		DeleteIndex(ctx context.Context, userID, id string) error
 
 		// Bind links the index store to a particular ledger instance by storing genesis block ID in the store.
 		// If the store is already bound to a ledger, if will check the provided hash and return an error
 		// if there is a mismatch. This is useful to catch conditions when the index store was used
 		// in the context of a different ledger (i.e. in the development environment.
-		Bind(gbHash string) error
+		Bind(ctx context.Context, gbHash string) error
 
-		GenesisBlockHash() string
+		GenesisBlockHash(ctx context.Context) string
 	}
 
 	// Client provides an interface to a group of index stores, accessed using a priority list.
@@ -140,31 +141,31 @@ type (
 
 		// Bind links all underlying index states to a specific genesis block hash. If any of the stores
 		// were already linked to a different hash, the call would fail.
-		Bind(gbHash string) error
+		Bind(ctx context.Context, gbHash string) error
 
 		// RootIndex returns a root index for the given account and requested access level.
 		// If the index is not found, it will return ErrIndexNotFound.
-		RootIndex(userID string, lvl model.AccessLevel) (RootIndex, error)
+		RootIndex(ctx context.Context, userID string, lvl model.AccessLevel) (RootIndex, error)
 
 		// Index returns an index with the given id for the given account.
 		// If the index is not found, it will return ErrIndexNotFound.
-		Index(userID string, id string) (Index, error)
+		Index(ctx context.Context, userID string, id string) (Index, error)
 		// ListIndexes return a list of index definitions for all the indexes that are available
 		// through this index client. We return a list of Properties to avoid construction of
 		// all index instances that may be an expensive operation.
-		ListIndexes(userID string) ([]*Properties, error)
+		ListIndexes(ctx context.Context, userID string) ([]*Properties, error)
 		// DeleteIndex deletes the index from all the underlying index stores.
-		DeleteIndex(userID, id string) error
+		DeleteIndex(ctx context.Context, userID, id string) error
 
 		// IndexStore returns the index store with the given name.
 		// If the store is not found, it will return ErrIndexStoreNotFound
-		IndexStore(storeName string) (Store, error)
+		IndexStore(ctx context.Context, storeName string) (Store, error)
 		// IndexStores return a list of index store definitions for all the stores that are available
 		// through this index client. We return a list of StoreProperties to avoid construction of
 		// all store instances that may be an expensive operation.
-		IndexStores() []*StoreProperties
+		IndexStores(ctx context.Context) []*StoreProperties
 		// AddIndexStore instantiates and adds a new index store based on the provided configuration.
-		AddIndexStore(cfg *StoreConfig, resolver cmdbase.ParameterResolver) error
+		AddIndexStore(ctx context.Context, cfg *StoreConfig, resolver cmdbase.ParameterResolver) error
 	}
 )
 

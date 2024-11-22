@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -55,11 +56,14 @@ func main() {
 		panic(err)
 	}
 
+	ctx := context.Background()
+
 	// create account 1: Jack
 
 	passPhrase := "passw0rd!"
 
 	jackWallet, _, err := factory.RegisterAccount(
+		ctx,
 		&account.Account{
 			Email:       "jack@example.com",
 			Name:        "Jack",
@@ -73,7 +77,7 @@ func main() {
 
 	// the wallet needs to be unlocked before use
 
-	err = jackWallet.Unlock(passPhrase)
+	err = jackWallet.Unlock(ctx, passPhrase)
 	if err != nil {
 		panic(err)
 	}
@@ -81,6 +85,7 @@ func main() {
 	// create account 2: Jill
 
 	jillWallet, _, err := factory.RegisterAccount(
+		ctx,
 		&account.Account{
 			Email:       "jill@example.com",
 			Name:        "Jill",
@@ -92,38 +97,38 @@ func main() {
 		panic(err)
 	}
 
-	err = jillWallet.Unlock(passPhrase)
+	err = jillWallet.Unlock(ctx, passPhrase)
 	if err != nil {
 		panic(err)
 	}
 
 	// create identities for Jack and Jill. An account can have an unlimited number of identities.
 
-	jack, err := jackWallet.NewIdentity(model.AccessLevelHosted, "Jack")
+	jack, err := jackWallet.NewIdentity(ctx, model.AccessLevelHosted, "Jack")
 	if err != nil {
 		panic(err)
 	}
 
-	jill, err := jillWallet.NewIdentity(model.AccessLevelHosted, "Jill")
+	jill, err := jillWallet.NewIdentity(ctx, model.AccessLevelHosted, "Jill")
 	if err != nil {
 		panic(err)
 	}
 
 	// create a locker between Jack and Jill
 
-	lockerForJack, err := jack.NewLocker("Hill", wallet.Participant(jill.DID(), nil))
+	lockerForJack, err := jack.NewLocker(ctx, "Hill", wallet.Participant(jill.DID(), nil))
 	if err != nil {
 		panic(err)
 	}
 
-	lockerForJill, err := jillWallet.AddLocker(lockerForJack.Raw().Perspective(jill.ID()))
+	lockerForJill, err := jillWallet.AddLocker(ctx, lockerForJack.Raw().Perspective(jill.ID()))
 	if err != nil {
 		panic(err)
 	}
 
 	// publish a JSON document in the shared locker
 
-	lb, err := lockerForJack.NewDataSetBuilder(dataset.WithVault("local"))
+	lb, err := lockerForJack.NewDataSetBuilder(ctx, dataset.WithVault("local"))
 	if err != nil {
 		panic(err)
 	}
@@ -145,44 +150,44 @@ func main() {
 
 	// Jill can access the published dataset
 
-	_, err = jillWallet.DataStore().Load(future1.ID(), dataset.FromLocker(lockerForJill.ID()))
+	_, err = jillWallet.DataStore().Load(ctx, future1.ID(), dataset.FromLocker(lockerForJill.ID()))
 	if err != nil {
 		panic(err)
 	}
 
 	// before we revoke the dataset lease, we need to build an index for Jack
 
-	rootIndex, err := jackWallet.CreateRootIndex(examples.DemoIndexStoreName)
+	rootIndex, err := jackWallet.CreateRootIndex(ctx, examples.DemoIndexStoreName)
 	if err != nil {
 		panic(err)
 	}
 
-	updater, err := jackWallet.IndexUpdater(rootIndex)
+	updater, err := jackWallet.IndexUpdater(ctx, rootIndex)
 	if err != nil {
 		panic(err)
 	}
 	defer updater.Close()
 
-	err = updater.Sync()
+	err = updater.Sync(ctx)
 	if err != nil {
 		panic(err)
 	}
 
 	// revoke the lease for the dataset above
 
-	err = jackWallet.DataStore().Revoke(future1.ID()).Wait(time.Second)
+	err = jackWallet.DataStore().Revoke(ctx, future1.ID()).Wait(time.Second)
 	if err != nil {
 		panic(err)
 	}
 
 	// Jill should still be able to load the dataset, but any attempt to access its data will fail
 
-	ds, err := jillWallet.DataStore().Load(future1.ID(), dataset.FromLocker(lockerForJill.ID()))
+	ds, err := jillWallet.DataStore().Load(ctx, future1.ID(), dataset.FromLocker(lockerForJill.ID()))
 	if err != nil {
 		panic(err)
 	}
 
-	_, err = ds.MetaResource()
+	_, err = ds.MetaResource(ctx)
 	if err == nil {
 		panic("revocation didn't work!")
 	} else {
@@ -193,14 +198,14 @@ func main() {
 	// This is a separate step, because it requires physical purging of data assets from underlying storage,
 	// which may take time.
 
-	err = jackWallet.DataStore().PurgeDataAssets(future1.ID())
+	err = jackWallet.DataStore().PurgeDataAssets(ctx, future1.ID())
 	if err != nil {
 		panic(err)
 	}
 
 	// and now Jill can't access even the lease itself
 
-	_, err = jillWallet.DataStore().Load(future1.ID(), dataset.FromLocker(lockerForJill.ID()))
+	_, err = jillWallet.DataStore().Load(ctx, future1.ID(), dataset.FromLocker(lockerForJill.ID()))
 	if err == nil {
 		panic("data purging didn't work!")
 	} else {

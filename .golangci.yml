@@ -29,8 +29,13 @@ linters-settings:
       - unnamedResult
       - unnecessaryBlock
       - whyNoLint
+  gosec:
+    excludes:
+      - G115  # Potential integer overflow when converting between integer types
   govet:
-    check-shadowing: false
+    enable:
+      # report about shadowed variables
+      - shadowing
   nolintlint:
     require-explanation: false
     require-specific: true
@@ -49,8 +54,9 @@ linters:
     - asciicheck
     - bidichk
     - bodyclose
-    - containedctx
+#    - containedctx
     - contextcheck
+    - copyloopvar
 #   - depguard
     - dogsled
 #   - dupl
@@ -58,7 +64,6 @@ linters:
     - errcheck
     - errname
     - errorlint
-    - exportloopref
     - exhaustive
     - goconst
     - gocritic
@@ -92,5 +97,7 @@ linters:
 
 run:
   issues-exit-code: 1
-  skip-dirs:
+  go: '1.22'
+issues:
+  exclude-dirs:
     - contexts

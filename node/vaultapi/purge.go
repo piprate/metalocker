@@ -44,7 +44,7 @@ func PostPurge(vaultAPI vaults.Vault) func(c *gin.Context) {
 
 		// purge blob
 
-		err = vaultAPI.PurgeBlob(res.StorageID(), res.Params)
+		err = vaultAPI.PurgeBlob(c, res.StorageID(), res.Params)
 		if err != nil {
 			if errors.Is(err, model.ErrBlobNotFound) {
 				c.Status(http.StatusNotFound)

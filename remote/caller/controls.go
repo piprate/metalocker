@@ -15,6 +15,7 @@
 package caller
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -24,9 +25,9 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func (c *MetaLockerHTTPCaller) GetServerControls() (*ServerControls, error) {
+func (c *MetaLockerHTTPCaller) GetServerControls(ctx context.Context) (*ServerControls, error) {
 	url := "/v1/status"
-	res, err := c.client.SendRequest(http.MethodGet, url, httpsecure.SkipAuthentication())
+	res, err := c.client.SendRequest(ctx, http.MethodGet, url, httpsecure.SkipAuthentication())
 	if err != nil {
 		return nil, err
 	}

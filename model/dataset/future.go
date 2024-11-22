@@ -15,6 +15,7 @@
 package dataset
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -33,19 +34,23 @@ type (
 		waitList []string
 		err      error
 		ready    bool
+		ctx      context.Context
 	}
 )
 
 var _ RecordFuture = (*recordFutureImpl)(nil)
 
+var dummyContext = context.Background()
+
 func RecordFutureWithError(err error) RecordFuture {
 	return &recordFutureImpl{
 		ready: true,
 		err:   err,
+		ctx:   dummyContext,
 	}
 }
 
-func RecordFutureWithResult(ledger model.Ledger, ns notification.Service, recordID string, dataset *DataSetImpl, heads map[string]string, waitList []string) RecordFuture {
+func RecordFutureWithResult(ctx context.Context, ledger model.Ledger, ns notification.Service, recordID string, dataset *DataSetImpl, heads map[string]string, waitList []string) RecordFuture {
 	return &recordFutureImpl{
 		ledger:   ledger,
 		ns:       ns,
@@ -53,6 +58,7 @@ func RecordFutureWithResult(ledger model.Ledger, ns notification.Service, record
 		dataset:  dataset,
 		heads:    heads,
 		waitList: waitList,
+		ctx:      ctx,
 	}
 }
 
@@ -64,12 +70,12 @@ func (f *recordFutureImpl) Wait(timeout time.Duration) error {
 	}
 
 	var blockNumber int64
-	blockNumber, f.err = WaitForConfirmation(f.ledger, f.ns, time.Second, timeout, f.waitList...)
+	blockNumber, f.err = WaitForConfirmation(f.ctx, f.ledger, f.ns, time.Second, timeout, f.waitList...)
 	f.ready = true
 
 	if f.dataset == nil {
 		// it's a lease revocation record. Check the record state explicitly.
-		rs, err := f.ledger.GetRecordState(f.recordID)
+		rs, err := f.ledger.GetRecordState(f.ctx, f.recordID)
 		if err != nil {
 			return err
 		}

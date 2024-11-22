@@ -70,7 +70,7 @@ func TestNewLocalDataWallet_Managed(t *testing.T) {
 
 	dw := env.CreateDataWallet(t, acct)
 
-	err = dw.UnlockAsManaged(managedKey)
+	err = dw.UnlockAsManaged(env.Ctx, managedKey)
 	require.NoError(t, err)
 
 	err = dw.Lock()
@@ -83,10 +83,10 @@ func TestLocalDataWallet_Unlock(t *testing.T) {
 
 	dw := testHostedAccount(t, env, false)
 
-	err := dw.Unlock("wrong password")
+	err := dw.Unlock(env.Ctx, "wrong password")
 	assert.Error(t, err)
 
-	err = dw.Unlock(TestPassphrase)
+	err = dw.Unlock(env.Ctx, TestPassphrase)
 	assert.NoError(t, err)
 }
 
@@ -97,7 +97,7 @@ func TestLocalDataWallet_UnlockAsManaged_Hosted(t *testing.T) {
 	dw := testHostedAccount(t, env, false)
 
 	wrongKey := model.NewEncryptionKey()
-	err := dw.UnlockAsManaged(wrongKey)
+	err := dw.UnlockAsManaged(env.Ctx, wrongKey)
 	assert.Error(t, err)
 
 	hashedPassphrase := account.HashUserPassword(TestPassphrase)
@@ -105,7 +105,7 @@ func TestLocalDataWallet_UnlockAsManaged_Hosted(t *testing.T) {
 	managedKey, err := dw.Account().ExtractManagedKey(hashedPassphrase)
 	require.NoError(t, err)
 
-	err = dw.UnlockAsManaged(managedKey)
+	err = dw.UnlockAsManaged(env.Ctx, managedKey)
 	assert.NoError(t, err)
 }
 
@@ -116,7 +116,7 @@ func TestLocalDataWallet_UnlockAsManaged_Managed(t *testing.T) {
 	dw := testManagedAccount(t, env, false)
 
 	wrongKey := model.NewEncryptionKey()
-	err := dw.UnlockAsManaged(wrongKey)
+	err := dw.UnlockAsManaged(env.Ctx, wrongKey)
 	assert.Error(t, err)
 
 	hashedPassphrase := account.HashUserPassword(TestPassphrase)
@@ -124,7 +124,7 @@ func TestLocalDataWallet_UnlockAsManaged_Managed(t *testing.T) {
 	managedKey, err := dw.Account().ExtractManagedKey(hashedPassphrase)
 	require.NoError(t, err)
 
-	err = dw.UnlockAsManaged(managedKey)
+	err = dw.UnlockAsManaged(env.Ctx, managedKey)
 	assert.NoError(t, err)
 }
 
@@ -168,6 +168,7 @@ func testAccount(t *testing.T, env *testbase.TestMetaLockerEnvironment, accessLe
 	t.Helper()
 
 	dw, _, err := env.Factory.RegisterAccount(
+		env.Ctx,
 		&account.Account{
 			Email:        "test@example.com",
 			Name:         "John Doe",
@@ -178,7 +179,7 @@ func testAccount(t *testing.T, env *testbase.TestMetaLockerEnvironment, accessLe
 	require.NoError(t, err)
 
 	if unlock {
-		err = dw.Unlock(TestPassphrase)
+		err = dw.Unlock(env.Ctx, TestPassphrase)
 		require.NoError(t, err)
 	}
 
@@ -191,7 +192,7 @@ func TestLocalDataWallet_UnlockWithAccessKey(t *testing.T) {
 
 	dw := testHostedAccount(t, env, true)
 
-	key, err := dw.CreateAccessKey(model.AccessLevelHosted, 1*time.Hour)
+	key, err := dw.CreateAccessKey(env.Ctx, model.AccessLevelHosted, 1*time.Hour)
 	require.NoError(t, err)
 
 	apiKey, apiSecret := key.ClientKeys()
@@ -199,10 +200,10 @@ func TestLocalDataWallet_UnlockWithAccessKey(t *testing.T) {
 	err = dw.Lock()
 	require.NoError(t, err)
 
-	err = dw.UnlockWithAccessKey(apiKey, apiSecret)
+	err = dw.UnlockWithAccessKey(env.Ctx, apiKey, apiSecret)
 	require.NoError(t, err)
 
-	idyList, err := dw.GetIdentities()
+	idyList, err := dw.GetIdentities(env.Ctx)
 	require.NoError(t, err)
 	assert.NotNil(t, idyList)
 }
@@ -213,7 +214,7 @@ func TestLocalDataWallet_AddLocker_Hosted(t *testing.T) {
 
 	dw := testHostedAccount(t, env, true)
 
-	idy, err := dw.NewIdentity(model.AccessLevelHosted, "John XXX")
+	idy, err := dw.NewIdentity(env.Ctx, model.AccessLevelHosted, "John XXX")
 	require.NoError(t, err)
 
 	expiryTime := time.Now().AddDate(0, 120, 0).UTC()
@@ -221,17 +222,17 @@ func TestLocalDataWallet_AddLocker_Hosted(t *testing.T) {
 		model.Us(idy.DID(), nil))
 	require.NoError(t, err)
 
-	wrapper, err := dw.AddLocker(locker)
+	wrapper, err := dw.AddLocker(env.Ctx, locker)
 	require.NoError(t, err)
 	require.NotEmpty(t, wrapper)
 	assert.Equal(t, "John XXX", wrapper.Name())
 	assert.True(t, wrapper.IsUniLocker())
 
-	retrievedLocker, err := dw.GetLocker(locker.ID)
+	retrievedLocker, err := dw.GetLocker(env.Ctx, locker.ID)
 	require.NoError(t, err)
 	require.NotEmpty(t, retrievedLocker)
 
-	retrievedLocker, err = dw.GetLocker("non-existent-locker")
+	retrievedLocker, err = dw.GetLocker(env.Ctx, "non-existent-locker")
 	require.True(t, errors.Is(err, storage.ErrLockerNotFound))
 	require.Empty(t, retrievedLocker)
 }
@@ -242,7 +243,7 @@ func TestLocalDataWallet_AddLocker_Managed(t *testing.T) {
 
 	dw := testHostedAccount(t, env, true)
 
-	idy, err := dw.NewIdentity(model.AccessLevelManaged, "John XXX")
+	idy, err := dw.NewIdentity(env.Ctx, model.AccessLevelManaged, "John XXX")
 	require.NoError(t, err)
 
 	expiryTime := time.Now().AddDate(0, 120, 0).UTC()
@@ -250,7 +251,7 @@ func TestLocalDataWallet_AddLocker_Managed(t *testing.T) {
 		model.Us(idy.DID(), nil))
 	require.NoError(t, err)
 
-	wrapper, err := dw.AddLocker(locker)
+	wrapper, err := dw.AddLocker(env.Ctx, locker)
 	require.NoError(t, err)
 	assert.NotEmpty(t, wrapper)
 
@@ -264,7 +265,7 @@ func TestLocalDataWallet_AddLocker_NoFirstBlock(t *testing.T) {
 
 	dw := testHostedAccount(t, env, true)
 
-	idy, err := dw.NewIdentity(model.AccessLevelManaged, "John XXX", WithType(account.IdentityTypePairwise))
+	idy, err := dw.NewIdentity(env.Ctx, model.AccessLevelManaged, "John XXX", WithType(account.IdentityTypePairwise))
 	require.NoError(t, err)
 
 	expiryTime := time.Now().AddDate(0, 120, 0).UTC()
@@ -272,7 +273,7 @@ func TestLocalDataWallet_AddLocker_NoFirstBlock(t *testing.T) {
 		model.Us(idy.DID(), nil))
 	require.NoError(t, err)
 
-	l, err := dw.AddLocker(locker)
+	l, err := dw.AddLocker(env.Ctx, locker)
 	require.NoError(t, err)
 
 	assert.True(t, l.Raw().FirstBlock != 0)
@@ -292,10 +293,10 @@ func TestLocalDataWallet_AddLocker_ThirdParty(t *testing.T) {
 		model.Us(did, nil))
 	require.NoError(t, err)
 
-	_, err = dw.AddLocker(locker.Perspective(""))
+	_, err = dw.AddLocker(env.Ctx, locker.Perspective(""))
 	require.NoError(t, err)
 
-	savedLocker, err := dw.GetLocker(locker.ID)
+	savedLocker, err := dw.GetLocker(env.Ctx, locker.ID)
 	require.NoError(t, err)
 	assert.NotEmpty(t, savedLocker)
 }
@@ -312,40 +313,40 @@ func TestLocalDataWallet_SetProperty(t *testing.T) {
 
 	// adding new property should fail because the wallet is locked
 
-	err = dw.SetProperty("key1", "value1", model.AccessLevelHosted)
+	err = dw.SetProperty(env.Ctx, "key1", "value1", model.AccessLevelHosted)
 	require.Error(t, err)
 
-	err = dw.Unlock(TestPassphrase)
+	err = dw.Unlock(env.Ctx, TestPassphrase)
 	require.NoError(t, err)
 
 	// try saving a hosted property
 
-	err = dw.SetProperty("key1", "value1", model.AccessLevelHosted)
+	err = dw.SetProperty(env.Ctx, "key1", "value1", model.AccessLevelHosted)
 	require.NoError(t, err)
 
-	val, err := dw.GetProperty("key1")
+	val, err := dw.GetProperty(env.Ctx, "key1")
 	require.NoError(t, err)
 	assert.Equal(t, "value1", val)
 
 	// try saving a managed property
 
-	err = dw.SetProperty("key2", "value2", model.AccessLevelManaged)
+	err = dw.SetProperty(env.Ctx, "key2", "value2", model.AccessLevelManaged)
 	require.NoError(t, err)
 
-	val, err = dw.GetProperty("key2")
+	val, err = dw.GetProperty(env.Ctx, "key2")
 	require.NoError(t, err)
 	assert.Equal(t, "value2", val)
 
 	// try saving a managed property that overrides an existing hosted property
 
-	err = dw.SetProperty("key1", "managed_value1", model.AccessLevelManaged)
+	err = dw.SetProperty(env.Ctx, "key1", "managed_value1", model.AccessLevelManaged)
 	require.NoError(t, err)
 
-	val, err = dw.GetProperty("key1")
+	val, err = dw.GetProperty(env.Ctx, "key1")
 	require.NoError(t, err)
 	assert.Equal(t, "value1", val)
 
-	valMap, err := dw.GetProperties()
+	valMap, err := dw.GetProperties(env.Ctx)
 	require.NoError(t, err)
 	assert.EqualValues(t, map[string]string{
 		"key1": "value1",
@@ -354,14 +355,14 @@ func TestLocalDataWallet_SetProperty(t *testing.T) {
 
 	require.NoError(t, dw.Lock())
 
-	err = dw.UnlockAsManaged(managedKey)
+	err = dw.UnlockAsManaged(env.Ctx, managedKey)
 	require.NoError(t, err)
 
-	val, err = dw.GetProperty("key1")
+	val, err = dw.GetProperty(env.Ctx, "key1")
 	require.NoError(t, err)
 	assert.Equal(t, "managed_value1", val)
 
-	valMap, err = dw.GetProperties()
+	valMap, err = dw.GetProperties(env.Ctx)
 	require.NoError(t, err)
 	assert.EqualValues(t, map[string]string{
 		"key1": "managed_value1",
@@ -381,35 +382,35 @@ func TestLocalDataWallet_DeleteProperty(t *testing.T) {
 
 	// insert test properties
 
-	err = dw.SetProperty("key1", "hosted_value1", model.AccessLevelHosted)
+	err = dw.SetProperty(env.Ctx, "key1", "hosted_value1", model.AccessLevelHosted)
 	require.NoError(t, err)
 
-	err = dw.SetProperty("key2", "value2", model.AccessLevelManaged)
+	err = dw.SetProperty(env.Ctx, "key2", "value2", model.AccessLevelManaged)
 	require.NoError(t, err)
 
-	err = dw.SetProperty("key3", "value3", model.AccessLevelManaged)
+	err = dw.SetProperty(env.Ctx, "key3", "value3", model.AccessLevelManaged)
 	require.NoError(t, err)
 
-	err = dw.SetProperty("key1", "managed_value1", model.AccessLevelManaged)
+	err = dw.SetProperty(env.Ctx, "key1", "managed_value1", model.AccessLevelManaged)
 	require.NoError(t, err)
 
 	// try deleting a property with a wrong (non-existent) level
 
-	err = dw.DeleteProperty("key2", model.AccessLevelHosted)
+	err = dw.DeleteProperty(env.Ctx, "key2", model.AccessLevelHosted)
 	require.Error(t, err)
 	require.True(t, errors.Is(err, storage.ErrPropertyNotFound))
 
 	// this call should succeed
 
-	err = dw.DeleteProperty("key2", model.AccessLevelManaged)
+	err = dw.DeleteProperty(env.Ctx, "key2", model.AccessLevelManaged)
 	require.NoError(t, err)
 
 	// delete a property when a higher level property exists
 
-	err = dw.DeleteProperty("key1", model.AccessLevelManaged)
+	err = dw.DeleteProperty(env.Ctx, "key1", model.AccessLevelManaged)
 	require.NoError(t, err)
 
-	valMap, err := dw.GetProperties()
+	valMap, err := dw.GetProperties(env.Ctx)
 	require.NoError(t, err)
 	assert.EqualValues(t, map[string]string{
 		"key1": "hosted_value1",
@@ -418,10 +419,10 @@ func TestLocalDataWallet_DeleteProperty(t *testing.T) {
 
 	require.NoError(t, dw.Lock())
 
-	err = dw.UnlockAsManaged(managedKey)
+	err = dw.UnlockAsManaged(env.Ctx, managedKey)
 	require.NoError(t, err)
 
-	valMap, err = dw.GetProperties()
+	valMap, err = dw.GetProperties(env.Ctx)
 	require.NoError(t, err)
 	assert.EqualValues(t, map[string]string{
 		"key3": "value3",
@@ -435,6 +436,7 @@ func TestLocalDataWallet_CreateSubAccount_Hosted(t *testing.T) {
 	// create hosted and managed sub-accounts of a hosted account
 
 	dw, _, err := env.Factory.RegisterAccount(
+		env.Ctx,
 		&account.Account{
 			Email:        "test@example.com",
 			Name:         "John Doe",
@@ -444,10 +446,10 @@ func TestLocalDataWallet_CreateSubAccount_Hosted(t *testing.T) {
 		account.WithPassphraseAuth(TestPassphrase))
 	require.NoError(t, err)
 
-	err = dw.Unlock(TestPassphrase)
+	err = dw.Unlock(env.Ctx, TestPassphrase)
 	require.NoError(t, err)
 
-	saWallet, err := dw.CreateSubAccount(model.AccessLevelHosted, "Sub-Account #1 (hosted)",
+	saWallet, err := dw.CreateSubAccount(env.Ctx, model.AccessLevelHosted, "Sub-Account #1 (hosted)",
 		account.WithPassphraseAuth(TestPassphrase))
 	require.NoError(t, err)
 	subAcct := saWallet.Account()
@@ -456,12 +458,12 @@ func TestLocalDataWallet_CreateSubAccount_Hosted(t *testing.T) {
 
 	saWallet = env.CreateDataWallet(t, subAcct)
 
-	err = saWallet.Unlock(TestPassphrase)
+	err = saWallet.Unlock(env.Ctx, TestPassphrase)
 	require.NoError(t, err)
 
 	// create a managed sub-account when the wallet is unlocked at Hosted level
 
-	saWallet, err = dw.CreateSubAccount(model.AccessLevelManaged, "Sub-Account #2 (managed)",
+	saWallet, err = dw.CreateSubAccount(env.Ctx, model.AccessLevelManaged, "Sub-Account #2 (managed)",
 		account.WithPassphraseAuth(TestPassphrase))
 	require.NoError(t, err)
 	subAcct = saWallet.Account()
@@ -470,7 +472,7 @@ func TestLocalDataWallet_CreateSubAccount_Hosted(t *testing.T) {
 
 	saWallet = env.CreateDataWallet(t, subAcct)
 
-	err = saWallet.Unlock(TestPassphrase)
+	err = saWallet.Unlock(env.Ctx, TestPassphrase)
 	require.NoError(t, err)
 
 	// create a managed sub-account when the wallet is unlocked at Managed level
@@ -481,10 +483,10 @@ func TestLocalDataWallet_CreateSubAccount_Hosted(t *testing.T) {
 
 	require.NoError(t, dw.Lock())
 
-	err = dw.UnlockAsManaged(managedKey)
+	err = dw.UnlockAsManaged(env.Ctx, managedKey)
 	require.NoError(t, err)
 
-	saWallet, err = dw.CreateSubAccount(model.AccessLevelManaged, "Sub-Account #3 (managed)",
+	saWallet, err = dw.CreateSubAccount(env.Ctx, model.AccessLevelManaged, "Sub-Account #3 (managed)",
 		account.WithPassphraseAuth(TestPassphrase))
 	require.NoError(t, err)
 	subAcct = saWallet.Account()
@@ -493,7 +495,7 @@ func TestLocalDataWallet_CreateSubAccount_Hosted(t *testing.T) {
 
 	saWallet = env.CreateDataWallet(t, subAcct)
 
-	err = saWallet.Unlock(TestPassphrase)
+	err = saWallet.Unlock(env.Ctx, TestPassphrase)
 	require.NoError(t, err)
 }
 
@@ -504,6 +506,7 @@ func TestLocalDataWallet_CreateSubAccount_Managed(t *testing.T) {
 	// create a managed sub-account of a managed account
 
 	dw, _, err := env.Factory.RegisterAccount(
+		env.Ctx,
 		&account.Account{
 			Email:        "test@example.com",
 			Name:         "John Doe",
@@ -513,14 +516,14 @@ func TestLocalDataWallet_CreateSubAccount_Managed(t *testing.T) {
 		account.WithPassphraseAuth(TestPassphrase))
 	require.NoError(t, err)
 
-	err = dw.Unlock(TestPassphrase)
+	err = dw.Unlock(env.Ctx, TestPassphrase)
 	require.NoError(t, err)
 
-	_, err = dw.CreateSubAccount(model.AccessLevelHosted, "Sub-Account #1 (hosted)",
+	_, err = dw.CreateSubAccount(env.Ctx, model.AccessLevelHosted, "Sub-Account #1 (hosted)",
 		account.WithPassphraseAuth(TestPassphrase))
 	require.Error(t, err)
 
-	saWallet, err := dw.CreateSubAccount(model.AccessLevelManaged, "Sub-Account #2 (managed)",
+	saWallet, err := dw.CreateSubAccount(env.Ctx, model.AccessLevelManaged, "Sub-Account #2 (managed)",
 		account.WithPassphraseAuth(TestPassphrase))
 	require.NoError(t, err)
 	subAcct := saWallet.Account()
@@ -529,13 +532,13 @@ func TestLocalDataWallet_CreateSubAccount_Managed(t *testing.T) {
 
 	saWallet = env.CreateDataWallet(t, subAcct)
 
-	err = saWallet.Unlock(TestPassphrase)
+	err = saWallet.Unlock(env.Ctx, TestPassphrase)
 	require.NoError(t, err)
 
-	saWallet, err = dw.GetSubAccountWallet(subAcct.ID)
+	saWallet, err = dw.GetSubAccountWallet(env.Ctx, subAcct.ID)
 	require.NoError(t, err)
 
-	_, err = saWallet.GetIdentities()
+	_, err = saWallet.GetIdentities(env.Ctx)
 	require.NoError(t, err)
 }
 
@@ -545,27 +548,27 @@ func TestLocalDataWallet_CreateRestrictedWallet(t *testing.T) {
 
 	dw := testHostedAccount(t, env, true)
 
-	_, err := dw.NewIdentity(model.AccessLevelManaged, "John XXX")
+	_, err := dw.NewIdentity(env.Ctx, model.AccessLevelManaged, "John XXX")
 	require.NoError(t, err)
 
-	idyTwo, err := dw.NewIdentity(model.AccessLevelManaged, "John YYY")
+	idyTwo, err := dw.NewIdentity(env.Ctx, model.AccessLevelManaged, "John YYY")
 	require.NoError(t, err)
 
-	idList, err := dw.GetIdentities()
+	idList, err := dw.GetIdentities(env.Ctx)
 	require.NoError(t, err)
 	assert.Equal(t, 3, len(idList))
 
-	_, err = idyTwo.NewLocker(idyTwo.Name())
+	_, err = idyTwo.NewLocker(env.Ctx, idyTwo.Name())
 	require.NoError(t, err)
 
 	rdw, err := dw.RestrictedWallet([]string{idyTwo.ID()})
 	require.NoError(t, err)
 
-	idList, err = rdw.GetIdentities()
+	idList, err = rdw.GetIdentities(env.Ctx)
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(idList))
 
-	lockerList, err := rdw.GetLockers()
+	lockerList, err := rdw.GetLockers(env.Ctx)
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(lockerList))
 }
@@ -576,7 +579,7 @@ func TestLocalDataWallet_GetRootIdentity(t *testing.T) {
 
 	dw := testHostedAccount(t, env, true)
 
-	rootIdy, err := dw.GetRootIdentity()
+	rootIdy, err := dw.GetRootIdentity(env.Ctx)
 	require.NoError(t, err)
 	assert.Equal(t, dw.ID(), rootIdy.ID())
 }
@@ -588,6 +591,7 @@ func TestLocalDataWallet_ChangePassphrase_Hosted(t *testing.T) {
 	passPhrase := TestPassphrase
 
 	dw, _, err := env.Factory.RegisterAccount(
+		env.Ctx,
 		&account.Account{
 			Name:         "Test Hosted User",
 			AccessLevel:  model.AccessLevelHosted,
@@ -596,29 +600,29 @@ func TestLocalDataWallet_ChangePassphrase_Hosted(t *testing.T) {
 		account.WithPassphraseAuth(passPhrase))
 	require.NoError(t, err)
 
-	err = dw.Unlock(passPhrase)
+	err = dw.Unlock(env.Ctx, passPhrase)
 	require.NoError(t, err)
 
-	idy, err := dw.NewIdentity(model.AccessLevelHosted, "John XXX")
+	idy, err := dw.NewIdentity(env.Ctx, model.AccessLevelHosted, "John XXX")
 	require.NoError(t, err)
 
 	newPassPhrase := "new123"
-	newWallet, err := dw.ChangePassphrase(passPhrase, newPassPhrase, false)
+	newWallet, err := dw.ChangePassphrase(env.Ctx, passPhrase, newPassPhrase, false)
 	require.NoError(t, err)
 	assert.NotNil(t, newWallet)
 
 	err = newWallet.Lock()
 	require.NoError(t, err)
 
-	err = newWallet.Unlock(newPassPhrase)
+	err = newWallet.Unlock(env.Ctx, newPassPhrase)
 	require.NoError(t, err)
 
 	text := []byte("plain text")
-	identityForSignature, err := newWallet.GetIdentity(idy.ID())
+	identityForSignature, err := newWallet.GetIdentity(env.Ctx, idy.ID())
 	require.NoError(t, err)
 	_ = identityForSignature.DID().Sign(text)
 
-	idList, err := newWallet.GetIdentities()
+	idList, err := newWallet.GetIdentities(env.Ctx)
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(idList))
 	assert.Equal(t, "John XXX", idList[idy.ID()].Name())
@@ -632,6 +636,7 @@ func TestLocalDataWallet_ChangePassphrase_Managed(t *testing.T) {
 	hashedPassphrase := account.HashUserPassword(passPhrase)
 
 	dw, _, err := env.Factory.RegisterAccount(
+		env.Ctx,
 		&account.Account{
 			Name:         "Test Managed User",
 			AccessLevel:  model.AccessLevelManaged,
@@ -640,14 +645,14 @@ func TestLocalDataWallet_ChangePassphrase_Managed(t *testing.T) {
 		account.WithHashedPassphraseAuth(hashedPassphrase))
 	require.NoError(t, err)
 
-	err = dw.Unlock(passPhrase)
+	err = dw.Unlock(env.Ctx, passPhrase)
 	require.NoError(t, err)
 
-	idy, err := dw.NewIdentity(model.AccessLevelManaged, "John XXX")
+	idy, err := dw.NewIdentity(env.Ctx, model.AccessLevelManaged, "John XXX")
 	require.NoError(t, err)
 
 	newPassPhrase := "new123"
-	newWallet, err := dw.ChangePassphrase(passPhrase, newPassPhrase, false)
+	newWallet, err := dw.ChangePassphrase(env.Ctx, passPhrase, newPassPhrase, false)
 	require.NoError(t, err)
 	assert.NotNil(t, newWallet)
 
@@ -656,15 +661,15 @@ func TestLocalDataWallet_ChangePassphrase_Managed(t *testing.T) {
 	err = newWallet.Lock()
 	require.NoError(t, err)
 
-	err = newWallet.Unlock(newPassPhrase)
+	err = newWallet.Unlock(env.Ctx, newPassPhrase)
 	require.NoError(t, err)
 
 	text := []byte("plain text")
-	identityForSignature, err := newWallet.GetIdentity(idy.ID())
+	identityForSignature, err := newWallet.GetIdentity(env.Ctx, idy.ID())
 	require.NoError(t, err)
 	_ = identityForSignature.DID().Sign(text)
 
-	idList, err := newWallet.GetIdentities()
+	idList, err := newWallet.GetIdentities(env.Ctx)
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(idList))
 	assert.Equal(t, "John XXX", idList[idy.ID()].Name())
@@ -678,14 +683,14 @@ func TestLocalDataWallet_ChangePassphrase_Managed(t *testing.T) {
 	managedKey, err := newWallet.Account().ExtractManagedKey(newPassPhraseHash)
 	require.NoError(t, err)
 
-	err = newWallet.UnlockAsManaged(managedKey)
+	err = newWallet.UnlockAsManaged(env.Ctx, managedKey)
 	require.NoError(t, err)
 
-	identityForSignature, err = newWallet.GetIdentity(idy.ID())
+	identityForSignature, err = newWallet.GetIdentity(env.Ctx, idy.ID())
 	require.NoError(t, err)
 	_ = identityForSignature.DID().Sign(text)
 
-	idList, err = newWallet.GetIdentities()
+	idList, err = newWallet.GetIdentities(env.Ctx)
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(idList))
 	assert.Equal(t, "John XXX", idList[idy.ID()].Name())
@@ -699,6 +704,7 @@ func TestLocalDataWallet_ChangePassphrase_ManagedWithHash(t *testing.T) {
 	hashedPassphrase := account.HashUserPassword(passPhrase)
 
 	dw, _, err := env.Factory.RegisterAccount(
+		env.Ctx,
 		&account.Account{
 			Name:         "Test Managed User",
 			AccessLevel:  model.AccessLevelManaged,
@@ -707,15 +713,15 @@ func TestLocalDataWallet_ChangePassphrase_ManagedWithHash(t *testing.T) {
 		account.WithHashedPassphraseAuth(hashedPassphrase))
 	require.NoError(t, err)
 
-	err = dw.Unlock(passPhrase)
+	err = dw.Unlock(env.Ctx, passPhrase)
 	require.NoError(t, err)
 
-	idy, err := dw.NewIdentity(model.AccessLevelManaged, "John XXX")
+	idy, err := dw.NewIdentity(env.Ctx, model.AccessLevelManaged, "John XXX")
 	require.NoError(t, err)
 
 	newPassPhrase := "new123"
 	newPassPhraseHash := account.HashUserPassword(newPassPhrase)
-	newWallet, err := dw.ChangePassphrase(hashedPassphrase, newPassPhraseHash, true)
+	newWallet, err := dw.ChangePassphrase(env.Ctx, hashedPassphrase, newPassPhraseHash, true)
 	require.NoError(t, err)
 	assert.NotNil(t, newWallet)
 
@@ -724,15 +730,15 @@ func TestLocalDataWallet_ChangePassphrase_ManagedWithHash(t *testing.T) {
 	err = newWallet.Lock()
 	require.NoError(t, err)
 
-	err = newWallet.Unlock(newPassPhrase)
+	err = newWallet.Unlock(env.Ctx, newPassPhrase)
 	require.NoError(t, err)
 
 	text := []byte("plain text")
-	identityForSignature, err := newWallet.GetIdentity(idy.ID())
+	identityForSignature, err := newWallet.GetIdentity(env.Ctx, idy.ID())
 	require.NoError(t, err)
 	_ = identityForSignature.DID().Sign(text)
 
-	idList, err := newWallet.GetIdentities()
+	idList, err := newWallet.GetIdentities(env.Ctx)
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(idList))
 	assert.Equal(t, "John XXX", idList[idy.ID()].Name())
@@ -745,14 +751,14 @@ func TestLocalDataWallet_ChangePassphrase_ManagedWithHash(t *testing.T) {
 	managedKey, err := newWallet.Account().ExtractManagedKey(newPassPhraseHash)
 	require.NoError(t, err)
 
-	err = newWallet.UnlockAsManaged(managedKey)
+	err = newWallet.UnlockAsManaged(env.Ctx, managedKey)
 	require.NoError(t, err)
 
-	identityForSignature, err = newWallet.GetIdentity(idy.ID())
+	identityForSignature, err = newWallet.GetIdentity(env.Ctx, idy.ID())
 	require.NoError(t, err)
 	_ = identityForSignature.DID().Sign(text)
 
-	idList, err = newWallet.GetIdentities()
+	idList, err = newWallet.GetIdentities(env.Ctx)
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(idList))
 	assert.Equal(t, "John XXX", idList[idy.ID()].Name())
@@ -765,6 +771,7 @@ func TestLocalDataWallet_Recover_Hosted(t *testing.T) {
 	oldPassPhrase := "passw0rd"
 
 	dw, recDetails, err := env.Factory.RegisterAccount(
+		env.Ctx,
 		&account.Account{
 			Name:         "Test Hosted User",
 			AccessLevel:  model.AccessLevelHosted,
@@ -776,10 +783,10 @@ func TestLocalDataWallet_Recover_Hosted(t *testing.T) {
 	recoveryPhrase := recDetails.RecoveryPhrase
 	assert.NotEqual(t, "", recoveryPhrase)
 
-	err = dw.Unlock(oldPassPhrase)
+	err = dw.Unlock(env.Ctx, oldPassPhrase)
 	require.NoError(t, err)
 
-	idy, err := dw.NewIdentity(model.AccessLevelHosted, "John XXX")
+	idy, err := dw.NewIdentity(env.Ctx, model.AccessLevelHosted, "John XXX")
 	require.NoError(t, err)
 
 	err = dw.Lock()
@@ -790,19 +797,19 @@ func TestLocalDataWallet_Recover_Hosted(t *testing.T) {
 	cryptoKey, _, _, err := account.GenerateKeysFromRecoveryPhrase(recoveryPhrase)
 	require.NoError(t, err)
 
-	newDataWallet, err := dw.Recover(cryptoKey, newPassPhrase)
+	newDataWallet, err := dw.Recover(env.Ctx, cryptoKey, newPassPhrase)
 	require.NoError(t, err)
 
 	err = newDataWallet.Lock()
 	require.NoError(t, err)
 
-	err = newDataWallet.Unlock(oldPassPhrase)
+	err = newDataWallet.Unlock(env.Ctx, oldPassPhrase)
 	assert.Error(t, err)
 
-	err = newDataWallet.Unlock(newPassPhrase)
+	err = newDataWallet.Unlock(env.Ctx, newPassPhrase)
 	require.NoError(t, err)
 
-	idList, err := newDataWallet.GetIdentities()
+	idList, err := newDataWallet.GetIdentities(env.Ctx)
 	require.NoError(t, err)
 
 	assert.Equal(t, 2, len(idList))
@@ -817,6 +824,7 @@ func TestLocalDataWallet_Recover_Managed(t *testing.T) {
 	hashedPassphrase := account.HashUserPassword(oldPassPhrase)
 
 	dw, recDetails, err := env.Factory.RegisterAccount(
+		env.Ctx,
 		&account.Account{
 			Name:         "Test Managed User",
 			AccessLevel:  model.AccessLevelManaged,
@@ -828,10 +836,10 @@ func TestLocalDataWallet_Recover_Managed(t *testing.T) {
 	recoveryPhrase := recDetails.RecoveryPhrase
 	assert.NotEqual(t, "", recoveryPhrase)
 
-	err = dw.Unlock(oldPassPhrase)
+	err = dw.Unlock(env.Ctx, oldPassPhrase)
 	require.NoError(t, err)
 
-	idy, err := dw.NewIdentity(model.AccessLevelManaged, "John XXX")
+	idy, err := dw.NewIdentity(env.Ctx, model.AccessLevelManaged, "John XXX")
 	require.NoError(t, err)
 
 	err = dw.Lock()
@@ -842,19 +850,19 @@ func TestLocalDataWallet_Recover_Managed(t *testing.T) {
 	cryptoKey, _, _, err := account.GenerateKeysFromRecoveryPhrase(recoveryPhrase)
 	require.NoError(t, err)
 
-	newDataWallet, err := dw.Recover(cryptoKey, newPassPhrase)
+	newDataWallet, err := dw.Recover(env.Ctx, cryptoKey, newPassPhrase)
 	require.NoError(t, err)
 
 	err = newDataWallet.Lock()
 	require.NoError(t, err)
 
-	err = newDataWallet.Unlock(oldPassPhrase)
+	err = newDataWallet.Unlock(env.Ctx, oldPassPhrase)
 	assert.Error(t, err)
 
-	err = newDataWallet.Unlock(newPassPhrase)
+	err = newDataWallet.Unlock(env.Ctx, newPassPhrase)
 	require.NoError(t, err)
 
-	idList, err := newDataWallet.GetIdentities()
+	idList, err := newDataWallet.GetIdentities(env.Ctx)
 	require.NoError(t, err)
 
 	assert.Equal(t, 2, len(idList))
@@ -868,6 +876,7 @@ func TestLocalDataWallet_RecoverWithPayload(t *testing.T) {
 	passPhrase := TestPassphrase
 
 	dw, recDetails, err := env.Factory.RegisterAccount(
+		env.Ctx,
 		&account.Account{
 			Email:        "test@example.com",
 			Name:         "John Doe",
@@ -879,10 +888,10 @@ func TestLocalDataWallet_RecoverWithPayload(t *testing.T) {
 
 	recoveryPhrase := recDetails.RecoveryPhrase
 
-	err = dw.Unlock(passPhrase)
+	err = dw.Unlock(env.Ctx, passPhrase)
 	require.NoError(t, err)
 
-	_, err = dw.NewIdentity(model.AccessLevelLocal, "John XXX")
+	_, err = dw.NewIdentity(env.Ctx, model.AccessLevelLocal, "John XXX")
 	require.NoError(t, err)
 
 	err = dw.Lock()
@@ -893,16 +902,16 @@ func TestLocalDataWallet_RecoverWithPayload(t *testing.T) {
 	cryptoKey, _, _, err := account.GenerateKeysFromRecoveryPhrase(recoveryPhrase)
 	require.NoError(t, err)
 
-	newDataWallet, err := dw.Recover(cryptoKey, newPassPhrase)
+	newDataWallet, err := dw.Recover(env.Ctx, cryptoKey, newPassPhrase)
 	require.NoError(t, err)
 
 	err = newDataWallet.Lock()
 	require.NoError(t, err)
 
-	err = newDataWallet.Unlock(newPassPhrase)
+	err = newDataWallet.Unlock(env.Ctx, newPassPhrase)
 	require.NoError(t, err)
 
-	idList, err := newDataWallet.GetIdentities()
+	idList, err := newDataWallet.GetIdentities(env.Ctx)
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(idList))
 }

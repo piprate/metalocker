@@ -15,6 +15,7 @@
 package examples
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -78,15 +79,17 @@ fAX1YBBXUb3XGJNZlQIDAQAB
 
 	srv := node.NewMetaLockerServer(serverDir)
 
-	if err := srv.InitServices(cfg, debugMode); err != nil {
+	ctx := context.Background()
+
+	if err := srv.InitServices(ctx, cfg, debugMode); err != nil {
 		return nil, "", err
 	}
 
-	if err := srv.InitAuthentication(cfg); err != nil {
+	if err := srv.InitAuthentication(ctx, cfg); err != nil {
 		return nil, "", err
 	}
 
-	if err := srv.InitStandardRoutes(cfg); err != nil {
+	if err := srv.InitStandardRoutes(ctx, cfg); err != nil {
 		return nil, "", err
 	}
 
@@ -114,7 +117,7 @@ func waitUntilDemoServerIsUp(url string) {
 
 	retries := 0
 	for retries < 10 {
-		_, err = httpCaller.GetServerControls()
+		_, err = httpCaller.GetServerControls(context.Background())
 		if err == nil {
 			return
 		}

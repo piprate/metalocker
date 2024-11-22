@@ -15,6 +15,7 @@
 package operations
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -23,7 +24,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func StoreDataSets(lib wallet.DataStore, path, metaType, vaultName, lockerID, provPath, provMapping string,
+func StoreDataSets(ctx context.Context, lib wallet.DataStore, path, metaType, vaultName, lockerID, provPath, provMapping string,
 	durationString string, waitForConfirmation bool) ([]string, error) {
 
 	dsFolders, err := os.ReadDir(path)
@@ -36,7 +37,7 @@ func StoreDataSets(lib wallet.DataStore, path, metaType, vaultName, lockerID, pr
 		if f.IsDir() {
 			log.Debug().Str("path", f.Name()).Msg("Importing dataset")
 			dsPath := filepath.Join(path, f.Name())
-			recID, impID, err := StoreDataSet(lib, dsPath, metaType, vaultName, lockerID, provPath,
+			recID, impID, err := StoreDataSet(ctx, lib, dsPath, metaType, vaultName, lockerID, provPath,
 				provMapping, "", durationString, waitForConfirmation)
 			if err != nil {
 				return nil, err

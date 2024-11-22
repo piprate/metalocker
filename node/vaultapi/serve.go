@@ -39,7 +39,7 @@ func PostServeBlobHandler(vaultAPI vaults.Vault) func(c *gin.Context) {
 			return
 		}
 
-		rdr, err := vaultAPI.ServeBlob(res.StorageID(), res.Params, accessToken)
+		rdr, err := vaultAPI.ServeBlob(c, res.StorageID(), res.Params, accessToken)
 		if err != nil {
 			log := apibase.CtxLogger(c)
 			if errors.Is(err, model.ErrDataAssetAccessDenied) {

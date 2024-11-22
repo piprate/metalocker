@@ -15,22 +15,24 @@
 package caller
 
 import (
+	"context"
+
 	"github.com/piprate/metalocker/model/account"
 	"github.com/piprate/metalocker/storage"
 )
 
-func (c *MetaLockerHTTPCaller) StoreProperty(prop *account.DataEnvelope) error {
-	return c.storeDataEnvelope("property", prop)
+func (c *MetaLockerHTTPCaller) StoreProperty(ctx context.Context, prop *account.DataEnvelope) error {
+	return c.storeDataEnvelope(ctx, "property", prop)
 }
 
-func (c *MetaLockerHTTPCaller) GetProperty(hash string) (*account.DataEnvelope, error) {
-	return c.getDataEnvelope("property", hash, storage.ErrPropertyNotFound)
+func (c *MetaLockerHTTPCaller) GetProperty(ctx context.Context, hash string) (*account.DataEnvelope, error) {
+	return c.getDataEnvelope(ctx, "property", hash, storage.ErrPropertyNotFound)
 }
 
-func (c *MetaLockerHTTPCaller) ListProperties() ([]*account.DataEnvelope, error) {
-	return c.listDataEnvelopes("property")
+func (c *MetaLockerHTTPCaller) ListProperties(ctx context.Context) ([]*account.DataEnvelope, error) {
+	return c.listDataEnvelopes(ctx, "property")
 }
 
-func (c *MetaLockerHTTPCaller) DeleteProperty(hash string) error {
-	return c.deleteDataEnvelope("property", hash, storage.ErrPropertyNotFound)
+func (c *MetaLockerHTTPCaller) DeleteProperty(ctx context.Context, hash string) error {
+	return c.deleteDataEnvelope(ctx, "property", hash, storage.ErrPropertyNotFound)
 }

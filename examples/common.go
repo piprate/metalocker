@@ -15,6 +15,7 @@
 package examples
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 
@@ -28,13 +29,13 @@ const DemoIndexStoreID = "did:piprate:B7hqrwxrCnsWqtBnbYnhABwzktnT5oo1ZWbtby3My8
 const DemoIndexStoreName = "examples"
 
 func WithDemoIndexStore(baseDir string) remote.IndexClientSourceFn {
-	return func(userID string, mlc *caller.MetaLockerHTTPCaller) (index.Client, error) {
-		gb, err := mlc.GetGenesisBlock()
+	return func(ctx context.Context, userID string, mlc *caller.MetaLockerHTTPCaller) (index.Client, error) {
+		gb, err := mlc.GetGenesisBlock(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		return index.NewLocalIndexClient([]*index.StoreConfig{
+		return index.NewLocalIndexClient(ctx, []*index.StoreConfig{
 			{
 				ID:   DemoIndexStoreID,
 				Name: DemoIndexStoreName,

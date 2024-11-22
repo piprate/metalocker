@@ -35,12 +35,12 @@ func GenerateSubAccountAccessKey(c *cli.Context) error {
 		return err
 	}
 
-	dw, err = dw.GetSubAccountWallet(c.Args().Get(0))
+	dw, err = dw.GetSubAccountWallet(c.Context, c.Args().Get(0))
 	if err != nil {
 		return err
 	}
 
-	ak, err := dw.CreateAccessKey(model.AccessLevelHosted, time.Hour*24*365)
+	ak, err := dw.CreateAccessKey(c.Context, model.AccessLevelHosted, time.Hour*24*365)
 	if err != nil {
 		return err
 	}
@@ -67,12 +67,12 @@ func ListSubAccountAccessKeys(c *cli.Context) error {
 		return err
 	}
 
-	dw, err = dw.GetSubAccountWallet(c.Args().Get(0))
+	dw, err = dw.GetSubAccountWallet(c.Context, c.Args().Get(0))
 	if err != nil {
 		return err
 	}
 
-	accessKeys, err := dw.AccessKeys()
+	accessKeys, err := dw.AccessKeys(c.Context)
 	if err != nil {
 		return cli.Exit(err.Error(), OperationFailed)
 	}
@@ -106,7 +106,7 @@ func GetSubAccount(c *cli.Context) error {
 		return err
 	}
 
-	acct, err := dw.GetSubAccount(c.Args().Get(0))
+	acct, err := dw.GetSubAccount(c.Context, c.Args().Get(0))
 	if err != nil {
 		return cli.Exit(err.Error(), OperationFailed)
 	}
@@ -126,12 +126,12 @@ func GetSubAccountAccessKey(c *cli.Context) error {
 		return err
 	}
 
-	dw, err = dw.GetSubAccountWallet(c.Args().Get(0))
+	dw, err = dw.GetSubAccountWallet(c.Context, c.Args().Get(0))
 	if err != nil {
 		return err
 	}
 
-	ak, err := dw.GetAccessKey(c.Args().Get(1))
+	ak, err := dw.GetAccessKey(c.Context, c.Args().Get(1))
 	if err != nil {
 		return cli.Exit(err.Error(), OperationFailed)
 	}
@@ -151,12 +151,12 @@ func DeleteSubAccountAccessKey(c *cli.Context) error {
 		return err
 	}
 
-	dw, err = dw.GetSubAccountWallet(c.Args().Get(0))
+	dw, err = dw.GetSubAccountWallet(c.Context, c.Args().Get(0))
 	if err != nil {
 		return err
 	}
 
-	return dw.RevokeAccessKey(c.Args().Get(1))
+	return dw.RevokeAccessKey(c.Context, c.Args().Get(1))
 }
 
 func CreateSubAccount(c *cli.Context) error {
@@ -169,7 +169,7 @@ func CreateSubAccount(c *cli.Context) error {
 		return cli.Exit("email and password options aren't yet supported", OperationFailed)
 	}
 
-	subDW, err := dw.CreateSubAccount(model.AccessLevelHosted, c.String("name"))
+	subDW, err := dw.CreateSubAccount(c.Context, model.AccessLevelHosted, c.String("name"))
 	if err != nil {
 		return cli.Exit(err.Error(), OperationFailed)
 	}
@@ -179,7 +179,7 @@ func CreateSubAccount(c *cli.Context) error {
 	}
 
 	if c.Bool("new-key") {
-		ak, err := subDW.CreateAccessKey(model.AccessLevelHosted, time.Hour*24*365)
+		ak, err := subDW.CreateAccessKey(c.Context, model.AccessLevelHosted, time.Hour*24*365)
 		if err != nil {
 			return err
 		}
@@ -207,7 +207,7 @@ func ListSubAccounts(c *cli.Context) error {
 		return err
 	}
 
-	subAccounts, err := dataWallet.SubAccounts()
+	subAccounts, err := dataWallet.SubAccounts(c.Context)
 	if err != nil {
 		return cli.Exit(err.Error(), OperationFailed)
 	}

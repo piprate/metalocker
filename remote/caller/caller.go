@@ -15,6 +15,7 @@
 package caller
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -22,7 +23,7 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/piprate/json-gold/ld"
 	"github.com/piprate/metalocker/model"
 	"github.com/piprate/metalocker/model/account"
@@ -114,7 +115,7 @@ func (c *MetaLockerHTTPCaller) SecureClient() *httpsecure.Client {
 	return c.client
 }
 
-func (c *MetaLockerHTTPCaller) NewInstance(email, passphrase string, isHash bool) (wallet.NodeClient, error) {
+func (c *MetaLockerHTTPCaller) NewInstance(ctx context.Context, email, passphrase string, isHash bool) (wallet.NodeClient, error) {
 	if isHash {
 		return nil, errors.New("can't acquire new caller using passphrase hash")
 	}
@@ -126,7 +127,7 @@ func (c *MetaLockerHTTPCaller) NewInstance(email, passphrase string, isHash bool
 		client: &newClient,
 	}
 
-	err := newCaller.LoginWithCredentials(email, passphrase)
+	err := newCaller.LoginWithCredentials(ctx, email, passphrase)
 	if err != nil {
 		log.Err(err).Str("user", email).Msg("Authentication failed")
 		return nil, err
@@ -166,7 +167,7 @@ func (c *MetaLockerHTTPCaller) LoginWithJWT(jwtToken string) error {
 	return nil
 }
 
-func (c *MetaLockerHTTPCaller) LoginWithCredentials(email string, password string) error {
+func (c *MetaLockerHTTPCaller) LoginWithCredentials(ctx context.Context, email string, password string) error {
 	// logout before trying to log in
 	c.Logout()
 
@@ -175,7 +176,7 @@ func (c *MetaLockerHTTPCaller) LoginWithCredentials(email string, password strin
 		Password: account.HashUserPassword(password),
 	}
 
-	res, err := c.client.SendRequest(http.MethodPost, "/v1/authenticate",
+	res, err := c.client.SendRequest(ctx, http.MethodPost, "/v1/authenticate",
 		httpsecure.WithJSONBody(loginForm),
 		httpsecure.SkipAuthentication())
 	if err != nil {
@@ -239,12 +240,12 @@ func (c *MetaLockerHTTPCaller) LoginWithAdminKeys(adminKey, adminSecret string) 
 	return nil
 }
 
-func (c *MetaLockerHTTPCaller) LoginWithAccessKeys(apiKey, clientSecret string) error {
+func (c *MetaLockerHTTPCaller) LoginWithAccessKeys(ctx context.Context, apiKey, clientSecret string) error {
 	if err := httpsecure.WithAccessKey(apiKey, clientSecret)(c.client); err != nil {
 		return err
 	}
 
-	acct, err := c.GetOwnAccount()
+	acct, err := c.GetOwnAccount(ctx)
 	if err != nil {
 		return err
 	}
@@ -268,13 +269,13 @@ type NewAccountForm struct {
 	RegistrationCode string           `json:"registrationCode"`
 }
 
-func (c *MetaLockerHTTPCaller) CreateAccount(acct *account.Account, registrationCode string) error {
+func (c *MetaLockerHTTPCaller) CreateAccount(ctx context.Context, acct *account.Account, registrationCode string) error {
 	form := NewAccountForm{
 		Account:          acct,
 		RegistrationCode: registrationCode,
 	}
 
-	res, err := c.client.SendRequest(http.MethodPost, "/v1/register",
+	res, err := c.client.SendRequest(ctx, http.MethodPost, "/v1/register",
 		httpsecure.WithJSONBody(form),
 		httpsecure.SkipAuthentication())
 	if err != nil {

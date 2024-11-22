@@ -40,7 +40,7 @@ func TestAccountHandler_GetPropertyListHandler(t *testing.T) {
 
 	acct := createTestAccount(t, "test@example.com", model.AccessLevelHosted, "", env)
 
-	err := env.IdentityBackend.StoreProperty(acct.ID, &account.DataEnvelope{
+	err := env.IdentityBackend.StoreProperty(env.Ctx, acct.ID, &account.DataEnvelope{
 		Hash:        "abc",
 		AccessLevel: model.AccessLevelHosted,
 	})
@@ -141,7 +141,7 @@ func TestAccountHandler_GetPropertyHandler(t *testing.T) {
 
 	acct := createTestAccount(t, "test@example.com", model.AccessLevelHosted, "", env)
 
-	err := env.IdentityBackend.StoreProperty(acct.ID, &account.DataEnvelope{
+	err := env.IdentityBackend.StoreProperty(env.Ctx, acct.ID, &account.DataEnvelope{
 		Hash:        "abc",
 		AccessLevel: model.AccessLevelHosted,
 	})
@@ -189,7 +189,7 @@ func TestAccountHandler_DeletePropertyHandler(t *testing.T) {
 
 	acct := createTestAccount(t, "test@example.com", model.AccessLevelHosted, "", env)
 
-	err := env.IdentityBackend.StoreProperty(acct.ID, &account.DataEnvelope{
+	err := env.IdentityBackend.StoreProperty(env.Ctx, acct.ID, &account.DataEnvelope{
 		Hash:        "abc",
 		AccessLevel: model.AccessLevelHosted,
 	})
@@ -226,6 +226,6 @@ func TestAccountHandler_DeletePropertyHandler(t *testing.T) {
 	//require.Equal(t, http.StatusNoContent, rec.Code)
 	require.True(t, rec.Code >= 200)
 
-	_, err = env.IdentityBackend.GetProperty(acct.ID, "abc")
+	_, err = env.IdentityBackend.GetProperty(env.Ctx, acct.ID, "abc")
 	require.Error(t, err)
 }

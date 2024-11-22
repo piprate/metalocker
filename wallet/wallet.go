@@ -15,6 +15,7 @@
 package wallet
 
 import (
+	"context"
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/sha512"
@@ -243,7 +244,7 @@ func (dw *LocalDataWallet) Lock() error {
 	return nil
 }
 
-func (dw *LocalDataWallet) Unlock(passphrase string) error {
+func (dw *LocalDataWallet) Unlock(ctx context.Context, passphrase string) error {
 	defer measure.ExecTime("wallet.Unlock")()
 
 	if dw.lockLevel != model.AccessLevelNone {
@@ -272,7 +273,7 @@ func (dw *LocalDataWallet) Unlock(passphrase string) error {
 		if err != nil {
 			return err
 		}
-		return dw.UnlockAsManaged(key)
+		return dw.UnlockAsManaged(ctx, key)
 	}
 
 	if dw.acct.AccessLevel != model.AccessLevelHosted && dw.acct.AccessLevel != model.AccessLevelLocal {
@@ -294,7 +295,7 @@ func (dw *LocalDataWallet) Unlock(passphrase string) error {
 		return err
 	}
 
-	if err = dw.decryptHostedSecrets(hostedKey); err != nil {
+	if err = dw.decryptHostedSecrets(ctx, hostedKey); err != nil {
 		return err
 	}
 
@@ -307,7 +308,7 @@ func (dw *LocalDataWallet) Unlock(passphrase string) error {
 	return nil
 }
 
-func (dw *LocalDataWallet) decryptHostedSecrets(hostedKey *model.AESKey) error {
+func (dw *LocalDataWallet) decryptHostedSecrets(ctx context.Context, hostedKey *model.AESKey) error {
 	dw.hostedCryptoKey = hostedKey
 
 	payload, err := dw.acct.HostedSecretStore.GetPayload(hostedKey)
@@ -338,7 +339,7 @@ func (dw *LocalDataWallet) decryptHostedSecrets(hostedKey *model.AESKey) error {
 
 	for _, idy := range payload.Identities {
 		for _, locker := range idy.Lockers {
-			if err = dw.addLocker(newLockerWrapper(dw, locker)); err != nil {
+			if err = dw.addLocker(ctx, newLockerWrapper(dw, locker)); err != nil {
 				return err
 			}
 		}
@@ -373,7 +374,7 @@ func (dw *LocalDataWallet) decryptManagedSecrets(managedKey *model.AESKey) error
 	return nil
 }
 
-func (dw *LocalDataWallet) UnlockAsManaged(managedKey *model.AESKey) error {
+func (dw *LocalDataWallet) UnlockAsManaged(ctx context.Context, managedKey *model.AESKey) error {
 	defer measure.ExecTime("wallet.UnlockAsManaged")()
 
 	if dw.lockLevel != model.AccessLevelNone {
@@ -400,14 +401,14 @@ func (dw *LocalDataWallet) UnlockAsManaged(managedKey *model.AESKey) error {
 	return nil
 }
 
-func (dw *LocalDataWallet) UnlockWithAccessKey(apiKey, apiSecret string) error {
+func (dw *LocalDataWallet) UnlockWithAccessKey(ctx context.Context, apiKey, apiSecret string) error {
 	defer measure.ExecTime("wallet.UnlockWithAccessKey")()
 
 	if dw.lockLevel != model.AccessLevelNone {
 		return errors.New("data wallet already unlocked")
 	}
 
-	accessKey, err := dw.GetAccessKey(apiKey)
+	accessKey, err := dw.GetAccessKey(ctx, apiKey)
 	if err != nil {
 		return err
 	}
@@ -445,7 +446,7 @@ func (dw *LocalDataWallet) UnlockWithAccessKey(apiKey, apiSecret string) error {
 			return err
 		}
 
-		if err = dw.decryptHostedSecrets(hostedKey); err != nil {
+		if err = dw.decryptHostedSecrets(ctx, hostedKey); err != nil {
 			return err
 		}
 
@@ -459,7 +460,7 @@ func (dw *LocalDataWallet) UnlockWithAccessKey(apiKey, apiSecret string) error {
 	return nil
 }
 
-func (dw *LocalDataWallet) UnlockAsChild(parentNode slip10.Node) error {
+func (dw *LocalDataWallet) UnlockAsChild(ctx context.Context, parentNode slip10.Node) error {
 	defer measure.ExecTime("wallet.UnlockAsChild")()
 
 	if dw.lockLevel != model.AccessLevelNone {
@@ -485,7 +486,7 @@ func (dw *LocalDataWallet) UnlockAsChild(parentNode slip10.Node) error {
 		}
 	case model.AccessLevelHosted:
 		dw.hostedCryptoKey = hostedCryptoKey
-		if err = dw.decryptHostedSecrets(hostedCryptoKey); err != nil {
+		if err = dw.decryptHostedSecrets(ctx, hostedCryptoKey); err != nil {
 			return err
 		}
 	default:
@@ -497,13 +498,13 @@ func (dw *LocalDataWallet) UnlockAsChild(parentNode slip10.Node) error {
 	return nil
 }
 
-func (dw *LocalDataWallet) addLocker(locker Locker) error {
+func (dw *LocalDataWallet) addLocker(ctx context.Context, locker Locker) error {
 	if !locker.Raw().IsHydrated() {
 		// hydrate locker
 		for _, party := range locker.Raw().Participants {
 			var signKey ed25519.PrivateKey
 			if party.Self {
-				idy, err := dw.GetIdentity(party.ID)
+				idy, err := dw.GetIdentity(ctx, party.ID)
 				if err != nil {
 					return err
 				}
@@ -522,15 +523,15 @@ func (dw *LocalDataWallet) addLocker(locker Locker) error {
 	return nil
 }
 
-func (dw *LocalDataWallet) GetRootIdentity() (Identity, error) {
-	return dw.GetIdentity(dw.acct.ID)
+func (dw *LocalDataWallet) GetRootIdentity(ctx context.Context) (Identity, error) {
+	return dw.GetIdentity(ctx, dw.acct.ID)
 }
 
-func (dw *LocalDataWallet) GetRootLocker(level model.AccessLevel) (Locker, error) {
+func (dw *LocalDataWallet) GetRootLocker(ctx context.Context, level model.AccessLevel) (Locker, error) {
 	if level == model.AccessLevelManaged {
-		return dw.GetLocker(dw.managedRootLockerID)
+		return dw.GetLocker(ctx, dw.managedRootLockerID)
 	} else if level >= model.AccessLevelHosted {
-		return dw.GetLocker(dw.hostedRootLockerID)
+		return dw.GetLocker(ctx, dw.hostedRootLockerID)
 	} else {
 		return nil, fmt.Errorf("access level not supported for root lockers: %d", level)
 	}
@@ -546,9 +547,9 @@ func (dw *LocalDataWallet) getRootLockerID(level model.AccessLevel) string {
 	}
 }
 
-func (dw *LocalDataWallet) sendAccountUpdate(au *AccountUpdate, wait bool) (int64, error) {
+func (dw *LocalDataWallet) sendAccountUpdate(ctx context.Context, au *AccountUpdate, wait bool) (int64, error) {
 	rootLockerID := dw.getRootLockerID(au.AccessLevel)
-	lb, err := dw.DataStore().NewDataSetBuilder(rootLockerID,
+	lb, err := dw.DataStore().NewDataSetBuilder(ctx, rootLockerID,
 		dataset.WithVault(dw.acct.DefaultVault))
 	if err != nil {
 		return 0, err
@@ -587,7 +588,7 @@ func (dw *LocalDataWallet) sendAccountUpdate(au *AccountUpdate, wait bool) (int6
 	}
 }
 
-func (dw *LocalDataWallet) AddLocker(locker *model.Locker) (Locker, error) {
+func (dw *LocalDataWallet) AddLocker(ctx context.Context, locker *model.Locker) (Locker, error) {
 	if locker.AccessLevel == model.AccessLevelNone {
 		return nil, errors.New("locker access level is not provided")
 	}
@@ -602,12 +603,13 @@ func (dw *LocalDataWallet) AddLocker(locker *model.Locker) (Locker, error) {
 
 	locker = locker.Copy()
 
-	acceptedAt, err := dw.sendAccountUpdate(&AccountUpdate{
-		Type:          AccountUpdateType,
-		AccountID:     dw.acct.ID,
-		AccessLevel:   locker.AccessLevel,
-		LockersOpened: []string{locker.ID},
-	}, true)
+	acceptedAt, err := dw.sendAccountUpdate(ctx,
+		&AccountUpdate{
+			Type:          AccountUpdateType,
+			AccountID:     dw.acct.ID,
+			AccessLevel:   locker.AccessLevel,
+			LockersOpened: []string{locker.ID},
+		}, true)
 	if err != nil {
 		log.Err(err).Msg("Error when sending account update message")
 		return nil, err
@@ -621,7 +623,7 @@ func (dw *LocalDataWallet) AddLocker(locker *model.Locker) (Locker, error) {
 	}
 
 	wrapper := newLockerWrapper(dw, locker)
-	err = dw.addLocker(wrapper)
+	err = dw.addLocker(ctx, wrapper)
 	if err != nil {
 		return nil, err
 	}
@@ -632,7 +634,7 @@ func (dw *LocalDataWallet) AddLocker(locker *model.Locker) (Locker, error) {
 		if err != nil {
 			return nil, err
 		}
-		if err = dw.nodeClient.StoreLocker(envelope); err != nil {
+		if err = dw.nodeClient.StoreLocker(ctx, envelope); err != nil {
 			return nil, err
 		}
 	case model.AccessLevelHosted:
@@ -640,14 +642,14 @@ func (dw *LocalDataWallet) AddLocker(locker *model.Locker) (Locker, error) {
 		if err != nil {
 			return nil, err
 		}
-		if err = dw.nodeClient.StoreLocker(envelope); err != nil {
+		if err = dw.nodeClient.StoreLocker(ctx, envelope); err != nil {
 			return nil, err
 		}
 	case model.AccessLevelLocal:
 		if err := dw.flushToHostedSecretStore(); err != nil {
 			return nil, errors.New("failed to build encrypted payload")
 		}
-		if err := dw.nodeClient.UpdateAccount(dw.acct); err != nil {
+		if err := dw.nodeClient.UpdateAccount(ctx, dw.acct); err != nil {
 			return nil, err
 		}
 	default:
@@ -657,7 +659,7 @@ func (dw *LocalDataWallet) AddLocker(locker *model.Locker) (Locker, error) {
 	return wrapper, nil
 }
 
-func (dw *LocalDataWallet) AddIdentity(idy *account.Identity) error {
+func (dw *LocalDataWallet) AddIdentity(ctx context.Context, idy *account.Identity) error {
 	if idy.AccessLevel == model.AccessLevelLocal {
 		if dw.lockLevel < model.AccessLevelHosted {
 			return ErrInsufficientLockLevel
@@ -684,7 +686,7 @@ func (dw *LocalDataWallet) AddIdentity(idy *account.Identity) error {
 
 	// check if identity exists
 	publishDID := false
-	existingDDoc, err := dw.nodeClient.DIDProvider().GetDIDDocument(idy.ID())
+	existingDDoc, err := dw.nodeClient.DIDProvider().GetDIDDocument(ctx, idy.ID())
 	if err != nil {
 		if errors.Is(err, storage.ErrDIDNotFound) {
 			publishDID = true
@@ -719,7 +721,7 @@ func (dw *LocalDataWallet) AddIdentity(idy *account.Identity) error {
 		if err != nil {
 			return err
 		}
-		if err = dw.nodeClient.StoreIdentity(envelope); err != nil {
+		if err = dw.nodeClient.StoreIdentity(ctx, envelope); err != nil {
 			return err
 		}
 	case model.AccessLevelHosted:
@@ -727,26 +729,27 @@ func (dw *LocalDataWallet) AddIdentity(idy *account.Identity) error {
 		if err != nil {
 			return err
 		}
-		if err = dw.nodeClient.StoreIdentity(envelope); err != nil {
+		if err = dw.nodeClient.StoreIdentity(ctx, envelope); err != nil {
 			return err
 		}
 	case model.AccessLevelLocal:
 		if err := dw.flushToHostedSecretStore(); err != nil {
 			return errors.New("failed to build encrypted payload")
 		}
-		if err = dw.nodeClient.UpdateAccount(dw.acct); err != nil {
+		if err = dw.nodeClient.UpdateAccount(ctx, dw.acct); err != nil {
 			return err
 		}
 	default:
 		return fmt.Errorf("identity access level not supported: %d", idy.AccessLevel)
 	}
 
-	_, err = dw.sendAccountUpdate(&AccountUpdate{
-		Type:            AccountUpdateType,
-		AccountID:       dw.acct.ID,
-		AccessLevel:     cleanIdy.AccessLevel,
-		IdentitiesAdded: []string{cleanIdy.ID()},
-	}, dw.confirmAccountUpdates)
+	_, err = dw.sendAccountUpdate(ctx,
+		&AccountUpdate{
+			Type:            AccountUpdateType,
+			AccountID:       dw.acct.ID,
+			AccessLevel:     cleanIdy.AccessLevel,
+			IdentitiesAdded: []string{cleanIdy.ID()},
+		}, dw.confirmAccountUpdates)
 	if err != nil {
 		log.Err(err).Msg("Error when sending account update message")
 		return err
@@ -755,7 +758,7 @@ func (dw *LocalDataWallet) AddIdentity(idy *account.Identity) error {
 	// add included lockers
 
 	for _, locker := range idy.Lockers {
-		if _, err = dw.AddLocker(locker); err != nil {
+		if _, err = dw.AddLocker(ctx, locker); err != nil {
 			return err
 		}
 	}
@@ -766,7 +769,7 @@ func (dw *LocalDataWallet) AddIdentity(idy *account.Identity) error {
 			return err
 		}
 
-		err = dw.nodeClient.DIDProvider().CreateDIDDocument(dDoc)
+		err = dw.nodeClient.DIDProvider().CreateDIDDocument(ctx, dDoc)
 		if err != nil {
 			return err
 		}
@@ -778,7 +781,7 @@ func (dw *LocalDataWallet) AddIdentity(idy *account.Identity) error {
 	return nil
 }
 
-func (dw *LocalDataWallet) GetIdentities() (map[string]Identity, error) {
+func (dw *LocalDataWallet) GetIdentities(ctx context.Context) (map[string]Identity, error) {
 	if dw.lockLevel == model.AccessLevelNone {
 		return nil, ErrWalletLocked
 	}
@@ -787,7 +790,7 @@ func (dw *LocalDataWallet) GetIdentities() (map[string]Identity, error) {
 		return dw.identities, nil
 	}
 
-	idyEnvList, err := dw.nodeClient.ListIdentities()
+	idyEnvList, err := dw.nodeClient.ListIdentities(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -807,7 +810,7 @@ func (dw *LocalDataWallet) GetIdentities() (map[string]Identity, error) {
 	return dw.identities, nil
 }
 
-func (dw *LocalDataWallet) GetIdentity(iid string) (Identity, error) {
+func (dw *LocalDataWallet) GetIdentity(ctx context.Context, iid string) (Identity, error) {
 	if dw.lockLevel == model.AccessLevelNone {
 		return nil, ErrWalletLocked
 	}
@@ -818,10 +821,10 @@ func (dw *LocalDataWallet) GetIdentity(iid string) (Identity, error) {
 
 	if !found {
 		managedHash := account.HashID(iid, dw.managedHMACKey)
-		envelope, err := dw.nodeClient.GetIdentity(managedHash)
+		envelope, err := dw.nodeClient.GetIdentity(ctx, managedHash)
 		if errors.Is(err, storage.ErrIdentityNotFound) {
 			hostedHash := account.HashID(iid, dw.hostedHMACKey)
-			envelope, err = dw.nodeClient.GetIdentity(hostedHash)
+			envelope, err = dw.nodeClient.GetIdentity(ctx, hostedHash)
 		}
 		if err != nil {
 			return nil, err
@@ -841,7 +844,7 @@ func (dw *LocalDataWallet) GetIdentity(iid string) (Identity, error) {
 	return idy, nil
 }
 
-func (dw *LocalDataWallet) GetDID(iid string) (*model.DID, error) {
+func (dw *LocalDataWallet) GetDID(ctx context.Context, iid string) (*model.DID, error) {
 	dw.dataMtx.RLock()
 	idy, found := dw.identities[iid]
 	dw.dataMtx.RUnlock()
@@ -849,7 +852,7 @@ func (dw *LocalDataWallet) GetDID(iid string) (*model.DID, error) {
 	if found {
 		return idy.Raw().DID.NeuteredCopy(), nil
 	} else {
-		didDoc, err := dw.nodeClient.DIDProvider().GetDIDDocument(iid)
+		didDoc, err := dw.nodeClient.DIDProvider().GetDIDDocument(ctx, iid)
 		if err != nil {
 			return nil, err
 		}
@@ -858,19 +861,19 @@ func (dw *LocalDataWallet) GetDID(iid string) (*model.DID, error) {
 	}
 }
 
-func (dw *LocalDataWallet) GetLockers() ([]*model.Locker, error) {
+func (dw *LocalDataWallet) GetLockers(ctx context.Context) ([]*model.Locker, error) {
 	if dw.lockLevel == model.AccessLevelNone {
 		return nil, ErrWalletLocked
 	}
 
-	lockerEnvList, err := dw.nodeClient.ListLockers()
+	lockerEnvList, err := dw.nodeClient.ListLockers(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, envelope := range lockerEnvList {
 		if envelope.AccessLevel <= dw.lockLevel {
-			_, err = dw.loadLockerEnvelope(envelope)
+			_, err = dw.loadLockerEnvelope(ctx, envelope)
 			if err != nil {
 				return nil, err
 			}
@@ -887,7 +890,7 @@ func (dw *LocalDataWallet) GetLockers() ([]*model.Locker, error) {
 	return list, nil
 }
 
-func (dw *LocalDataWallet) GetLocker(lockerID string) (Locker, error) {
+func (dw *LocalDataWallet) GetLocker(ctx context.Context, lockerID string) (Locker, error) {
 	if dw.lockLevel == model.AccessLevelNone {
 		return nil, ErrWalletLocked
 	}
@@ -901,16 +904,16 @@ func (dw *LocalDataWallet) GetLocker(lockerID string) (Locker, error) {
 
 	if !found {
 		managedHash := account.HashID(lockerID, dw.managedHMACKey)
-		envelope, err := dw.nodeClient.GetLocker(managedHash)
+		envelope, err := dw.nodeClient.GetLocker(ctx, managedHash)
 		if errors.Is(err, storage.ErrLockerNotFound) {
 			hostedHash := account.HashID(lockerID, dw.hostedHMACKey)
-			envelope, err = dw.nodeClient.GetLocker(hostedHash)
+			envelope, err = dw.nodeClient.GetLocker(ctx, hostedHash)
 		}
 		if err != nil {
 			return nil, err
 		}
 
-		if locker, err = dw.loadLockerEnvelope(envelope); err != nil {
+		if locker, err = dw.loadLockerEnvelope(ctx, envelope); err != nil {
 			return nil, err
 		} else if locker == nil {
 			// the locker may have been loaded since this function call started
@@ -923,7 +926,7 @@ func (dw *LocalDataWallet) GetLocker(lockerID string) (Locker, error) {
 	return locker, nil
 }
 
-func (dw *LocalDataWallet) GetProperty(key string) (string, error) {
+func (dw *LocalDataWallet) GetProperty(ctx context.Context, key string) (string, error) {
 	if dw.lockLevel == model.AccessLevelNone {
 		return "", ErrWalletLocked
 	}
@@ -933,11 +936,11 @@ func (dw *LocalDataWallet) GetProperty(key string) (string, error) {
 
 	if dw.lockLevel == model.AccessLevelHosted {
 		hostedHash := account.HashID(key, dw.hostedHMACKey)
-		envelope, err = dw.nodeClient.GetProperty(hostedHash)
+		envelope, err = dw.nodeClient.GetProperty(ctx, hostedHash)
 	}
 	if errors.Is(err, storage.ErrPropertyNotFound) || dw.lockLevel == model.AccessLevelManaged {
 		managedHash := account.HashID(key, dw.managedHMACKey)
-		envelope, err = dw.nodeClient.GetProperty(managedHash)
+		envelope, err = dw.nodeClient.GetProperty(ctx, managedHash)
 	}
 	if err != nil {
 		return "", err
@@ -949,7 +952,7 @@ func (dw *LocalDataWallet) GetProperty(key string) (string, error) {
 	return dw.decryptProperty(envelope, nil)
 }
 
-func (dw *LocalDataWallet) SetProperty(key string, value string, lvl model.AccessLevel) error {
+func (dw *LocalDataWallet) SetProperty(ctx context.Context, key string, value string, lvl model.AccessLevel) error {
 	if dw.lockLevel < lvl {
 		return ErrInsufficientLockLevel
 	}
@@ -959,15 +962,15 @@ func (dw *LocalDataWallet) SetProperty(key string, value string, lvl model.Acces
 		return err
 	}
 
-	return dw.nodeClient.StoreProperty(env)
+	return dw.nodeClient.StoreProperty(ctx, env)
 }
 
-func (dw *LocalDataWallet) GetProperties() (map[string]string, error) {
+func (dw *LocalDataWallet) GetProperties(ctx context.Context) (map[string]string, error) {
 	if dw.lockLevel == model.AccessLevelNone {
 		return nil, ErrWalletLocked
 	}
 
-	envList, err := dw.nodeClient.ListProperties()
+	envList, err := dw.nodeClient.ListProperties(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -992,7 +995,7 @@ func (dw *LocalDataWallet) GetProperties() (map[string]string, error) {
 	return res, nil
 }
 
-func (dw *LocalDataWallet) DeleteProperty(key string, lvl model.AccessLevel) error {
+func (dw *LocalDataWallet) DeleteProperty(ctx context.Context, key string, lvl model.AccessLevel) error {
 	if dw.lockLevel == model.AccessLevelNone {
 		return ErrWalletLocked
 	}
@@ -1003,11 +1006,11 @@ func (dw *LocalDataWallet) DeleteProperty(key string, lvl model.AccessLevel) err
 
 	if lvl == model.AccessLevelHosted {
 		hostedHash := account.HashID(key, dw.hostedHMACKey)
-		return dw.nodeClient.DeleteProperty(hostedHash)
+		return dw.nodeClient.DeleteProperty(ctx, hostedHash)
 	}
 	if lvl == model.AccessLevelManaged {
 		managedHash := account.HashID(key, dw.managedHMACKey)
-		return dw.nodeClient.DeleteProperty(managedHash)
+		return dw.nodeClient.DeleteProperty(ctx, managedHash)
 	}
 
 	return fmt.Errorf("unsupported property access level: %d", lvl)
@@ -1040,10 +1043,10 @@ func (dw *LocalDataWallet) flushToHostedSecretStore() error {
 	return nil
 }
 
-func (dw *LocalDataWallet) ChangeEmail(email string) error {
+func (dw *LocalDataWallet) ChangeEmail(ctx context.Context, email string) error {
 	dw.acct.Email = strings.ToLower(email)
 
-	err := dw.nodeClient.PatchAccount(dw.acct.Email, "", "", "", "", "")
+	err := dw.nodeClient.PatchAccount(ctx, dw.acct.Email, "", "", "", "", "")
 	if err != nil {
 		return err
 	}
@@ -1051,7 +1054,7 @@ func (dw *LocalDataWallet) ChangeEmail(email string) error {
 	return nil
 }
 
-func (dw *LocalDataWallet) ChangePassphrase(oldPassphrase, newPassphrase string, isHash bool) (DataWallet, error) {
+func (dw *LocalDataWallet) ChangePassphrase(ctx context.Context, oldPassphrase, newPassphrase string, isHash bool) (DataWallet, error) {
 	if dw.acct.AccessLevel > dw.lockLevel {
 		return nil, ErrInsufficientLockLevel
 	}
@@ -1061,12 +1064,12 @@ func (dw *LocalDataWallet) ChangePassphrase(oldPassphrase, newPassphrase string,
 		return nil, err
 	}
 
-	err = dw.nodeClient.UpdateAccount(acct)
+	err = dw.nodeClient.UpdateAccount(ctx, acct)
 	if err != nil {
 		return nil, err
 	}
 
-	newNodeClient, err := dw.nodeClient.NewInstance(acct.Email, newPassphrase, isHash)
+	newNodeClient, err := dw.nodeClient.NewInstance(ctx, acct.Email, newPassphrase, isHash)
 	if err != nil {
 		return nil, err
 	}
@@ -1082,11 +1085,11 @@ func (dw *LocalDataWallet) ChangePassphrase(oldPassphrase, newPassphrase string,
 			return nil, err
 		}
 
-		if err = newDataWallet.UnlockAsManaged(managedKey); err != nil {
+		if err = newDataWallet.UnlockAsManaged(ctx, managedKey); err != nil {
 			return nil, errors.New("failed unlock the new wallet")
 		}
 	} else {
-		if err = newDataWallet.Unlock(newPassphrase); err != nil {
+		if err = newDataWallet.Unlock(ctx, newPassphrase); err != nil {
 			return nil, errors.New("failed unlock the new wallet")
 		}
 	}
@@ -1098,7 +1101,7 @@ func (dw *LocalDataWallet) ChangePassphrase(oldPassphrase, newPassphrase string,
 	return newDataWallet, nil
 }
 
-func (dw *LocalDataWallet) Recover(cryptoKey *model.AESKey, newPassphrase string) (DataWallet, error) {
+func (dw *LocalDataWallet) Recover(ctx context.Context, cryptoKey *model.AESKey, newPassphrase string) (DataWallet, error) {
 	if dw.lockLevel != model.AccessLevelNone {
 		return nil, errors.New("can't recover passphrase for unlocked wallet")
 	}
@@ -1113,7 +1116,7 @@ func (dw *LocalDataWallet) Recover(cryptoKey *model.AESKey, newPassphrase string
 		return nil, err
 	}
 
-	if err = newWallet.Unlock(newPassphrase); err != nil {
+	if err = newWallet.Unlock(ctx, newPassphrase); err != nil {
 		return nil, err
 	}
 
@@ -1122,7 +1125,7 @@ func (dw *LocalDataWallet) Recover(cryptoKey *model.AESKey, newPassphrase string
 	return newWallet, nil
 }
 
-func (dw *LocalDataWallet) CreateSubAccount(accessLevel model.AccessLevel, name string, opts ...account.Option) (DataWallet, error) {
+func (dw *LocalDataWallet) CreateSubAccount(ctx context.Context, accessLevel model.AccessLevel, name string, opts ...account.Option) (DataWallet, error) {
 	if accessLevel > dw.lockLevel {
 		return nil, ErrInsufficientLockLevel
 	}
@@ -1150,7 +1153,7 @@ func (dw *LocalDataWallet) CreateSubAccount(accessLevel model.AccessLevel, name 
 		name = fmt.Sprintf("Sub-Account #%d", derivationIndex)
 	}
 
-	tb, err := dw.nodeClient.Ledger().GetTopBlock()
+	tb, err := dw.nodeClient.Ledger().GetTopBlock(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -1174,31 +1177,32 @@ func (dw *LocalDataWallet) CreateSubAccount(accessLevel model.AccessLevel, name 
 		return nil, err
 	}
 
-	err = SaveNewAccount(resp, subNodeClient, "", nil)
+	err = SaveNewAccount(ctx, resp, subNodeClient, "", nil)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = dw.sendAccountUpdate(&AccountUpdate{
-		Type:             AccountUpdateType,
-		AccountID:        dw.acct.ID,
-		AccessLevel:      resp.Account.AccessLevel,
-		SubAccountsAdded: []string{resp.Account.ID},
-	}, dw.confirmAccountUpdates)
+	_, err = dw.sendAccountUpdate(ctx,
+		&AccountUpdate{
+			Type:             AccountUpdateType,
+			AccountID:        dw.acct.ID,
+			AccessLevel:      resp.Account.AccessLevel,
+			SubAccountsAdded: []string{resp.Account.ID},
+		}, dw.confirmAccountUpdates)
 	if err != nil {
 		log.Err(err).Msg("Error when sending account update message")
 		return nil, err
 	}
 
-	return dw.GetSubAccountWallet(resp.Account.ID)
+	return dw.GetSubAccountWallet(ctx, resp.Account.ID)
 }
 
-func (dw *LocalDataWallet) GetSubAccount(id string) (*account.Account, error) {
-	return dw.nodeClient.GetAccount(id)
+func (dw *LocalDataWallet) GetSubAccount(ctx context.Context, id string) (*account.Account, error) {
+	return dw.nodeClient.GetAccount(ctx, id)
 }
 
-func (dw *LocalDataWallet) GetSubAccountWallet(id string) (DataWallet, error) {
-	acct, err := dw.nodeClient.GetAccount(id)
+func (dw *LocalDataWallet) GetSubAccountWallet(ctx context.Context, id string) (DataWallet, error) {
+	acct, err := dw.nodeClient.GetAccount(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -1213,7 +1217,7 @@ func (dw *LocalDataWallet) GetSubAccountWallet(id string) (DataWallet, error) {
 		return nil, err
 	}
 
-	err = subWallet.UnlockAsChild(dw.node)
+	err = subWallet.UnlockAsChild(ctx, dw.node)
 	if err != nil {
 		return nil, err
 	}
@@ -1221,15 +1225,15 @@ func (dw *LocalDataWallet) GetSubAccountWallet(id string) (DataWallet, error) {
 	return subWallet, nil
 }
 
-func (dw *LocalDataWallet) DeleteSubAccount(id string) error {
-	return dw.nodeClient.DeleteAccount(id)
+func (dw *LocalDataWallet) DeleteSubAccount(ctx context.Context, id string) error {
+	return dw.nodeClient.DeleteAccount(ctx, id)
 }
 
-func (dw *LocalDataWallet) SubAccounts() ([]*account.Account, error) {
-	return dw.nodeClient.ListSubAccounts(dw.acct.ID)
+func (dw *LocalDataWallet) SubAccounts(ctx context.Context) ([]*account.Account, error) {
+	return dw.nodeClient.ListSubAccounts(ctx, dw.acct.ID)
 }
 
-func (dw *LocalDataWallet) CreateAccessKey(accessLevel model.AccessLevel, duration time.Duration) (*model.AccessKey, error) {
+func (dw *LocalDataWallet) CreateAccessKey(ctx context.Context, accessLevel model.AccessLevel, duration time.Duration) (*model.AccessKey, error) {
 
 	// we allow to create a key with managed secrets only for hosted accounts
 	if dw.lockLevel < accessLevel {
@@ -1248,19 +1252,19 @@ func (dw *LocalDataWallet) CreateAccessKey(accessLevel model.AccessLevel, durati
 		}
 	}
 
-	return dw.nodeClient.CreateAccessKey(key)
+	return dw.nodeClient.CreateAccessKey(ctx, key)
 }
 
-func (dw *LocalDataWallet) GetAccessKey(keyID string) (*model.AccessKey, error) {
-	return dw.nodeClient.GetAccessKey(keyID)
+func (dw *LocalDataWallet) GetAccessKey(ctx context.Context, keyID string) (*model.AccessKey, error) {
+	return dw.nodeClient.GetAccessKey(ctx, keyID)
 }
 
-func (dw *LocalDataWallet) RevokeAccessKey(keyID string) error {
-	return dw.nodeClient.DeleteAccessKey(keyID)
+func (dw *LocalDataWallet) RevokeAccessKey(ctx context.Context, keyID string) error {
+	return dw.nodeClient.DeleteAccessKey(ctx, keyID)
 }
 
-func (dw *LocalDataWallet) AccessKeys() ([]*model.AccessKey, error) {
-	return dw.nodeClient.ListAccessKeys()
+func (dw *LocalDataWallet) AccessKeys(ctx context.Context) ([]*model.AccessKey, error) {
+	return dw.nodeClient.ListAccessKeys(ctx)
 }
 
 func (dw *LocalDataWallet) encryptIdentity(idy *account.Identity) (*account.DataEnvelope, error) {
@@ -1333,7 +1337,7 @@ func (dw *LocalDataWallet) decryptLocker(envelope *account.DataEnvelope) (*model
 	}
 }
 
-func (dw *LocalDataWallet) loadLockerEnvelope(envelope *account.DataEnvelope) (Locker, error) {
+func (dw *LocalDataWallet) loadLockerEnvelope(ctx context.Context, envelope *account.DataEnvelope) (Locker, error) {
 	dw.dataMtx.Lock()
 	_, found := dw.lockerHashes[envelope.Hash]
 	dw.dataMtx.Unlock()
@@ -1345,7 +1349,7 @@ func (dw *LocalDataWallet) loadLockerEnvelope(envelope *account.DataEnvelope) (L
 		}
 
 		locker := newLockerWrapper(dw, lockerData)
-		if err = dw.addLocker(locker); err != nil {
+		if err = dw.addLocker(ctx, locker); err != nil {
 			return nil, err
 		}
 
@@ -1426,8 +1430,8 @@ func (dw *LocalDataWallet) Backend() AccountBackend {
 	return dw.nodeClient
 }
 
-func (dw *LocalDataWallet) CreateRootIndex(indexStoreName string) (index.RootIndex, error) {
-	ix, err := dw.CreateIndex(indexStoreName, index.TypeRoot)
+func (dw *LocalDataWallet) CreateRootIndex(ctx context.Context, indexStoreName string) (index.RootIndex, error) {
+	ix, err := dw.CreateIndex(ctx, indexStoreName, index.TypeRoot)
 	if err != nil {
 		return nil, err
 	} else {
@@ -1435,7 +1439,7 @@ func (dw *LocalDataWallet) CreateRootIndex(indexStoreName string) (index.RootInd
 	}
 }
 
-func (dw *LocalDataWallet) CreateIndex(indexStoreName, indexType string, opts ...index.Option) (index.Index, error) {
+func (dw *LocalDataWallet) CreateIndex(ctx context.Context, indexStoreName, indexType string, opts ...index.Option) (index.Index, error) {
 	if dw.lockLevel == model.AccessLevelNone {
 		return nil, ErrWalletLocked
 	}
@@ -1444,7 +1448,7 @@ func (dw *LocalDataWallet) CreateIndex(indexStoreName, indexType string, opts ..
 		return nil, ErrInsufficientLockLevel
 	}
 
-	indexStore, err := dw.indexClient.IndexStore(indexStoreName)
+	indexStore, err := dw.indexClient.IndexStore(ctx, indexStoreName)
 	if err != nil {
 		return nil, err
 	}
@@ -1463,7 +1467,7 @@ func (dw *LocalDataWallet) CreateIndex(indexStoreName, indexType string, opts ..
 		opts = append(opts, index.WithEncryption(key[:]))
 	}
 
-	ix, err := indexStore.CreateIndex(dw.acct.ID, indexType, dw.lockLevel, opts...)
+	ix, err := indexStore.CreateIndex(ctx, dw.acct.ID, indexType, dw.lockLevel, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1472,27 +1476,27 @@ func (dw *LocalDataWallet) CreateIndex(indexStoreName, indexType string, opts ..
 
 	iw, _ := ix.Writer()
 
-	l, err := dw.GetLocker(dw.managedRootLockerID)
+	l, err := dw.GetLocker(ctx, dw.managedRootLockerID)
 	if err != nil {
 		return nil, err
 	}
-	if err = iw.AddLockerState(dw.ID(), l.ID(), l.Raw().FirstBlock); err != nil {
+	if err = iw.AddLockerState(ctx, dw.ID(), l.ID(), l.Raw().FirstBlock); err != nil {
 		return nil, err
 	}
 
 	if dw.lockLevel >= model.AccessLevelHosted {
-		l, err := dw.GetLocker(dw.hostedRootLockerID)
+		l, err := dw.GetLocker(ctx, dw.hostedRootLockerID)
 		if err != nil {
 			return nil, err
 		}
-		if err = iw.AddLockerState(dw.ID(), l.ID(), l.Raw().FirstBlock); err != nil {
+		if err = iw.AddLockerState(ctx, dw.ID(), l.ID(), l.Raw().FirstBlock); err != nil {
 			return nil, err
 		}
 	}
 
 	if ai, ok := ix.(AccountIndex); ok {
 		// initialise account index
-		if err = InitAccountIndex(ai, dw); err != nil {
+		if err = InitAccountIndex(ctx, ai, dw); err != nil {
 			return nil, err
 		}
 	}
@@ -1522,7 +1526,7 @@ func (dw *LocalDataWallet) EncryptionKey(tag string, accessLevel model.AccessLev
 	return model.NewAESKey(model.Hash(tag, cryptoKey[:])), nil
 }
 
-func (dw *LocalDataWallet) RootIndex() (index.RootIndex, error) {
+func (dw *LocalDataWallet) RootIndex(ctx context.Context) (index.RootIndex, error) {
 	if dw.lockLevel == model.AccessLevelNone {
 		return nil, ErrWalletLocked
 	}
@@ -1531,7 +1535,7 @@ func (dw *LocalDataWallet) RootIndex() (index.RootIndex, error) {
 		return nil, ErrInsufficientLockLevel
 	}
 
-	ix, err := dw.indexClient.RootIndex(dw.acct.ID, dw.acct.AccessLevel)
+	ix, err := dw.indexClient.RootIndex(ctx, dw.acct.ID, dw.acct.AccessLevel)
 	if err != nil {
 		return nil, err
 	}
@@ -1549,7 +1553,7 @@ func (dw *LocalDataWallet) RootIndex() (index.RootIndex, error) {
 	return ix, nil
 }
 
-func (dw *LocalDataWallet) Index(id string) (index.Index, error) {
+func (dw *LocalDataWallet) Index(ctx context.Context, id string) (index.Index, error) {
 	if dw.lockLevel == model.AccessLevelNone {
 		return nil, ErrWalletLocked
 	}
@@ -1558,7 +1562,7 @@ func (dw *LocalDataWallet) Index(id string) (index.Index, error) {
 		return nil, ErrInsufficientLockLevel
 	}
 
-	ix, err := dw.indexClient.Index(dw.acct.ID, id)
+	ix, err := dw.indexClient.Index(ctx, dw.acct.ID, id)
 	if err != nil {
 		return nil, err
 	}
@@ -1576,9 +1580,9 @@ func (dw *LocalDataWallet) Index(id string) (index.Index, error) {
 	return ix, nil
 }
 
-func (dw *LocalDataWallet) IndexUpdater(indexes ...index.Index) (*IndexUpdater, error) {
+func (dw *LocalDataWallet) IndexUpdater(ctx context.Context, indexes ...index.Index) (*IndexUpdater, error) {
 	updater := NewIndexUpdater(dw.nodeClient.Ledger())
-	err := updater.AddIndexes(dw, indexes...)
+	err := updater.AddIndexes(ctx, dw, indexes...)
 	if err != nil {
 		_ = updater.Close()
 		return nil, err

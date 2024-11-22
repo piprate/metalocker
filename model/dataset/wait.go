@@ -15,6 +15,7 @@
 package dataset
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -24,7 +25,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func WaitForConfirmation(ledger model.Ledger, ns notification.Service, interval, timeout time.Duration, recordID ...string) (int64, error) {
+func WaitForConfirmation(ctx context.Context, ledger model.Ledger, ns notification.Service, interval, timeout time.Duration, recordID ...string) (int64, error) {
 
 	if len(recordID) == 0 {
 		// fast exit if there's nothing to wait for
@@ -33,7 +34,7 @@ func WaitForConfirmation(ledger model.Ledger, ns notification.Service, interval,
 
 	// wait for the last record
 
-	blockNumber, err := waitForOneRecord(ledger, ns, interval, timeout, recordID[len(recordID)-1])
+	blockNumber, err := waitForOneRecord(ctx, ledger, ns, interval, timeout, recordID[len(recordID)-1])
 	if err != nil {
 		return 0, err
 	}
@@ -42,7 +43,7 @@ func WaitForConfirmation(ledger model.Ledger, ns notification.Service, interval,
 	if len(recordID) > 1 {
 		blockNumber = 0
 		for _, rid := range recordID[0 : len(recordID)-1] {
-			currentState, err := ledger.GetRecordState(rid)
+			currentState, err := ledger.GetRecordState(ctx, rid)
 			if err != nil {
 				return 0, err
 			}
@@ -64,7 +65,7 @@ func WaitForConfirmation(ledger model.Ledger, ns notification.Service, interval,
 	return blockNumber, nil
 }
 
-func waitForOneRecord(ledger model.Ledger, ns notification.Service, interval, timeout time.Duration, recordID string) (int64, error) {
+func waitForOneRecord(ctx context.Context, ledger model.Ledger, ns notification.Service, interval, timeout time.Duration, recordID string) (int64, error) {
 
 	var blockCh chan any
 
@@ -75,7 +76,7 @@ func waitForOneRecord(ledger model.Ledger, ns notification.Service, interval, ti
 	defer timeoutTicker.Stop()
 
 	for {
-		currentState, err := ledger.GetRecordState(recordID)
+		currentState, err := ledger.GetRecordState(ctx, recordID)
 		if err != nil {
 			return 0, err
 		}

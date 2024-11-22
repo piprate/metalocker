@@ -15,6 +15,7 @@
 package operations
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
@@ -23,7 +24,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func ExportAccounts(mlc *caller.MetaLockerHTTPCaller, dest string) error {
+func ExportAccounts(ctx context.Context, mlc *caller.MetaLockerHTTPCaller, dest string) error {
 	log.Info().Str("dest", dest).Msg("Exporting account database")
 
 	err := os.MkdirAll(dest, 0o700)
@@ -33,7 +34,7 @@ func ExportAccounts(mlc *caller.MetaLockerHTTPCaller, dest string) error {
 
 	// export accounts
 
-	acctList, err := mlc.AdminGetAccountList()
+	acctList, err := mlc.AdminGetAccountList(ctx)
 	if err != nil {
 		return err
 	}
@@ -46,7 +47,7 @@ func ExportAccounts(mlc *caller.MetaLockerHTTPCaller, dest string) error {
 
 	// export identities
 
-	iidList, err := mlc.ListDIDDocuments()
+	iidList, err := mlc.ListDIDDocuments(ctx)
 	if err != nil {
 		return err
 	}

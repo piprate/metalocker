@@ -15,6 +15,8 @@
 package memory
 
 import (
+	"context"
+
 	"github.com/piprate/metalocker/model"
 	"github.com/piprate/metalocker/model/account"
 	"github.com/piprate/metalocker/sdk/cmdbase"
@@ -44,7 +46,7 @@ func (be *InMemoryBackend) Close() error {
 	return nil
 }
 
-func (be *InMemoryBackend) UpdateAccount(acct *account.Account) error {
+func (be *InMemoryBackend) UpdateAccount(ctx context.Context, acct *account.Account) error {
 	if a, found := be.accountsByEmail[acct.Email]; found && a.ID != acct.ID {
 		return storage.ErrAccountExists
 	}
@@ -54,7 +56,7 @@ func (be *InMemoryBackend) UpdateAccount(acct *account.Account) error {
 	return nil
 }
 
-func (be *InMemoryBackend) GetAccount(id string) (*account.Account, error) {
+func (be *InMemoryBackend) GetAccount(ctx context.Context, id string) (*account.Account, error) {
 	acct, found := be.accounts[id]
 	if !found {
 		acct, found = be.accountsByEmail[id]
@@ -65,7 +67,7 @@ func (be *InMemoryBackend) GetAccount(id string) (*account.Account, error) {
 	return copyAccount(acct), nil
 }
 
-func (be *InMemoryBackend) HasAccountAccess(accountID, targetAccountID string) (bool, error) {
+func (be *InMemoryBackend) HasAccountAccess(ctx context.Context, accountID, targetAccountID string) (bool, error) {
 	for {
 		acct, found := be.accounts[targetAccountID]
 		if !found {
@@ -81,7 +83,7 @@ func (be *InMemoryBackend) HasAccountAccess(accountID, targetAccountID string) (
 	}
 }
 
-func (be *InMemoryBackend) DeleteAccount(id string) error {
+func (be *InMemoryBackend) DeleteAccount(ctx context.Context, id string) error {
 	delete(be.accounts, id)
 	for email, acct := range be.accountsByEmail {
 		if acct.ID == id {
@@ -107,7 +109,7 @@ func (be *InMemoryBackend) DeleteAccount(id string) error {
 	return nil
 }
 
-func (be *InMemoryBackend) ListAccessKeys(accountID string) ([]*model.AccessKey, error) {
+func (be *InMemoryBackend) ListAccessKeys(ctx context.Context, accountID string) ([]*model.AccessKey, error) {
 	acctMap, found := be.accessKeysByAccount[accountID]
 	if !found {
 		return []*model.AccessKey{}, nil
@@ -119,7 +121,7 @@ func (be *InMemoryBackend) ListAccessKeys(accountID string) ([]*model.AccessKey,
 	return res, nil
 }
 
-func (be *InMemoryBackend) StoreAccessKey(accessKey *model.AccessKey) error {
+func (be *InMemoryBackend) StoreAccessKey(ctx context.Context, accessKey *model.AccessKey) error {
 	acctMap, found := be.accessKeysByAccount[accessKey.AccountID]
 	if !found {
 		acctMap = make(map[string]*model.AccessKey)
@@ -131,7 +133,7 @@ func (be *InMemoryBackend) StoreAccessKey(accessKey *model.AccessKey) error {
 	return nil
 }
 
-func (be *InMemoryBackend) GetAccessKey(keyID string) (*model.AccessKey, error) {
+func (be *InMemoryBackend) GetAccessKey(ctx context.Context, keyID string) (*model.AccessKey, error) {
 	key, found := be.accessKeys[keyID]
 	if found {
 		return key, nil
@@ -139,7 +141,7 @@ func (be *InMemoryBackend) GetAccessKey(keyID string) (*model.AccessKey, error) 
 	return nil, storage.ErrAccessKeyNotFound
 }
 
-func (be *InMemoryBackend) DeleteAccessKey(keyID string) error {
+func (be *InMemoryBackend) DeleteAccessKey(ctx context.Context, keyID string) error {
 	key, found := be.accessKeys[keyID]
 	if found {
 		delete(be.accessKeysByAccount, key.AccountID)
@@ -150,7 +152,7 @@ func (be *InMemoryBackend) DeleteAccessKey(keyID string) error {
 	}
 }
 
-func (be *InMemoryBackend) StoreIdentity(accountID string, idy *account.DataEnvelope) error {
+func (be *InMemoryBackend) StoreIdentity(ctx context.Context, accountID string, idy *account.DataEnvelope) error {
 	acctMap, found := be.identities[accountID]
 	if !found {
 		acctMap = make(map[string]*account.DataEnvelope)
@@ -160,7 +162,7 @@ func (be *InMemoryBackend) StoreIdentity(accountID string, idy *account.DataEnve
 	return nil
 }
 
-func (be *InMemoryBackend) GetIdentity(accountID string, hash string) (*account.DataEnvelope, error) {
+func (be *InMemoryBackend) GetIdentity(ctx context.Context, accountID string, hash string) (*account.DataEnvelope, error) {
 	acctMap, found := be.identities[accountID]
 	if found {
 		idy, found := acctMap[hash]
@@ -171,7 +173,7 @@ func (be *InMemoryBackend) GetIdentity(accountID string, hash string) (*account.
 	return nil, storage.ErrIdentityNotFound
 }
 
-func (be *InMemoryBackend) ListIdentities(accountID string, lvl model.AccessLevel) ([]*account.DataEnvelope, error) {
+func (be *InMemoryBackend) ListIdentities(ctx context.Context, accountID string, lvl model.AccessLevel) ([]*account.DataEnvelope, error) {
 	acctMap, found := be.identities[accountID]
 	if !found {
 		return []*account.DataEnvelope{}, nil
@@ -185,7 +187,7 @@ func (be *InMemoryBackend) ListIdentities(accountID string, lvl model.AccessLeve
 	return res, nil
 }
 
-func (be *InMemoryBackend) StoreLocker(accountID string, l *account.DataEnvelope) error {
+func (be *InMemoryBackend) StoreLocker(ctx context.Context, accountID string, l *account.DataEnvelope) error {
 	acctMap, found := be.lockers[accountID]
 	if !found {
 		acctMap = make(map[string]*account.DataEnvelope)
@@ -195,7 +197,7 @@ func (be *InMemoryBackend) StoreLocker(accountID string, l *account.DataEnvelope
 	return nil
 }
 
-func (be *InMemoryBackend) GetLocker(accountID string, hash string) (*account.DataEnvelope, error) {
+func (be *InMemoryBackend) GetLocker(ctx context.Context, accountID string, hash string) (*account.DataEnvelope, error) {
 	acctMap, found := be.lockers[accountID]
 	if found {
 		locker, found := acctMap[hash]
@@ -206,7 +208,7 @@ func (be *InMemoryBackend) GetLocker(accountID string, hash string) (*account.Da
 	return nil, storage.ErrLockerNotFound
 }
 
-func (be *InMemoryBackend) ListLockers(accountID string, lvl model.AccessLevel) ([]*account.DataEnvelope, error) {
+func (be *InMemoryBackend) ListLockers(ctx context.Context, accountID string, lvl model.AccessLevel) ([]*account.DataEnvelope, error) {
 	acctMap, found := be.lockers[accountID]
 	if !found {
 		return []*account.DataEnvelope{}, nil
@@ -220,7 +222,7 @@ func (be *InMemoryBackend) ListLockers(accountID string, lvl model.AccessLevel) 
 	return res, nil
 }
 
-func (be *InMemoryBackend) ListLockerHashes(accountID string, lvl model.AccessLevel) ([]string, error) {
+func (be *InMemoryBackend) ListLockerHashes(ctx context.Context, accountID string, lvl model.AccessLevel) ([]string, error) {
 	acctMap, found := be.lockers[accountID]
 	if !found {
 		return []string{}, nil
@@ -234,7 +236,7 @@ func (be *InMemoryBackend) ListLockerHashes(accountID string, lvl model.AccessLe
 	return res, nil
 }
 
-func (be *InMemoryBackend) StoreProperty(accountID string, prop *account.DataEnvelope) error {
+func (be *InMemoryBackend) StoreProperty(ctx context.Context, accountID string, prop *account.DataEnvelope) error {
 	acctMap, found := be.properties[accountID]
 	if !found {
 		acctMap = make(map[string]*account.DataEnvelope)
@@ -244,7 +246,7 @@ func (be *InMemoryBackend) StoreProperty(accountID string, prop *account.DataEnv
 	return nil
 }
 
-func (be *InMemoryBackend) GetProperty(accountID string, hash string) (*account.DataEnvelope, error) {
+func (be *InMemoryBackend) GetProperty(ctx context.Context, accountID string, hash string) (*account.DataEnvelope, error) {
 	acctMap, found := be.properties[accountID]
 	if found {
 		prop, found := acctMap[hash]
@@ -255,7 +257,7 @@ func (be *InMemoryBackend) GetProperty(accountID string, hash string) (*account.
 	return nil, storage.ErrPropertyNotFound
 }
 
-func (be *InMemoryBackend) ListProperties(accountID string, lvl model.AccessLevel) ([]*account.DataEnvelope, error) {
+func (be *InMemoryBackend) ListProperties(ctx context.Context, accountID string, lvl model.AccessLevel) ([]*account.DataEnvelope, error) {
 	acctMap, found := be.properties[accountID]
 	if !found {
 		return []*account.DataEnvelope{}, nil
@@ -269,7 +271,7 @@ func (be *InMemoryBackend) ListProperties(accountID string, lvl model.AccessLeve
 	return res, nil
 }
 
-func (be *InMemoryBackend) DeleteProperty(accountID string, hash string) error {
+func (be *InMemoryBackend) DeleteProperty(ctx context.Context, accountID string, hash string) error {
 	acctMap, found := be.properties[accountID]
 	if !found {
 		return storage.ErrPropertyNotFound
@@ -285,7 +287,7 @@ func (be *InMemoryBackend) DeleteProperty(accountID string, hash string) error {
 	return nil
 }
 
-func (be *InMemoryBackend) CreateAccount(acct *account.Account) error {
+func (be *InMemoryBackend) CreateAccount(ctx context.Context, acct *account.Account) error {
 	acct = copyAccount(acct)
 	if _, found := be.accounts[acct.ID]; found {
 		return storage.ErrAccountExists
@@ -303,7 +305,7 @@ func (be *InMemoryBackend) CreateAccount(acct *account.Account) error {
 	return nil
 }
 
-func (be *InMemoryBackend) ListAccounts(parentAccountID, stateFilter string) ([]*account.Account, error) {
+func (be *InMemoryBackend) ListAccounts(ctx context.Context, parentAccountID, stateFilter string) ([]*account.Account, error) {
 	res := make([]*account.Account, 0, len(be.accounts))
 	for _, acct := range be.accounts {
 		if parentAccountID != "" && acct.ParentAccount != parentAccountID {
@@ -314,7 +316,7 @@ func (be *InMemoryBackend) ListAccounts(parentAccountID, stateFilter string) ([]
 	return res, nil
 }
 
-func (be *InMemoryBackend) ListDIDDocuments() ([]*model.DIDDocument, error) {
+func (be *InMemoryBackend) ListDIDDocuments(ctx context.Context) ([]*model.DIDDocument, error) {
 	res := make([]*model.DIDDocument, len(be.dids))
 	i := 0
 	for _, did := range be.dids {
@@ -324,12 +326,12 @@ func (be *InMemoryBackend) ListDIDDocuments() ([]*model.DIDDocument, error) {
 	return res, nil
 }
 
-func (be *InMemoryBackend) CreateRecoveryCode(c *account.RecoveryCode) error {
+func (be *InMemoryBackend) CreateRecoveryCode(ctx context.Context, c *account.RecoveryCode) error {
 	be.recoveryCodes[c.Code] = c
 	return nil
 }
 
-func (be *InMemoryBackend) GetRecoveryCode(code string) (*account.RecoveryCode, error) {
+func (be *InMemoryBackend) GetRecoveryCode(ctx context.Context, code string) (*account.RecoveryCode, error) {
 	c, found := be.recoveryCodes[code]
 	if !found {
 		return nil, storage.ErrRecoveryCodeNotFound
@@ -338,7 +340,7 @@ func (be *InMemoryBackend) GetRecoveryCode(code string) (*account.RecoveryCode, 
 	}
 }
 
-func (be *InMemoryBackend) DeleteRecoveryCode(code string) error {
+func (be *InMemoryBackend) DeleteRecoveryCode(ctx context.Context, code string) error {
 	if _, found := be.recoveryCodes[code]; !found {
 		return storage.ErrRecoveryCodeNotFound
 	} else {
@@ -347,12 +349,12 @@ func (be *InMemoryBackend) DeleteRecoveryCode(code string) error {
 	}
 }
 
-func (be *InMemoryBackend) CreateDIDDocument(ddoc *model.DIDDocument) error {
+func (be *InMemoryBackend) CreateDIDDocument(ctx context.Context, ddoc *model.DIDDocument) error {
 	be.dids[ddoc.ID] = ddoc
 	return nil
 }
 
-func (be *InMemoryBackend) GetDIDDocument(iid string) (*model.DIDDocument, error) {
+func (be *InMemoryBackend) GetDIDDocument(ctx context.Context, iid string) (*model.DIDDocument, error) {
 	res, found := be.dids[iid]
 	if !found {
 		return nil, storage.ErrDIDNotFound

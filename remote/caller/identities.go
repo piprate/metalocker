@@ -15,6 +15,7 @@
 package caller
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -24,25 +25,25 @@ import (
 	"github.com/piprate/metalocker/storage"
 )
 
-func (c *MetaLockerHTTPCaller) StoreIdentity(idy *account.DataEnvelope) error {
-	return c.storeDataEnvelope("identity", idy)
+func (c *MetaLockerHTTPCaller) StoreIdentity(ctx context.Context, idy *account.DataEnvelope) error {
+	return c.storeDataEnvelope(ctx, "identity", idy)
 }
 
-func (c *MetaLockerHTTPCaller) GetIdentity(hash string) (*account.DataEnvelope, error) {
-	return c.getDataEnvelope("identity", hash, storage.ErrIdentityNotFound)
+func (c *MetaLockerHTTPCaller) GetIdentity(ctx context.Context, hash string) (*account.DataEnvelope, error) {
+	return c.getDataEnvelope(ctx, "identity", hash, storage.ErrIdentityNotFound)
 }
 
-func (c *MetaLockerHTTPCaller) ListIdentities() ([]*account.DataEnvelope, error) {
-	return c.listDataEnvelopes("identity")
+func (c *MetaLockerHTTPCaller) ListIdentities(ctx context.Context) ([]*account.DataEnvelope, error) {
+	return c.listDataEnvelopes(ctx, "identity")
 }
 
-func (c *MetaLockerHTTPCaller) storeDataEnvelope(entityType string, env *account.DataEnvelope) error {
+func (c *MetaLockerHTTPCaller) storeDataEnvelope(ctx context.Context, entityType string, env *account.DataEnvelope) error {
 	if !c.client.IsAuthenticated() {
 		return errors.New("you need to log in before performing any operations")
 	}
 
 	url := "/v1/account/" + c.currentAccountID + "/" + entityType
-	res, err := c.client.SendRequest(http.MethodPost, url, httpsecure.WithJSONBody(env))
+	res, err := c.client.SendRequest(ctx, http.MethodPost, url, httpsecure.WithJSONBody(env))
 	if err != nil {
 		return err
 	}
@@ -60,14 +61,14 @@ func (c *MetaLockerHTTPCaller) storeDataEnvelope(entityType string, env *account
 	return nil
 }
 
-func (c *MetaLockerHTTPCaller) getDataEnvelope(entityType, hash string, entityNotFoundErr error) (*account.DataEnvelope, error) {
+func (c *MetaLockerHTTPCaller) getDataEnvelope(ctx context.Context, entityType, hash string, entityNotFoundErr error) (*account.DataEnvelope, error) {
 	if !c.client.IsAuthenticated() {
 		return nil, errors.New("you need to log in before performing any operations")
 	}
 
 	var env account.DataEnvelope
 	url := "/v1/account/" + c.currentAccountID + "/" + entityType + "/" + hash
-	err := c.client.LoadContents(http.MethodGet, url, nil, &env)
+	err := c.client.LoadContents(ctx, http.MethodGet, url, nil, &env)
 	if err != nil {
 		if errors.Is(err, httpsecure.ErrEntityNotFound) {
 			return nil, entityNotFoundErr
@@ -78,14 +79,14 @@ func (c *MetaLockerHTTPCaller) getDataEnvelope(entityType, hash string, entityNo
 	}
 }
 
-func (c *MetaLockerHTTPCaller) listDataEnvelopes(entityType string) ([]*account.DataEnvelope, error) {
+func (c *MetaLockerHTTPCaller) listDataEnvelopes(ctx context.Context, entityType string) ([]*account.DataEnvelope, error) {
 	if !c.client.IsAuthenticated() {
 		return nil, errors.New("you need to log in before performing any operations")
 	}
 
 	var envList []*account.DataEnvelope
 	url := "/v1/account/" + c.currentAccountID + "/" + entityType
-	err := c.client.LoadContents(http.MethodGet, url, nil, &envList)
+	err := c.client.LoadContents(ctx, http.MethodGet, url, nil, &envList)
 	if err != nil {
 		return nil, err
 	} else {
@@ -93,13 +94,13 @@ func (c *MetaLockerHTTPCaller) listDataEnvelopes(entityType string) ([]*account.
 	}
 }
 
-func (c *MetaLockerHTTPCaller) deleteDataEnvelope(entityType, hash string, entityNotFoundErr error) error {
+func (c *MetaLockerHTTPCaller) deleteDataEnvelope(ctx context.Context, entityType, hash string, entityNotFoundErr error) error {
 	if !c.client.IsAuthenticated() {
 		return errors.New("you need to log in before performing any operations")
 	}
 
 	url := "/v1/account/" + c.currentAccountID + "/" + entityType + "/" + hash
-	res, err := c.client.SendRequest(http.MethodDelete, url)
+	res, err := c.client.SendRequest(ctx, http.MethodDelete, url)
 	if err != nil {
 		return err
 	}

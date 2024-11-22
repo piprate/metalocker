@@ -15,6 +15,7 @@
 package datatypes
 
 import (
+	"context"
 	"errors"
 	"io"
 	"sort"
@@ -56,9 +57,9 @@ func RegisterUploader(metaType string, ctor uploaderConstructor) {
 	uploaderConstructors[metaType] = ctor
 }
 
-func NewRenderer(ds model.DataSet) (Renderer, error) {
+func NewRenderer(ctx context.Context, ds model.DataSet) (Renderer, error) {
 
-	r, err := ds.MetaResource()
+	r, err := ds.MetaResource(ctx)
 	if err != nil {
 		return nil, err
 	}

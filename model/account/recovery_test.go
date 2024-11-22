@@ -107,7 +107,7 @@ func TestFirstLevelRecoveryProcedure(t *testing.T) {
 
 	dw := env.CreateDataWallet(t, recoveredAcct)
 
-	err = dw.UnlockAsManaged(managedKey)
+	err = dw.UnlockAsManaged(env.Ctx, managedKey)
 	require.NoError(t, err)
 }
 
@@ -178,7 +178,7 @@ func TestSecondLevelRecoveryProcedure(t *testing.T) {
 
 	dw := env.CreateDataWallet(t, recoveredAcct)
 
-	err = dw.UnlockAsManaged(managedKey)
+	err = dw.UnlockAsManaged(env.Ctx, managedKey)
 	require.NoError(t, err)
 }
 
@@ -222,6 +222,6 @@ func TestRecoverManaged(t *testing.T) {
 
 	dw := env.CreateDataWallet(t, recoveredAcct)
 
-	err = dw.UnlockAsManaged(managedKey)
+	err = dw.UnlockAsManaged(env.Ctx, managedKey)
 	require.NoError(t, err)
 }

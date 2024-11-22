@@ -27,7 +27,7 @@ import (
 func (h *Handler) GetAccountListHandler(c *gin.Context) {
 	state := c.Query("state")
 
-	accounts, err := h.identityBackend.ListAccounts("", state)
+	accounts, err := h.identityBackend.ListAccounts(c, "", state)
 	if err != nil {
 		log := apibase.CtxLogger(c)
 		log.Err(err).Msg("Error when reading account list")
@@ -40,7 +40,7 @@ func (h *Handler) GetAccountListHandler(c *gin.Context) {
 func (h *Handler) GetAccountHandler(c *gin.Context) {
 	accountID := c.Params.ByName("id")
 
-	acct, err := h.identityBackend.GetAccount(accountID)
+	acct, err := h.identityBackend.GetAccount(c, accountID)
 	if err != nil {
 		log := apibase.CtxLogger(c)
 		log.Err(err).Msg("Error when retrieving account details")
@@ -72,7 +72,7 @@ func (h *Handler) PostAccountHandler(c *gin.Context) {
 		return
 	}
 
-	err = h.identityBackend.CreateAccount(&acct)
+	err = h.identityBackend.CreateAccount(c, &acct)
 	if err != nil {
 		log.Err(err).Msg("Error updating account")
 		_ = c.AbortWithError(http.StatusInternalServerError, err)
@@ -103,7 +103,7 @@ func (h *Handler) PatchAccountHandler(c *gin.Context) {
 
 	log.Debug().Str("body", string(buf)).Msg("Account patch submitted")
 
-	acct, err := h.identityBackend.GetAccount(id)
+	acct, err := h.identityBackend.GetAccount(c, id)
 	if err != nil {
 		log.Err(err).Msg("Error retrieving account")
 		_ = c.AbortWithError(http.StatusInternalServerError, err)
@@ -127,7 +127,7 @@ func (h *Handler) PatchAccountHandler(c *gin.Context) {
 		acct.State = account.StateActive
 	}
 
-	err = h.identityBackend.UpdateAccount(acct)
+	err = h.identityBackend.UpdateAccount(c, acct)
 	if err != nil {
 		log.Err(err).Msg("Error updating account")
 		_ = c.AbortWithError(http.StatusInternalServerError, err)

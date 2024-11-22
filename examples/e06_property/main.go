@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	"github.com/piprate/json-gold/ld"
@@ -52,11 +53,14 @@ func main() {
 		panic(err)
 	}
 
+	ctx := context.Background()
+
 	// create an account
 
 	passPhrase := "passw0rd!"
 
 	dataWallet, _, err := factory.RegisterAccount(
+		ctx,
 		&account.Account{
 			Email:       "hackers@example.com",
 			Name:        "Hackers The Movie",
@@ -70,14 +74,14 @@ func main() {
 
 	// the wallet needs to be unlocked before use
 
-	err = dataWallet.Unlock(passPhrase)
+	err = dataWallet.Unlock(ctx, passPhrase)
 	if err != nil {
 		panic(err)
 	}
 
 	// create an identity
 
-	crash, err := dataWallet.NewIdentity(model.AccessLevelHosted, "Crash Override",
+	crash, err := dataWallet.NewIdentity(ctx, model.AccessLevelHosted, "Crash Override",
 		wallet.WithType(account.IdentityTypePersona))
 	if err != nil {
 		panic(err)
@@ -87,12 +91,12 @@ func main() {
 	// setting transient (not persisted in the ledger), discoverable values for account
 	// management purposes.
 
-	err = dataWallet.SetProperty("my.main.identity", crash.ID(), model.AccessLevelHosted)
+	err = dataWallet.SetProperty(ctx, "my.main.identity", crash.ID(), model.AccessLevelHosted)
 	if err != nil {
 		panic(err)
 	}
 
-	props, err := dataWallet.GetProperties()
+	props, err := dataWallet.GetProperties(ctx)
 	if err != nil {
 		panic(err)
 	}

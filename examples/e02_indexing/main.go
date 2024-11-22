@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"time"
 
@@ -55,11 +56,14 @@ func main() {
 		panic(err)
 	}
 
+	ctx := context.Background()
+
 	// create an account
 
 	passPhrase := "passw0rd!"
 
 	dataWallet, _, err := factory.RegisterAccount(
+		ctx,
 		&account.Account{
 			Email:       "jeditemple@example.com",
 			Name:        "Jedi Temple",
@@ -73,28 +77,28 @@ func main() {
 
 	// the wallet needs to be unlocked before use
 
-	err = dataWallet.Unlock(passPhrase)
+	err = dataWallet.Unlock(ctx, passPhrase)
 	if err != nil {
 		panic(err)
 	}
 
 	// create an identity
 
-	kenobi, err := dataWallet.NewIdentity(model.AccessLevelHosted, "Obi-Wan Kenobi")
+	kenobi, err := dataWallet.NewIdentity(ctx, model.AccessLevelHosted, "Obi-Wan Kenobi")
 	if err != nil {
 		panic(err)
 	}
 
 	// create a locker
 
-	locker, err := kenobi.NewLocker("Quotes")
+	locker, err := kenobi.NewLocker(ctx, "Quotes")
 	if err != nil {
 		panic(err)
 	}
 
 	// publish several JSON documents
 
-	lb, err := locker.NewDataSetBuilder(dataset.WithVault("local"))
+	lb, err := locker.NewDataSetBuilder(ctx, dataset.WithVault("local"))
 	if err != nil {
 		panic(err)
 	}
@@ -113,7 +117,7 @@ func main() {
 		panic(err)
 	}
 
-	lb, err = locker.NewDataSetBuilder(dataset.WithVault("local"))
+	lb, err = locker.NewDataSetBuilder(ctx, dataset.WithVault("local"))
 	if err != nil {
 		panic(err)
 	}
@@ -134,20 +138,20 @@ func main() {
 
 	// create an index
 
-	rootIndex, err := dataWallet.CreateRootIndex(examples.DemoIndexStoreName)
+	rootIndex, err := dataWallet.CreateRootIndex(ctx, examples.DemoIndexStoreName)
 	if err != nil {
 		panic(err)
 	}
 
 	// sync the index with the ledger
 
-	updater, err := dataWallet.IndexUpdater(rootIndex)
+	updater, err := dataWallet.IndexUpdater(ctx, rootIndex)
 	if err != nil {
 		panic(err)
 	}
 	defer updater.Close()
 
-	err = updater.Sync()
+	err = updater.Sync(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -159,7 +163,7 @@ func main() {
 	table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
 	table.SetCenterSeparator("|")
 
-	err = rootIndex.TraverseRecords("", "", func(r *index.RecordState) error {
+	err = rootIndex.TraverseRecords(ctx, "", "", func(r *index.RecordState) error {
 		table.Append([]string{r.ID, r.ContentType, string(r.Status)})
 		return nil
 	}, 0)

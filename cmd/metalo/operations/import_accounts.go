@@ -15,6 +15,7 @@
 package operations
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
@@ -25,7 +26,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func ImportAccounts(mlc *caller.MetaLockerHTTPCaller, srcPath string) error {
+func ImportAccounts(ctx context.Context, mlc *caller.MetaLockerHTTPCaller, srcPath string) error {
 	log.Info().Str("dest", srcPath).Msg("Importing account database")
 
 	// import accounts
@@ -44,7 +45,7 @@ func ImportAccounts(mlc *caller.MetaLockerHTTPCaller, srcPath string) error {
 	var accountsCount int64
 
 	for _, acct := range acctList {
-		err := mlc.AdminStoreAccount(acct)
+		err := mlc.AdminStoreAccount(ctx, acct)
 		if err != nil {
 			log.Err(err).Msg("Error when importing account")
 			//return nil, err
@@ -69,7 +70,7 @@ func ImportAccounts(mlc *caller.MetaLockerHTTPCaller, srcPath string) error {
 	var identitiesCount int64
 
 	for _, iid := range iidList {
-		err := mlc.AdminStoreIdentity(iid)
+		err := mlc.AdminStoreIdentity(ctx, iid)
 		if err != nil {
 			log.Err(err).Msg("Error when importing identity")
 			//return nil, err

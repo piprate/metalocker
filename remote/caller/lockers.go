@@ -15,24 +15,25 @@
 package caller
 
 import (
+	"context"
 	"errors"
 
 	"github.com/piprate/metalocker/model/account"
 	"github.com/piprate/metalocker/storage"
 )
 
-func (c *MetaLockerHTTPCaller) StoreLocker(locker *account.DataEnvelope) error {
-	return c.storeDataEnvelope("locker", locker)
+func (c *MetaLockerHTTPCaller) StoreLocker(ctx context.Context, locker *account.DataEnvelope) error {
+	return c.storeDataEnvelope(ctx, "locker", locker)
 }
 
-func (c *MetaLockerHTTPCaller) GetLocker(hash string) (*account.DataEnvelope, error) {
-	return c.getDataEnvelope("locker", hash, storage.ErrLockerNotFound)
+func (c *MetaLockerHTTPCaller) GetLocker(ctx context.Context, hash string) (*account.DataEnvelope, error) {
+	return c.getDataEnvelope(ctx, "locker", hash, storage.ErrLockerNotFound)
 }
 
-func (c *MetaLockerHTTPCaller) ListLockers() ([]*account.DataEnvelope, error) {
-	return c.listDataEnvelopes("locker")
+func (c *MetaLockerHTTPCaller) ListLockers(ctx context.Context) ([]*account.DataEnvelope, error) {
+	return c.listDataEnvelopes(ctx, "locker")
 }
 
-func (c *MetaLockerHTTPCaller) ListLockerHashes() ([]string, error) {
+func (c *MetaLockerHTTPCaller) ListLockerHashes(ctx context.Context) ([]string, error) {
 	return nil, errors.New("operation ListLockerHashes not implemented")
 }

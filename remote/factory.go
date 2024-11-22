@@ -15,6 +15,7 @@
 package remote
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -27,16 +28,16 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type IndexClientSourceFn func(userID string, httpCaller *caller.MetaLockerHTTPCaller) (index.Client, error)
+type IndexClientSourceFn func(ctx context.Context, userID string, httpCaller *caller.MetaLockerHTTPCaller) (index.Client, error)
 
 func WithIndexClient(indexClient index.Client) IndexClientSourceFn {
-	return func(userID string, httpCaller *caller.MetaLockerHTTPCaller) (index.Client, error) {
-		gb, err := httpCaller.GetGenesisBlock()
+	return func(ctx context.Context, userID string, httpCaller *caller.MetaLockerHTTPCaller) (index.Client, error) {
+		gb, err := httpCaller.GetGenesisBlock(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		if err = indexClient.Bind(gb.Hash); err != nil {
+		if err = indexClient.Bind(ctx, gb.Hash); err != nil {
 			return nil, err
 		}
 
@@ -87,7 +88,7 @@ func NewWalletFactory(url string, indexClientSourceFn IndexClientSourceFn, accou
 }
 
 func (rf *Factory) GetTopBlock() (int64, error) {
-	controls, err := rf.httpCaller.GetServerControls()
+	controls, err := rf.httpCaller.GetServerControls(context.Background())
 	if err != nil {
 		return 0, err
 	}
@@ -95,14 +96,14 @@ func (rf *Factory) GetTopBlock() (int64, error) {
 	return controls.TopBlock, nil
 }
 
-func (rf *Factory) RegisterAccount(acctTemplate *account.Account, passwd string, opts ...account.Option) (wallet.DataWallet, *wallet.RecoveryDetails, error) {
+func (rf *Factory) RegisterAccount(ctx context.Context, acctTemplate *account.Account, passwd string, opts ...account.Option) (wallet.DataWallet, *wallet.RecoveryDetails, error) {
 
 	httpCaller, err := caller.NewMetaLockerHTTPCaller(rf.url, factoryUserAgent)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	controls, err := httpCaller.GetServerControls()
+	controls, err := httpCaller.GetServerControls(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -120,17 +121,17 @@ func (rf *Factory) RegisterAccount(acctTemplate *account.Account, passwd string,
 		SecondLevelRecoveryCode: resp.SecondLevelRecoveryCode,
 	}
 
-	if err = httpCaller.CreateAccount(resp.Account, resp.RegistrationCode); err != nil {
+	if err = httpCaller.CreateAccount(ctx, resp.Account, resp.RegistrationCode); err != nil {
 		log.Err(err).Msg("Registration failed")
 		return nil, nil, err
 	}
 
-	if err = httpCaller.LoginWithCredentials(resp.Account.Email, passwd); err != nil {
+	if err = httpCaller.LoginWithCredentials(ctx, resp.Account.Email, passwd); err != nil {
 		log.Err(err).Msg("Login failed")
 		return nil, recDetails, err
 	}
 
-	acct, err := httpCaller.GetOwnAccount()
+	acct, err := httpCaller.GetOwnAccount(ctx)
 	if err != nil {
 		return nil, recDetails, err
 	}
@@ -138,7 +139,7 @@ func (rf *Factory) RegisterAccount(acctTemplate *account.Account, passwd string,
 	// save root identities and lockers
 
 	for _, e := range resp.EncryptedIdentities {
-		if err := httpCaller.StoreIdentity(e); err != nil {
+		if err := httpCaller.StoreIdentity(ctx, e); err != nil {
 			return nil, recDetails, err
 		}
 	}
@@ -149,19 +150,19 @@ func (rf *Factory) RegisterAccount(acctTemplate *account.Account, passwd string,
 			return nil, recDetails, err
 		}
 
-		if err = httpCaller.CreateDIDDocument(dDoc); err != nil {
+		if err = httpCaller.CreateDIDDocument(ctx, dDoc); err != nil {
 			return nil, recDetails, err
 		}
 	}
 
 	for _, e := range resp.EncryptedLockers {
-		if err := httpCaller.StoreLocker(e); err != nil {
+		if err := httpCaller.StoreLocker(ctx, e); err != nil {
 			return nil, recDetails, err
 		}
 	}
 
 	if rf.indexClient == nil {
-		rf.indexClient, err = rf.indexClientSourceFn(acct.ID, httpCaller)
+		rf.indexClient, err = rf.indexClientSourceFn(ctx, acct.ID, httpCaller)
 		if err != nil {
 			return nil, recDetails, err
 		}
@@ -175,15 +176,15 @@ func (rf *Factory) RegisterAccount(acctTemplate *account.Account, passwd string,
 	return dw, recDetails, nil
 }
 
-func (rf *Factory) GetWalletWithAccessKey(apiKey, apiSecret string) (wallet.DataWallet, error) {
-	dw, err := rf.loadRemoteWallet(func(mlc *caller.MetaLockerHTTPCaller) error {
-		return mlc.LoginWithAccessKeys(apiKey, apiSecret)
+func (rf *Factory) GetWalletWithAccessKey(ctx context.Context, apiKey, apiSecret string) (wallet.DataWallet, error) {
+	dw, err := rf.loadRemoteWallet(ctx, func(mlc *caller.MetaLockerHTTPCaller) error {
+		return mlc.LoginWithAccessKeys(ctx, apiKey, apiSecret)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	if err = dw.UnlockWithAccessKey(apiKey, apiSecret); err != nil {
+	if err = dw.UnlockWithAccessKey(ctx, apiKey, apiSecret); err != nil {
 		_ = dw.Close()
 		return nil, err
 	}
@@ -191,15 +192,15 @@ func (rf *Factory) GetWalletWithAccessKey(apiKey, apiSecret string) (wallet.Data
 	return dw, nil
 }
 
-func (rf *Factory) GetWalletWithCredentials(userID, secret string) (wallet.DataWallet, error) {
-	dw, err := rf.loadRemoteWallet(func(mlc *caller.MetaLockerHTTPCaller) error {
-		return mlc.LoginWithCredentials(userID, secret)
+func (rf *Factory) GetWalletWithCredentials(ctx context.Context, userID, secret string) (wallet.DataWallet, error) {
+	dw, err := rf.loadRemoteWallet(ctx, func(mlc *caller.MetaLockerHTTPCaller) error {
+		return mlc.LoginWithCredentials(ctx, userID, secret)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	if err = dw.Unlock(secret); err != nil {
+	if err = dw.Unlock(ctx, secret); err != nil {
 		_ = dw.Close()
 		return nil, err
 	}
@@ -207,15 +208,15 @@ func (rf *Factory) GetWalletWithCredentials(userID, secret string) (wallet.DataW
 	return dw, nil
 }
 
-func (rf *Factory) GetWalletWithTokenAndKey(jwtToken string, managedKey *model.AESKey) (wallet.DataWallet, error) {
-	w, err := rf.loadRemoteWallet(func(mlc *caller.MetaLockerHTTPCaller) error {
+func (rf *Factory) GetWalletWithTokenAndKey(ctx context.Context, jwtToken string, managedKey *model.AESKey) (wallet.DataWallet, error) {
+	w, err := rf.loadRemoteWallet(ctx, func(mlc *caller.MetaLockerHTTPCaller) error {
 		return mlc.LoginWithJWT(jwtToken)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	if err = w.UnlockAsManaged(managedKey); err != nil {
+	if err = w.UnlockAsManaged(ctx, managedKey); err != nil {
 		return nil, err
 	}
 
@@ -239,7 +240,7 @@ func (rf *Factory) setAccount(acct *account.Account) {
 	}
 }
 
-func (rf *Factory) loadRemoteWallet(authFn func(mlc *caller.MetaLockerHTTPCaller) error) (wallet.DataWallet, error) {
+func (rf *Factory) loadRemoteWallet(ctx context.Context, authFn func(mlc *caller.MetaLockerHTTPCaller) error) (wallet.DataWallet, error) {
 	log.Debug().Str("url", rf.url).Msg("Initialising remote Data Wallet")
 
 	httpCaller, err := caller.NewMetaLockerHTTPCaller(rf.url, factoryUserAgent)
@@ -254,7 +255,7 @@ func (rf *Factory) loadRemoteWallet(authFn func(mlc *caller.MetaLockerHTTPCaller
 	acct := rf.getAccount(httpCaller.AuthenticatedAccountID())
 
 	if acct == nil {
-		acct, err = httpCaller.GetOwnAccount()
+		acct, err = httpCaller.GetOwnAccount(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -263,7 +264,7 @@ func (rf *Factory) loadRemoteWallet(authFn func(mlc *caller.MetaLockerHTTPCaller
 	}
 
 	if rf.indexClient == nil {
-		rf.indexClient, err = rf.indexClientSourceFn(acct.ID, httpCaller)
+		rf.indexClient, err = rf.indexClientSourceFn(ctx, acct.ID, httpCaller)
 		if err != nil {
 			return nil, err
 		}

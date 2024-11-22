@@ -15,6 +15,7 @@
 package wallet
 
 import (
+	"context"
 	"time"
 
 	"github.com/piprate/metalocker/model"
@@ -128,12 +129,12 @@ func (lw *lockerWrapper) extractThem() []*model.LockerParticipant {
 	return them
 }
 
-func (lw *lockerWrapper) NewDataSetBuilder(opts ...dataset.BuilderOption) (dataset.Builder, error) {
-	return lw.wallet.DataStore().NewDataSetBuilder(lw.ID(), opts...)
+func (lw *lockerWrapper) NewDataSetBuilder(ctx context.Context, opts ...dataset.BuilderOption) (dataset.Builder, error) {
+	return lw.wallet.DataStore().NewDataSetBuilder(ctx, lw.ID(), opts...)
 }
 
-func (lw *lockerWrapper) Store(meta any, expiryTime time.Time, opts ...dataset.BuilderOption) dataset.RecordFuture {
-	b, err := lw.wallet.DataStore().NewDataSetBuilder(lw.ID(), opts...)
+func (lw *lockerWrapper) Store(ctx context.Context, meta any, expiryTime time.Time, opts ...dataset.BuilderOption) dataset.RecordFuture {
+	b, err := lw.wallet.DataStore().NewDataSetBuilder(ctx, lw.ID(), opts...)
 	if err != nil {
 		return dataset.RecordFutureWithError(err)
 	}
@@ -144,23 +145,23 @@ func (lw *lockerWrapper) Store(meta any, expiryTime time.Time, opts ...dataset.B
 	return b.Submit(expiryTime)
 }
 
-func (lw *lockerWrapper) Share(id, vaultName string, expiryTime time.Time) dataset.RecordFuture {
-	ds, err := lw.wallet.DataStore().Load(id)
+func (lw *lockerWrapper) Share(ctx context.Context, id, vaultName string, expiryTime time.Time) dataset.RecordFuture {
+	ds, err := lw.wallet.DataStore().Load(ctx, id)
 	if err != nil {
 		return dataset.RecordFutureWithError(err)
 	}
 
-	return lw.wallet.DataStore().Share(ds, lw, vaultName, expiryTime)
+	return lw.wallet.DataStore().Share(ctx, ds, lw, vaultName, expiryTime)
 }
 
-func (lw *lockerWrapper) HeadID(assetID string, headName string) string {
+func (lw *lockerWrapper) HeadID(ctx context.Context, assetID string, headName string) string {
 	return model.HeadID(assetID, lw.raw.ID, lw.raw.Us(), headName)
 }
 
-func (lw *lockerWrapper) SetAssetHead(assetID, headName, recordID string) dataset.RecordFuture {
-	return lw.wallet.DataStore().SetAssetHead(assetID, lw.raw, headName, recordID)
+func (lw *lockerWrapper) SetAssetHead(ctx context.Context, assetID, headName, recordID string) dataset.RecordFuture {
+	return lw.wallet.DataStore().SetAssetHead(ctx, assetID, lw.raw, headName, recordID)
 }
 
-func (lw *lockerWrapper) Seal() error {
+func (lw *lockerWrapper) Seal(ctx context.Context) error {
 	panic("operation not implemented")
 }

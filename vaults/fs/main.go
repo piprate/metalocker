@@ -16,6 +16,7 @@ package fs
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -56,7 +57,7 @@ func (v *FileSystemVault) SSE() bool {
 	return v.sse
 }
 
-func (v *FileSystemVault) CreateBlob(r io.Reader) (*model.StoredResource, error) {
+func (v *FileSystemVault) CreateBlob(ctx context.Context, r io.Reader) (*model.StoredResource, error) {
 
 	var id string
 	var fileName string
@@ -125,9 +126,9 @@ func (v *FileSystemVault) CreateBlob(r io.Reader) (*model.StoredResource, error)
 	return res, nil
 }
 
-func (v *FileSystemVault) PurgeBlob(id string, params map[string]any) error {
+func (v *FileSystemVault) PurgeBlob(ctx context.Context, id string, params map[string]any) error {
 	if v.verifier != nil {
-		state, err := v.verifier.GetDataAssetState(id)
+		state, err := v.verifier.GetDataAssetState(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -152,9 +153,9 @@ func (v *FileSystemVault) PurgeBlob(id string, params map[string]any) error {
 	return os.Remove(fileName)
 }
 
-func (v *FileSystemVault) ServeBlob(id string, params map[string]any, accessToken string) (io.ReadCloser, error) {
+func (v *FileSystemVault) ServeBlob(ctx context.Context, id string, params map[string]any, accessToken string) (io.ReadCloser, error) {
 	if v.verifier != nil {
-		if !model.VerifyAccessToken(accessToken, id, time.Now().Unix(), model.DefaultMaxDistanceSeconds, v.verifier) {
+		if !model.VerifyAccessToken(ctx, accessToken, id, time.Now().Unix(), model.DefaultMaxDistanceSeconds, v.verifier) {
 			return nil, model.ErrDataAssetAccessDenied
 		}
 	}

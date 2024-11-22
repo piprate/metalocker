@@ -134,7 +134,7 @@ func TestAccountHandler_GetIdentityHandler(t *testing.T) {
 
 	acct := createTestAccount(t, "test@example.com", model.AccessLevelHosted, "", env)
 
-	err := env.IdentityBackend.StoreIdentity(acct.ID, &account.DataEnvelope{
+	err := env.IdentityBackend.StoreIdentity(env.Ctx, acct.ID, &account.DataEnvelope{
 		Hash:        "abc",
 		AccessLevel: model.AccessLevelHosted,
 	})

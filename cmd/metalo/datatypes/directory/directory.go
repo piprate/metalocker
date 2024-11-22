@@ -15,6 +15,7 @@
 package directory
 
 import (
+	"context"
 	"io"
 	"os"
 	"path/filepath"
@@ -220,7 +221,7 @@ func (dr *Renderer) Print() error {
 	return nil
 }
 
-func (dr *Renderer) ExportToDisk(destFolder string, includeMetaData bool) error {
+func (dr *Renderer) ExportToDisk(ctx context.Context, destFolder string, includeMetaData bool) error {
 	if includeMetaData {
 		metaFilePath := filepath.Join(destFolder, datatypes.DefaultMetadataFile)
 
@@ -244,7 +245,7 @@ func (dr *Renderer) ExportToDisk(destFolder string, includeMetaData bool) error 
 
 		fileName := filepath.Join(folderPath, f.Name)
 
-		r, err := dr.ds.Resource(f.ID)
+		r, err := dr.ds.Resource(ctx, f.ID)
 		if err != nil {
 			return err
 		}

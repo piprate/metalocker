@@ -134,7 +134,7 @@ func TestAccountHandler_GetLockerHandler(t *testing.T) {
 
 	acct := createTestAccount(t, "test@example.com", model.AccessLevelHosted, "", env)
 
-	err := env.IdentityBackend.StoreLocker(acct.ID, &account.DataEnvelope{
+	err := env.IdentityBackend.StoreLocker(env.Ctx, acct.ID, &account.DataEnvelope{
 		Hash:        "abc",
 		AccessLevel: model.AccessLevelHosted,
 	})

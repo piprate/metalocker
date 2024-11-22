@@ -34,7 +34,7 @@ func PostStoreRaw(vaultAPI vaults.Vault) func(c *gin.Context) {
 		log.Debug().Str("vault", vaultAPI.Name()).Msg("Uploading raw blob")
 
 		// persist blob
-		res, err := vaultAPI.CreateBlob(c.Request.Body)
+		res, err := vaultAPI.CreateBlob(c, c.Request.Body)
 		if err != nil {
 			apibase.AbortWithInternalServerError(c, err)
 			return

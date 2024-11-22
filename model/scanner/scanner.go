@@ -108,16 +108,14 @@ func NewScanner(ledgerAPI model.Ledger) *Scanner {
 	}
 }
 
-func (isu *Scanner) ScanLedger(scannerList []*LockerConfig, startBlockNumber int64, endBlockNumber int64, blockBatchSize int) (int64, bool, error) {
+func (isu *Scanner) scanLedger(ctx context.Context, scannerList []*LockerConfig, startBlockNumber int64, endBlockNumber int64, blockBatchSize int) (int64, bool, error) {
 	currentBlockNumber := startBlockNumber
 	firstBlockIndex := 0
 	earlyExit := false
 
-	ctx := context.Background()
-
 AllBlocks:
 	for {
-		blocks, err := isu.ledgerAPI.GetChain(currentBlockNumber, blockBatchSize)
+		blocks, err := isu.ledgerAPI.GetChain(ctx, currentBlockNumber, blockBatchSize)
 		if err != nil {
 			return -1, false, err
 		}
@@ -133,7 +131,7 @@ AllBlocks:
 
 			states := make(map[string]*subscriptionState)
 
-			records, err := isu.ledgerAPI.GetBlockRecords(currentBlockNumber)
+			records, err := isu.ledgerAPI.GetBlockRecords(ctx, currentBlockNumber)
 			if err != nil {
 				return -1, false, err
 			}
@@ -171,7 +169,7 @@ AllBlocks:
 
 					if lr == nil {
 						// lazy-read record
-						lr, err = isu.ledgerAPI.GetRecord(rid)
+						lr, err = isu.ledgerAPI.GetRecord(ctx, rid)
 						if err != nil {
 							return -1, false, err
 						}
@@ -283,9 +281,9 @@ func (isu *Scanner) Subscriptions() map[string]Subscription {
 	return isu.subscriptions
 }
 
-func (isu *Scanner) Scan() (bool, error) {
+func (isu *Scanner) Scan(ctx context.Context) (bool, error) {
 	for {
-		complete, restart, err := isu.scanOneRound()
+		complete, restart, err := isu.scanOneRound(ctx)
 		if err != nil {
 			return false, err
 		}
@@ -310,7 +308,7 @@ func (isu *Scanner) Scan() (bool, error) {
 	}
 }
 
-func (isu *Scanner) scanOneRound() (bool, bool, error) {
+func (isu *Scanner) scanOneRound(ctx context.Context) (bool, bool, error) {
 
 	blockBatchSize := 10
 
@@ -336,7 +334,7 @@ func (isu *Scanner) scanOneRound() (bool, bool, error) {
 
 	accumulatedLockers := make([]*LockerConfig, 0)
 
-	topBlock, err := isu.ledgerAPI.GetTopBlock()
+	topBlock, err := isu.ledgerAPI.GetTopBlock(ctx)
 	if err != nil {
 		return false, false, err
 	}
@@ -384,7 +382,7 @@ func (isu *Scanner) scanOneRound() (bool, bool, error) {
 		log.Debug().Int("idx", idx).Int64("start", startBlockNumber).Int64("end", endBlockNumber).
 			Int("lockerCount", len(accumulatedLockers)).Msg("Initiating new scanning round")
 
-		topBlockNumber, exitedEarly, err = isu.ScanLedger(accumulatedLockers, startBlockNumber, endBlockNumber, blockBatchSize)
+		topBlockNumber, exitedEarly, err = isu.scanLedger(ctx, accumulatedLockers, startBlockNumber, endBlockNumber, blockBatchSize)
 		if err != nil {
 			return false, false, err
 		}

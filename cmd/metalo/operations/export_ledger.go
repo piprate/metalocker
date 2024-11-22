@@ -15,6 +15,7 @@
 package operations
 
 import (
+	"context"
 	"os"
 	"path"
 
@@ -24,13 +25,13 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func ExportLedger(ledger model.Ledger, offChainStorage model.OffChainStorage, basePath string) error {
-	gb, err := ledger.GetGenesisBlock()
+func ExportLedger(ctx context.Context, ledger model.Ledger, offChainStorage model.OffChainStorage, basePath string) error {
+	gb, err := ledger.GetGenesisBlock(ctx)
 	if err != nil {
 		return err
 	}
 
-	tb, err := ledger.GetTopBlock()
+	tb, err := ledger.GetTopBlock(ctx)
 	if err != nil {
 		return err
 	}
@@ -40,12 +41,12 @@ func ExportLedger(ledger model.Ledger, offChainStorage model.OffChainStorage, ba
 	blockBatchSize := 10
 	b := gb
 
-	if err = SaveBlock(ledger, offChainStorage, basePath, b); err != nil {
+	if err = SaveBlock(ctx, ledger, offChainStorage, basePath, b); err != nil {
 		return err
 	}
 
 	for {
-		blocks, err := ledger.GetChain(currentBlock, blockBatchSize)
+		blocks, err := ledger.GetChain(ctx, currentBlock, blockBatchSize)
 		if err != nil {
 			return err
 		}
@@ -55,7 +56,7 @@ func ExportLedger(ledger model.Ledger, offChainStorage model.OffChainStorage, ba
 		}
 
 		for _, b = range blocks[1:] {
-			if err = SaveBlock(ledger, offChainStorage, basePath, b); err != nil {
+			if err = SaveBlock(ctx, ledger, offChainStorage, basePath, b); err != nil {
 				return err
 			}
 		}
@@ -81,7 +82,7 @@ func ExportLedger(ledger model.Ledger, offChainStorage model.OffChainStorage, ba
 	return nil
 }
 
-func SaveBlock(ledger model.Ledger, offChainStorage model.OffChainStorage, basePath string, b *model.Block) error {
+func SaveBlock(ctx context.Context, ledger model.Ledger, offChainStorage model.OffChainStorage, basePath string, b *model.Block) error {
 	log.Info().Int64("number", b.Number).Msg("Saving block")
 
 	dest := path.Join(basePath, utils.Int64ToString(b.Number))
@@ -107,7 +108,7 @@ func SaveBlock(ledger model.Ledger, offChainStorage model.OffChainStorage, baseP
 		return err
 	}
 
-	recList, err := ledger.GetBlockRecords(b.Number)
+	recList, err := ledger.GetBlockRecords(ctx, b.Number)
 	if err != nil {
 		return err
 	}
@@ -116,7 +117,7 @@ func SaveBlock(ledger model.Ledger, offChainStorage model.OffChainStorage, baseP
 	for _, r := range recList {
 		log.Warn().Str("rid", r[0]).Msg("Saving record")
 
-		rec, err := ledger.GetRecord(r[0])
+		rec, err := ledger.GetRecord(ctx, r[0])
 		if err != nil {
 			return err
 		}
@@ -124,7 +125,7 @@ func SaveBlock(ledger model.Ledger, offChainStorage model.OffChainStorage, baseP
 		recs = append(recs, rec)
 
 		if rec.Operation == model.OpTypeLease {
-			opRecBytes, err := offChainStorage.GetOperation(rec.OperationAddress)
+			opRecBytes, err := offChainStorage.GetOperation(ctx, rec.OperationAddress)
 			if err != nil {
 				return err
 			}

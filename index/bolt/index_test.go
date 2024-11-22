@@ -15,6 +15,7 @@
 package bolt_test
 
 import (
+	"context"
 	"errors"
 	"os"
 	"testing"
@@ -34,19 +35,21 @@ func TestIndex_AddLockerState(t *testing.T) {
 
 	userID := "did:piprate:QgH6CZvhjTUFvCbRUw4N6Z"
 
-	ix, err := store.CreateIndex(userID, index.TypeRoot, model.AccessLevelHosted)
+	ctx := context.Background()
+
+	ix, err := store.CreateIndex(ctx, userID, index.TypeRoot, model.AccessLevelHosted)
 	require.NoError(t, err)
 
 	iw, _ := ix.Writer()
 
 	locker := testbase.TestUniLocker(t)
 
-	err = iw.AddLockerState(userID, locker.ID, locker.FirstBlock)
+	err = iw.AddLockerState(ctx, userID, locker.ID, locker.FirstBlock)
 	require.NoError(t, err)
 
 	// try adding the same locker again
 
-	err = iw.AddLockerState(userID, locker.ID, locker.FirstBlock)
+	err = iw.AddLockerState(ctx, userID, locker.ID, locker.FirstBlock)
 	require.Error(t, err)
 	require.True(t, errors.Is(err, index.ErrLockerStateExists))
 }

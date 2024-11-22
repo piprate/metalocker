@@ -15,6 +15,7 @@
 package operations
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -27,7 +28,7 @@ import (
 	"github.com/piprate/metalocker/wallet"
 )
 
-func StoreDataSet(lib wallet.DataStore, path, metaType, vaultName, lockerID, provPath, provMapping, parentRecordID string,
+func StoreDataSet(ctx context.Context, lib wallet.DataStore, path, metaType, vaultName, lockerID, provPath, provMapping, parentRecordID string,
 	durationString string, waitForConfirmation bool) (string, string, error) {
 
 	provMap, err := utils.BuildMapFromString(provMapping)
@@ -37,7 +38,8 @@ func StoreDataSet(lib wallet.DataStore, path, metaType, vaultName, lockerID, pro
 
 	var builder dataset.Builder
 	if parentRecordID != "" {
-		builder, err = lib.NewDataSetBuilder(lockerID,
+		builder, err = lib.NewDataSetBuilder(ctx,
+			lockerID,
 			dataset.WithVault(vaultName),
 			dataset.WithParent(
 				parentRecordID,
@@ -47,7 +49,7 @@ func StoreDataSet(lib wallet.DataStore, path, metaType, vaultName, lockerID, pro
 				false),
 		)
 	} else {
-		builder, err = lib.NewDataSetBuilder(lockerID, dataset.WithVault(vaultName))
+		builder, err = lib.NewDataSetBuilder(ctx, lockerID, dataset.WithVault(vaultName))
 	}
 
 	if err != nil {
