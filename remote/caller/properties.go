@@ -22,17 +22,17 @@ import (
 )
 
 func (c *MetaLockerHTTPCaller) StoreProperty(ctx context.Context, prop *account.DataEnvelope) error {
-	return c.storeDataEnvelope("property", prop)
+	return c.storeDataEnvelope(ctx, "property", prop)
 }
 
 func (c *MetaLockerHTTPCaller) GetProperty(ctx context.Context, hash string) (*account.DataEnvelope, error) {
-	return c.getDataEnvelope("property", hash, storage.ErrPropertyNotFound)
+	return c.getDataEnvelope(ctx, "property", hash, storage.ErrPropertyNotFound)
 }
 
 func (c *MetaLockerHTTPCaller) ListProperties(ctx context.Context) ([]*account.DataEnvelope, error) {
-	return c.listDataEnvelopes("property")
+	return c.listDataEnvelopes(ctx, "property")
 }
 
 func (c *MetaLockerHTTPCaller) DeleteProperty(ctx context.Context, hash string) error {
-	return c.deleteDataEnvelope("property", hash, storage.ErrPropertyNotFound)
+	return c.deleteDataEnvelope(ctx, "property", hash, storage.ErrPropertyNotFound)
 }

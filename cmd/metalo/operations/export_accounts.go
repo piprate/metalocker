@@ -34,7 +34,7 @@ func ExportAccounts(ctx context.Context, mlc *caller.MetaLockerHTTPCaller, dest 
 
 	// export accounts
 
-	acctList, err := mlc.AdminGetAccountList()
+	acctList, err := mlc.AdminGetAccountList(ctx)
 	if err != nil {
 		return err
 	}

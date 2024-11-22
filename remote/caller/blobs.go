@@ -37,7 +37,7 @@ func (c *MetaLockerHTTPCaller) GetBlob(ctx context.Context, res *model.StoredRes
 			Params: res.Params,
 		}
 
-		rsp, err := c.client.SendRequest(http.MethodPost, url,
+		rsp, err := c.client.SendRequest(ctx, http.MethodPost, url,
 			httpsecure.WithHeaders(map[string]string{
 				"X-Vault-Access-Token": accessToken,
 			}),
@@ -69,7 +69,7 @@ func (c *MetaLockerHTTPCaller) PurgeBlob(ctx context.Context, res *model.StoredR
 		Params: res.Params,
 	}
 
-	rsp, err := c.client.SendRequest(http.MethodPost, url, httpsecure.WithJSONBody(truncatedRes))
+	rsp, err := c.client.SendRequest(ctx, http.MethodPost, url, httpsecure.WithJSONBody(truncatedRes))
 	if err != nil {
 		return err
 	}
@@ -88,7 +88,7 @@ func (c *MetaLockerHTTPCaller) PurgeBlob(ctx context.Context, res *model.StoredR
 }
 
 func (c *MetaLockerHTTPCaller) SendBlob(ctx context.Context, data io.Reader, cleartext bool, vaultName string) (*model.StoredResource, error) {
-	vaultMap, err := c.GetVaultMap()
+	vaultMap, err := c.GetVaultMap(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (c *MetaLockerHTTPCaller) SendBlob(ctx context.Context, data io.Reader, cle
 	}
 
 	return vaults.SendBlob(data, vault.ID, vault.SSE || cleartext, func(data io.Reader, vaultID string) (*model.StoredResource, error) {
-		rsp, err := c.client.SendRequest(http.MethodPost, fmt.Sprintf("/v1/vault/%s/raw", vaultID), httpsecure.WithUnsignedBody(data))
+		rsp, err := c.client.SendRequest(ctx, http.MethodPost, fmt.Sprintf("/v1/vault/%s/raw", vaultID), httpsecure.WithUnsignedBody(data))
 		if err != nil {
 			return nil, err
 		}
@@ -131,17 +131,17 @@ func (c *MetaLockerHTTPCaller) SendBlob(ctx context.Context, data io.Reader, cle
 
 func (c *MetaLockerHTTPCaller) GetDataAssetState(ctx context.Context, id string) (model.DataAssetState, error) {
 	var rsp map[string]model.DataAssetState
-	err := c.client.LoadContents(http.MethodGet, fmt.Sprintf("/v1/ledger/data-asset/%s/state", id), nil, &rsp)
+	err := c.client.LoadContents(ctx, http.MethodGet, fmt.Sprintf("/v1/ledger/data-asset/%s/state", id), nil, &rsp)
 	if err != nil {
 		return model.DataAssetStateKeep, err
 	}
 	return rsp["state"], nil
 }
 
-func (c *MetaLockerHTTPCaller) GetVaultMap() (map[string]*model.VaultProperties, error) {
+func (c *MetaLockerHTTPCaller) GetVaultMap(ctx context.Context) (map[string]*model.VaultProperties, error) {
 	if c.cachedVaultMap == nil {
 		var vaultList []*model.VaultProperties
-		err := c.client.LoadContents(http.MethodGet, "/v1/vault/list", nil, &vaultList)
+		err := c.client.LoadContents(ctx, http.MethodGet, "/v1/vault/list", nil, &vaultList)
 		if err != nil {
 			return nil, err
 		}

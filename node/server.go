@@ -191,7 +191,7 @@ func (mls *MetaLockerServer) InitAuthentication(ctx context.Context, cfg *koanf.
 	return nil
 }
 
-func (mls *MetaLockerServer) InitStandardRoutes(cfg *koanf.Koanf) error {
+func (mls *MetaLockerServer) InitStandardRoutes(ctx context.Context, cfg *koanf.Koanf) error {
 	r := mls.Router
 
 	if cfg.Exists("administration") {
@@ -229,7 +229,7 @@ func (mls *MetaLockerServer) InitStandardRoutes(cfg *koanf.Koanf) error {
 	vaultGrp.Use(mls.Level2AuthFn)
 	vaultGrp.Use(apibase.ContextLoggerHandler)
 
-	vaultapi.InitRoutes(vaultGrp, mls.BlobManager)
+	vaultapi.InitRoutes(ctx, vaultGrp, mls.BlobManager)
 
 	// serve JSON-LD contexts which are compatible with the current MetaLocker implementation.
 	// This includes third-party contexts to avoid unexpected changes and round-trips over network.

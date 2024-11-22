@@ -77,7 +77,7 @@ type (
 		SendBlob(ctx context.Context, data io.Reader, cleartext bool, vaultID string) (*StoredResource, error)
 		PurgeBlob(ctx context.Context, res *StoredResource) error
 
-		GetVaultMap() (map[string]*VaultProperties, error)
+		GetVaultMap(ctx context.Context) (map[string]*VaultProperties, error)
 	}
 )
 

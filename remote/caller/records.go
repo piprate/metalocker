@@ -29,7 +29,7 @@ import (
 
 func (c *MetaLockerHTTPCaller) GetRecord(ctx context.Context, rid string) (*model.Record, error) {
 	var lr model.Record
-	err := c.client.LoadContents(http.MethodGet, fmt.Sprintf("/v1/lrec/%s", rid), nil, &lr)
+	err := c.client.LoadContents(ctx, http.MethodGet, fmt.Sprintf("/v1/lrec/%s", rid), nil, &lr)
 	if err != nil {
 		return nil, err
 	} else {
@@ -38,7 +38,7 @@ func (c *MetaLockerHTTPCaller) GetRecord(ctx context.Context, rid string) (*mode
 }
 
 func (c *MetaLockerHTTPCaller) SubmitRecord(ctx context.Context, r *model.Record) error {
-	res, err := c.client.SendRequest(http.MethodPost, "/v1/lrec", httpsecure.WithJSONBody(r))
+	res, err := c.client.SendRequest(ctx, http.MethodPost, "/v1/lrec", httpsecure.WithJSONBody(r))
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func (c *MetaLockerHTTPCaller) SubmitRecord(ctx context.Context, r *model.Record
 
 func (c *MetaLockerHTTPCaller) GetRecordState(ctx context.Context, rid string) (*model.RecordState, error) {
 	url := fmt.Sprintf("/v1/lrec/%s/state", rid)
-	res, err := c.client.SendRequest(http.MethodGet, url)
+	res, err := c.client.SendRequest(ctx, http.MethodGet, url)
 	if err != nil {
 		return &model.RecordState{
 			Status: model.StatusUnknown,
@@ -104,7 +104,7 @@ func (c *MetaLockerHTTPCaller) GetRecordState(ctx context.Context, rid string) (
 
 func (c *MetaLockerHTTPCaller) GetAssetHead(ctx context.Context, headID string) (*model.Record, error) {
 	var lr model.Record
-	err := c.client.LoadContents(http.MethodGet, fmt.Sprintf("/v1/head/%s", headID), nil, &lr)
+	err := c.client.LoadContents(ctx, http.MethodGet, fmt.Sprintf("/v1/head/%s", headID), nil, &lr)
 	if err != nil {
 		if errors.Is(err, httpsecure.ErrEntityNotFound) {
 			return nil, model.ErrAssetHeadNotFound

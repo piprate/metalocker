@@ -83,7 +83,7 @@ func (lbm *LocalBlobManager) SendBlob(ctx context.Context, data io.Reader, clear
 	})
 }
 
-func (lbm *LocalBlobManager) GetVaultMap() (map[string]*model.VaultProperties, error) {
+func (lbm *LocalBlobManager) GetVaultMap(ctx context.Context) (map[string]*model.VaultProperties, error) {
 	return lbm.propMap, nil
 }
 

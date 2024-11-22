@@ -28,7 +28,7 @@ import (
 
 func (c *MetaLockerHTTPCaller) GetOperation(ctx context.Context, opAddr string) ([]byte, error) {
 	var op []byte
-	err := c.client.LoadContents(http.MethodGet, fmt.Sprintf("/v1/lop/%s", opAddr), nil, &op)
+	err := c.client.LoadContents(ctx, http.MethodGet, fmt.Sprintf("/v1/lop/%s", opAddr), nil, &op)
 	if err != nil {
 		if errors.Is(err, httpsecure.ErrEntityNotFound) {
 			return nil, model.ErrOperationNotFound
@@ -40,7 +40,7 @@ func (c *MetaLockerHTTPCaller) GetOperation(ctx context.Context, opAddr string) 
 }
 
 func (c *MetaLockerHTTPCaller) SendOperation(ctx context.Context, opData []byte) (string, error) {
-	res, err := c.client.SendRequest(http.MethodPost, "/v1/lop", httpsecure.WithBody(bytes.NewBuffer(opData)))
+	res, err := c.client.SendRequest(ctx, http.MethodPost, "/v1/lop", httpsecure.WithBody(bytes.NewBuffer(opData)))
 	if err != nil {
 		return "", err
 	}
@@ -69,7 +69,7 @@ func (c *MetaLockerHTTPCaller) SendOperation(ctx context.Context, opData []byte)
 }
 
 func (c *MetaLockerHTTPCaller) PurgeOperation(ctx context.Context, opAddr string) error {
-	res, err := c.client.SendRequest(http.MethodPost, fmt.Sprintf("/v1/lop/%s/purge", opAddr))
+	res, err := c.client.SendRequest(ctx, http.MethodPost, fmt.Sprintf("/v1/lop/%s/purge", opAddr))
 	if err != nil {
 		return err
 	}

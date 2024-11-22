@@ -55,7 +55,7 @@ func ImportAccounts(c *cli.Context) error {
 		return cli.Exit("connection to MetaLocker failed", OperationFailed)
 	}
 
-	err = operations.ImportAccounts(mlc, c.Args().Get(0))
+	err = operations.ImportAccounts(c.Context, mlc, c.Args().Get(0))
 	if err != nil {
 		log.Err(err).Msg("Accounts import failed")
 		return cli.Exit(err, OperationFailed)
@@ -88,7 +88,7 @@ func UpdateAccountState(c *cli.Context) error {
 		return cli.Exit("connection to MetaLocker failed", OperationFailed)
 	}
 
-	err = operations.UpdateAccountState(mlc, c.Args().Get(0), targetState)
+	err = operations.UpdateAccountState(c.Context, mlc, c.Args().Get(0), targetState)
 	if err != nil {
 		log.Err(err).Msg("Account state update failed")
 		return cli.Exit(err, OperationFailed)

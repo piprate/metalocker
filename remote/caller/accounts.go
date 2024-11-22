@@ -29,13 +29,13 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func (c *MetaLockerHTTPCaller) AdminGetAccountList() ([]account.Account, error) {
+func (c *MetaLockerHTTPCaller) AdminGetAccountList(ctx context.Context) ([]account.Account, error) {
 	if !c.client.IsAuthenticated() {
 		return nil, errors.New("you need to log in before performing any operations")
 	}
 
 	var acctList []account.Account
-	err := c.client.LoadContents(http.MethodGet, "/v1/admin/account", nil, &acctList)
+	err := c.client.LoadContents(ctx, http.MethodGet, "/v1/admin/account", nil, &acctList)
 	if err != nil {
 		return nil, err
 	}
@@ -43,12 +43,12 @@ func (c *MetaLockerHTTPCaller) AdminGetAccountList() ([]account.Account, error) 
 	return acctList, nil
 }
 
-func (c *MetaLockerHTTPCaller) AdminStoreAccount(acc *account.Account) error {
+func (c *MetaLockerHTTPCaller) AdminStoreAccount(ctx context.Context, acc *account.Account) error {
 	if !c.client.IsAuthenticated() {
 		return errors.New("you need to log in before performing any operations")
 	}
 
-	res, err := c.client.SendRequest(http.MethodPost, "/v1/admin/account", httpsecure.WithJSONBody(acc))
+	res, err := c.client.SendRequest(ctx, http.MethodPost, "/v1/admin/account", httpsecure.WithJSONBody(acc))
 	if err != nil {
 		return err
 	}
@@ -71,13 +71,13 @@ type AccountAdminPatch struct {
 	State string `json:"state,omitempty"`
 }
 
-func (c *MetaLockerHTTPCaller) AdminPatchAccount(id string, patch AccountAdminPatch) error {
+func (c *MetaLockerHTTPCaller) AdminPatchAccount(ctx context.Context, id string, patch AccountAdminPatch) error {
 	if !c.client.IsAuthenticated() {
 		return errors.New("you need to log in before performing any operations")
 	}
 
 	url := fmt.Sprintf("/v1/admin/account/%s", id)
-	res, err := c.client.SendRequest(http.MethodPatch, url, httpsecure.WithJSONBody(patch))
+	res, err := c.client.SendRequest(ctx, http.MethodPatch, url, httpsecure.WithJSONBody(patch))
 	if err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func (c *MetaLockerHTTPCaller) GetOwnAccount(ctx context.Context) (*account.Acco
 	}
 
 	var acct account.Account
-	err := c.client.LoadContents(http.MethodGet, "/v1/account", nil, &acct)
+	err := c.client.LoadContents(ctx, http.MethodGet, "/v1/account", nil, &acct)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func (c *MetaLockerHTTPCaller) GetAccount(ctx context.Context, id string) (*acco
 	}
 
 	var acct account.Account
-	err := c.client.LoadContents(http.MethodGet, "/v1/account/"+id, nil, &acct)
+	err := c.client.LoadContents(ctx, http.MethodGet, "/v1/account/"+id, nil, &acct)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +129,7 @@ func (c *MetaLockerHTTPCaller) UpdateAccount(ctx context.Context, acc *account.A
 		return errors.New("you need to log in before performing any operations")
 	}
 
-	res, err := c.client.SendRequest(http.MethodPut, "/v1/account", httpsecure.WithJSONBody(acc))
+	res, err := c.client.SendRequest(ctx, http.MethodPut, "/v1/account", httpsecure.WithJSONBody(acc))
 	if err != nil {
 		return err
 	}
@@ -161,7 +161,7 @@ func (c *MetaLockerHTTPCaller) PatchAccount(ctx context.Context, email, oldEncry
 		FamilyName:           familyName,
 	}
 
-	res, err := c.client.SendRequest(http.MethodPatch, "/v1/account", httpsecure.WithJSONBody(patch))
+	res, err := c.client.SendRequest(ctx, http.MethodPatch, "/v1/account", httpsecure.WithJSONBody(patch))
 	if err != nil {
 		return err
 	}
@@ -186,7 +186,7 @@ func (c *MetaLockerHTTPCaller) DeleteAccount(ctx context.Context, id string) err
 
 	url := fmt.Sprintf("/v1/account/%s", id)
 
-	res, err := c.client.SendRequest(http.MethodDelete, url)
+	res, err := c.client.SendRequest(ctx, http.MethodDelete, url)
 	if err != nil {
 		return err
 	}
@@ -206,7 +206,7 @@ func (c *MetaLockerHTTPCaller) DeleteAccount(ctx context.Context, id string) err
 
 func (c *MetaLockerHTTPCaller) GetAccountRecoveryCode(ctx context.Context, username string) (string, error) {
 	url := fmt.Sprintf("/v1/recovery-code?email=%s", username)
-	res, err := c.client.SendRequest(http.MethodGet, url, httpsecure.SkipAuthentication())
+	res, err := c.client.SendRequest(ctx, http.MethodGet, url, httpsecure.SkipAuthentication())
 	if err != nil {
 		return "", err
 	}
@@ -228,11 +228,11 @@ func (c *MetaLockerHTTPCaller) GetAccountRecoveryCode(ctx context.Context, usern
 	return rsp.Code, nil
 }
 
-func (c *MetaLockerHTTPCaller) RecoverAccount(userID string, privKey ed25519.PrivateKey, recoveryCode, newPassphrase string) (*account.Account, error) {
+func (c *MetaLockerHTTPCaller) RecoverAccount(ctx context.Context, userID string, privKey ed25519.PrivateKey, recoveryCode, newPassphrase string) (*account.Account, error) {
 
 	req := account.BuildRecoveryRequest(userID, recoveryCode, privKey, newPassphrase, nil)
 
-	res, err := c.client.SendRequest(http.MethodPost, "/v1/recover-account",
+	res, err := c.client.SendRequest(ctx, http.MethodPost, "/v1/recover-account",
 		httpsecure.WithJSONBody(req),
 		httpsecure.SkipAuthentication())
 	if err != nil {
@@ -261,7 +261,7 @@ func (c *MetaLockerHTTPCaller) CreateSubAccount(ctx context.Context, acct *accou
 		return nil, errors.New("you need to log in before performing any operations")
 	}
 
-	res, err := c.client.SendRequest(http.MethodPost, "/v1/account", httpsecure.WithJSONBody(acct))
+	res, err := c.client.SendRequest(ctx, http.MethodPost, "/v1/account", httpsecure.WithJSONBody(acct))
 	if err != nil {
 		return nil, err
 	}
@@ -289,7 +289,7 @@ func (c *MetaLockerHTTPCaller) ListSubAccounts(ctx context.Context, id string) (
 	}
 
 	var acctList []*account.Account
-	err := c.client.LoadContents(http.MethodGet, "/v1/account/"+id+"/children", nil, &acctList)
+	err := c.client.LoadContents(ctx, http.MethodGet, "/v1/account/"+id+"/children", nil, &acctList)
 	if err != nil {
 		return nil, err
 	}
@@ -303,7 +303,7 @@ func (c *MetaLockerHTTPCaller) CreateAccessKey(ctx context.Context, key *model.A
 	}
 
 	url := "/v1/account/" + c.currentAccountID + "/access-key"
-	res, err := c.client.SendRequest(http.MethodPost, url, httpsecure.WithJSONBody(key))
+	res, err := c.client.SendRequest(ctx, http.MethodPost, url, httpsecure.WithJSONBody(key))
 	if err != nil {
 		return nil, err
 	}
@@ -332,7 +332,7 @@ func (c *MetaLockerHTTPCaller) DeleteAccessKey(ctx context.Context, keyID string
 	}
 
 	url := "/v1/account/" + c.currentAccountID + "/access-key/" + keyID
-	res, err := c.client.SendRequest(http.MethodDelete, url)
+	res, err := c.client.SendRequest(ctx, http.MethodDelete, url)
 	if err != nil {
 		return err
 	}
@@ -357,7 +357,7 @@ func (c *MetaLockerHTTPCaller) GetAccessKey(ctx context.Context, keyID string) (
 
 	var key model.AccessKey
 	url := "/v1/account/" + c.currentAccountID + "/access-key/" + keyID
-	err := c.client.LoadContents(http.MethodGet, url, nil, &key)
+	err := c.client.LoadContents(ctx, http.MethodGet, url, nil, &key)
 	if err != nil {
 		return nil, err
 	}
@@ -372,7 +372,7 @@ func (c *MetaLockerHTTPCaller) ListAccessKeys(ctx context.Context) ([]*model.Acc
 
 	var keyList []*model.AccessKey
 	url := "/v1/account/" + c.currentAccountID + "/access-key"
-	err := c.client.LoadContents(http.MethodGet, url, nil, &keyList)
+	err := c.client.LoadContents(ctx, http.MethodGet, url, nil, &keyList)
 	if err != nil {
 		return nil, err
 	}

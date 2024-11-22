@@ -15,12 +15,14 @@
 package operations
 
 import (
+	"context"
+
 	"github.com/piprate/metalocker/remote/caller"
 )
 
-func UpdateAccountState(mlc *caller.MetaLockerHTTPCaller, acctID, targetState string) error {
+func UpdateAccountState(ctx context.Context, mlc *caller.MetaLockerHTTPCaller, acctID, targetState string) error {
 
-	err := mlc.AdminPatchAccount(acctID, caller.AccountAdminPatch{
+	err := mlc.AdminPatchAccount(ctx, acctID, caller.AccountAdminPatch{
 		State: targetState,
 	})
 	if err != nil {

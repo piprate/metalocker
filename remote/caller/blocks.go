@@ -26,7 +26,7 @@ import (
 
 func (c *MetaLockerHTTPCaller) GetGenesisBlock(ctx context.Context) (*model.Block, error) {
 	var b model.Block
-	err := c.client.LoadContents(http.MethodGet, "/v1/ledger/genesis", nil, &b)
+	err := c.client.LoadContents(ctx, http.MethodGet, "/v1/ledger/genesis", nil, &b)
 	if err != nil {
 		return nil, err
 	} else {
@@ -36,7 +36,7 @@ func (c *MetaLockerHTTPCaller) GetGenesisBlock(ctx context.Context) (*model.Bloc
 
 func (c *MetaLockerHTTPCaller) GetTopBlock(ctx context.Context) (*model.Block, error) {
 	var b model.Block
-	err := c.client.LoadContents(http.MethodGet, "/v1/ledger/top", nil, &b)
+	err := c.client.LoadContents(ctx, http.MethodGet, "/v1/ledger/top", nil, &b)
 	if err != nil {
 		return nil, err
 	} else {
@@ -46,7 +46,7 @@ func (c *MetaLockerHTTPCaller) GetTopBlock(ctx context.Context) (*model.Block, e
 
 func (c *MetaLockerHTTPCaller) GetBlock(ctx context.Context, bn int64) (*model.Block, error) {
 	var b model.Block
-	err := c.client.LoadContents(http.MethodGet, fmt.Sprintf("/v1/ledger/block/%d", bn), nil, &b)
+	err := c.client.LoadContents(ctx, http.MethodGet, fmt.Sprintf("/v1/ledger/block/%d", bn), nil, &b)
 	if err != nil {
 		return nil, err
 	} else {
@@ -56,7 +56,7 @@ func (c *MetaLockerHTTPCaller) GetBlock(ctx context.Context, bn int64) (*model.B
 
 func (c *MetaLockerHTTPCaller) GetChain(ctx context.Context, startNumber int64, depth int) ([]*model.Block, error) {
 	var blocks []*model.Block
-	err := c.client.LoadContents(http.MethodGet, fmt.Sprintf("/v1/ledger/chain/%d/%d", startNumber, depth), nil, &blocks)
+	err := c.client.LoadContents(ctx, http.MethodGet, fmt.Sprintf("/v1/ledger/chain/%d/%d", startNumber, depth), nil, &blocks)
 	if err != nil {
 		return nil, err
 	} else {
@@ -66,7 +66,7 @@ func (c *MetaLockerHTTPCaller) GetChain(ctx context.Context, startNumber int64, 
 
 func (c *MetaLockerHTTPCaller) GetBlockRecords(ctx context.Context, bn int64) ([][]string, error) {
 	var recBytes []byte
-	err := c.client.LoadContents(http.MethodGet, fmt.Sprintf("/v1/ledger/block/%d/records", bn), nil, &recBytes)
+	err := c.client.LoadContents(ctx, http.MethodGet, fmt.Sprintf("/v1/ledger/block/%d/records", bn), nil, &recBytes)
 	if err != nil {
 		return nil, err
 	} else {

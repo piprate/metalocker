@@ -16,6 +16,7 @@ package httpsecure
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -194,8 +195,8 @@ func (c *Client) CloseIdleConnections() {
 	c.httpClient.CloseIdleConnections()
 }
 
-func (c *Client) LoadContents(method, contentURL string, headerValues map[string]string, val any) error {
-	res, err := c.SendRequest(method, contentURL, WithHeaders(headerValues))
+func (c *Client) LoadContents(ctx context.Context, method, contentURL string, headerValues map[string]string, val any) error {
+	res, err := c.SendRequest(ctx, method, contentURL, WithHeaders(headerValues))
 	if err != nil {
 		return err
 	}
@@ -227,7 +228,7 @@ func (c *Client) LoadContents(method, contentURL string, headerValues map[string
 	}
 }
 
-func (c *Client) SendRequest(method, requestURL string, opts ...Option) (*http.Response, error) {
+func (c *Client) SendRequest(ctx context.Context, method, requestURL string, opts ...Option) (*http.Response, error) {
 	// process options
 	var options requestOptions
 	options.authMethod = c.authMethod
@@ -237,7 +238,7 @@ func (c *Client) SendRequest(method, requestURL string, opts ...Option) (*http.R
 		}
 	}
 
-	req, err := c.buildRequest(method, requestURL, options)
+	req, err := c.buildRequest(ctx, method, requestURL, options)
 	if err != nil {
 		return nil, err
 	}
@@ -249,13 +250,13 @@ func (c *Client) SendRequest(method, requestURL string, opts ...Option) (*http.R
 	return c.httpClient.Do(req)
 }
 
-func (c *Client) buildRequest(method, relativeURL string, opts requestOptions) (*http.Request, error) {
+func (c *Client) buildRequest(ctx context.Context, method, relativeURL string, opts requestOptions) (*http.Request, error) {
 
 	fullURL := c.connectionURL + relativeURL
 
 	log.Debug().Str("method", method).Str("url", fullURL).Msg("Sending HTTP request")
 
-	req, err := http.NewRequest(method, fullURL, opts.body)
+	req, err := http.NewRequestWithContext(ctx, method, fullURL, opts.body)
 	if err != nil {
 		return nil, err
 	}

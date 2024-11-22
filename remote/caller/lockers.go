@@ -23,15 +23,15 @@ import (
 )
 
 func (c *MetaLockerHTTPCaller) StoreLocker(ctx context.Context, locker *account.DataEnvelope) error {
-	return c.storeDataEnvelope("locker", locker)
+	return c.storeDataEnvelope(ctx, "locker", locker)
 }
 
 func (c *MetaLockerHTTPCaller) GetLocker(ctx context.Context, hash string) (*account.DataEnvelope, error) {
-	return c.getDataEnvelope("locker", hash, storage.ErrLockerNotFound)
+	return c.getDataEnvelope(ctx, "locker", hash, storage.ErrLockerNotFound)
 }
 
 func (c *MetaLockerHTTPCaller) ListLockers(ctx context.Context) ([]*account.DataEnvelope, error) {
-	return c.listDataEnvelopes("locker")
+	return c.listDataEnvelopes(ctx, "locker")
 }
 
 func (c *MetaLockerHTTPCaller) ListLockerHashes(ctx context.Context) ([]string, error) {

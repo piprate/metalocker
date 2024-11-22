@@ -116,7 +116,7 @@ func RunServer(c *cli.Context) error {
 		return err
 	}
 
-	if err = srv.InitStandardRoutes(cfg); err != nil {
+	if err = srv.InitStandardRoutes(c.Context, cfg); err != nil {
 		return err
 	}
 

@@ -88,7 +88,7 @@ func NewWalletFactory(url string, indexClientSourceFn IndexClientSourceFn, accou
 }
 
 func (rf *Factory) GetTopBlock() (int64, error) {
-	controls, err := rf.httpCaller.GetServerControls()
+	controls, err := rf.httpCaller.GetServerControls(context.Background())
 	if err != nil {
 		return 0, err
 	}
@@ -103,7 +103,7 @@ func (rf *Factory) RegisterAccount(ctx context.Context, acctTemplate *account.Ac
 		return nil, nil, err
 	}
 
-	controls, err := httpCaller.GetServerControls()
+	controls, err := httpCaller.GetServerControls(ctx)
 	if err != nil {
 		return nil, nil, err
 	}

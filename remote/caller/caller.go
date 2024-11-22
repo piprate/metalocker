@@ -176,7 +176,9 @@ func (c *MetaLockerHTTPCaller) LoginWithCredentials(email string, password strin
 		Password: account.HashUserPassword(password),
 	}
 
-	res, err := c.client.SendRequest(http.MethodPost, "/v1/authenticate",
+	ctx := context.Background()
+
+	res, err := c.client.SendRequest(ctx, http.MethodPost, "/v1/authenticate",
 		httpsecure.WithJSONBody(loginForm),
 		httpsecure.SkipAuthentication())
 	if err != nil {
@@ -275,7 +277,7 @@ func (c *MetaLockerHTTPCaller) CreateAccount(ctx context.Context, acct *account.
 		RegistrationCode: registrationCode,
 	}
 
-	res, err := c.client.SendRequest(http.MethodPost, "/v1/register",
+	res, err := c.client.SendRequest(ctx, http.MethodPost, "/v1/register",
 		httpsecure.WithJSONBody(form),
 		httpsecure.SkipAuthentication())
 	if err != nil {

@@ -333,7 +333,7 @@ func CreateLocker(c *cli.Context) error {
 
 	mlc := CreateHTTPCaller(c)
 
-	controls, err := mlc.GetServerControls()
+	controls, err := mlc.GetServerControls(c.Context)
 	if err != nil {
 		return err
 	}
@@ -517,7 +517,7 @@ func RecoverAccount(c *cli.Context) error {
 		return err
 	}
 
-	acct, err := mlc.RecoverAccount(userID, privKey, recoveryCode, newPassphrase)
+	acct, err := mlc.RecoverAccount(c.Context, userID, privKey, recoveryCode, newPassphrase)
 	if err != nil {
 		log.Err(err).Msg("Failed to recover account")
 		return fmt.Errorf("failed to recover account: %w", err)
@@ -587,7 +587,7 @@ func RecoverAccountSecondLevel(c *cli.Context) error {
 
 	privKey := ed25519.PrivateKey(pkBytes)
 
-	acct, err := mlc.RecoverAccount(userID, privKey, recoveryCode, newPassphrase)
+	acct, err := mlc.RecoverAccount(c.Context, userID, privKey, recoveryCode, newPassphrase)
 	if err != nil {
 		log.Err(err).Msg("Failed to recover account")
 		return fmt.Errorf("failed to recover account: %w", err)

@@ -27,7 +27,7 @@ import (
 
 func (c *MetaLockerHTTPCaller) GetDIDDocument(ctx context.Context, id string) (*model.DIDDocument, error) {
 	var ddoc model.DIDDocument
-	err := c.client.LoadContents(http.MethodGet, fmt.Sprintf("/v1/did/%s", id), nil, &ddoc)
+	err := c.client.LoadContents(ctx, http.MethodGet, fmt.Sprintf("/v1/did/%s", id), nil, &ddoc)
 	if err != nil {
 		if errors.Is(err, httpsecure.ErrEntityNotFound) {
 			return nil, storage.ErrDIDNotFound
@@ -43,7 +43,7 @@ func (c *MetaLockerHTTPCaller) CreateDIDDocument(ctx context.Context, didDoc *mo
 		return errors.New("you need to log in before performing any operations")
 	}
 
-	res, err := c.client.SendRequest(http.MethodPost, "/v1/did", httpsecure.WithJSONBody(didDoc))
+	res, err := c.client.SendRequest(ctx, http.MethodPost, "/v1/did", httpsecure.WithJSONBody(didDoc))
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (c *MetaLockerHTTPCaller) ListDIDDocuments(ctx context.Context) ([]*model.D
 	}
 
 	var iidList []*model.DIDDocument
-	err := c.client.LoadContents(http.MethodGet, "/v1/admin/did", nil, &iidList)
+	err := c.client.LoadContents(ctx, http.MethodGet, "/v1/admin/did", nil, &iidList)
 	if err != nil {
 		return nil, err
 	} else {
@@ -75,12 +75,12 @@ func (c *MetaLockerHTTPCaller) ListDIDDocuments(ctx context.Context) ([]*model.D
 	}
 }
 
-func (c *MetaLockerHTTPCaller) AdminStoreIdentity(didDoc *model.DIDDocument) error {
+func (c *MetaLockerHTTPCaller) AdminStoreIdentity(ctx context.Context, didDoc *model.DIDDocument) error {
 	if !c.client.IsAuthenticated() {
 		return errors.New("you need to log in before performing any operations")
 	}
 
-	res, err := c.client.SendRequest(http.MethodPost, "/v1/admin/did", httpsecure.WithJSONBody(didDoc))
+	res, err := c.client.SendRequest(ctx, http.MethodPost, "/v1/admin/did", httpsecure.WithJSONBody(didDoc))
 	if err != nil {
 		return err
 	}

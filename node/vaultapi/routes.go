@@ -15,12 +15,13 @@
 package vaultapi
 
 import (
+	"context"
 	"github.com/gin-gonic/gin"
 	"github.com/piprate/metalocker/vaults"
 )
 
-func InitRoutes(vaultGrp *gin.RouterGroup, lbm *vaults.LocalBlobManager) {
-	vaultMap, _ := lbm.GetVaultMap()
+func InitRoutes(ctx context.Context, vaultGrp *gin.RouterGroup, lbm *vaults.LocalBlobManager) {
+	vaultMap, _ := lbm.GetVaultMap(ctx)
 	for _, prop := range vaultMap {
 		vault, err := lbm.GetVault(prop.ID)
 		if err != nil {
