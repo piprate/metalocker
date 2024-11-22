@@ -115,7 +115,7 @@ func (c *MetaLockerHTTPCaller) SecureClient() *httpsecure.Client {
 	return c.client
 }
 
-func (c *MetaLockerHTTPCaller) NewInstance(email, passphrase string, isHash bool) (wallet.NodeClient, error) {
+func (c *MetaLockerHTTPCaller) NewInstance(ctx context.Context, email, passphrase string, isHash bool) (wallet.NodeClient, error) {
 	if isHash {
 		return nil, errors.New("can't acquire new caller using passphrase hash")
 	}
@@ -127,7 +127,7 @@ func (c *MetaLockerHTTPCaller) NewInstance(email, passphrase string, isHash bool
 		client: &newClient,
 	}
 
-	err := newCaller.LoginWithCredentials(email, passphrase)
+	err := newCaller.LoginWithCredentials(ctx, email, passphrase)
 	if err != nil {
 		log.Err(err).Str("user", email).Msg("Authentication failed")
 		return nil, err
@@ -167,7 +167,7 @@ func (c *MetaLockerHTTPCaller) LoginWithJWT(jwtToken string) error {
 	return nil
 }
 
-func (c *MetaLockerHTTPCaller) LoginWithCredentials(email string, password string) error {
+func (c *MetaLockerHTTPCaller) LoginWithCredentials(ctx context.Context, email string, password string) error {
 	// logout before trying to log in
 	c.Logout()
 
@@ -175,8 +175,6 @@ func (c *MetaLockerHTTPCaller) LoginWithCredentials(email string, password strin
 		Username: email,
 		Password: account.HashUserPassword(password),
 	}
-
-	ctx := context.Background()
 
 	res, err := c.client.SendRequest(ctx, http.MethodPost, "/v1/authenticate",
 		httpsecure.WithJSONBody(loginForm),

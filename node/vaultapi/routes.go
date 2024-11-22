@@ -16,6 +16,7 @@ package vaultapi
 
 import (
 	"context"
+
 	"github.com/gin-gonic/gin"
 	"github.com/piprate/metalocker/vaults"
 )
@@ -30,10 +31,10 @@ func InitRoutes(ctx context.Context, vaultGrp *gin.RouterGroup, lbm *vaults.Loca
 
 		v := vaultGrp.Group(vault.ID())
 
-		v.POST("/raw", PostStoreRaw(vault))
-		v.POST("/encrypt", PostStoreEncrypt(vault))
-		v.POST("/serve", PostServeBlobHandler(vault))
-		v.POST("/purge", PostPurge(vault))
+		v.POST("/raw", PostStoreRaw(vault))           //nolint:contextcheck
+		v.POST("/encrypt", PostStoreEncrypt(vault))   //nolint:contextcheck
+		v.POST("/serve", PostServeBlobHandler(vault)) //nolint:contextcheck
+		v.POST("/purge", PostPurge(vault))            //nolint:contextcheck
 	}
 
 	vaultGrp.GET("/list", GetVaultListHandler(vaultMap))

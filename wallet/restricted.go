@@ -174,7 +174,7 @@ func (r *RestrictedNodeClient) BlobManager() model.BlobManager {
 	return r.nodeClient.BlobManager()
 }
 
-func (r *RestrictedNodeClient) NewInstance(email, passphrase string, isHash bool) (NodeClient, error) {
+func (r *RestrictedNodeClient) NewInstance(ctx context.Context, email, passphrase string, isHash bool) (NodeClient, error) {
 	return nil, ErrForbiddenOperation
 }
 

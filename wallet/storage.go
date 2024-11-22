@@ -29,7 +29,7 @@ type (
 		AccountBackend
 		Services
 
-		NewInstance(email, passphrase string, isHash bool) (NodeClient, error)
+		NewInstance(ctx context.Context, email, passphrase string, isHash bool) (NodeClient, error)
 		SubAccountInstance(subAccountID string) (NodeClient, error)
 	}
 

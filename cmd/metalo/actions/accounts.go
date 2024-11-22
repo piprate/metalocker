@@ -523,7 +523,7 @@ func RecoverAccount(c *cli.Context) error {
 		return fmt.Errorf("failed to recover account: %w", err)
 	}
 
-	err = mlc.LoginWithCredentials(userID, newPassphrase)
+	err = mlc.LoginWithCredentials(c.Context, userID, newPassphrase)
 	if err != nil {
 		return err
 	}
@@ -610,7 +610,7 @@ func RecoverAccountSecondLevel(c *cli.Context) error {
 		return err
 	}
 
-	err = mlc.LoginWithCredentials(userID, newPassphrase)
+	err = mlc.LoginWithCredentials(c.Context, userID, newPassphrase)
 	if err != nil {
 		return err
 	}
@@ -647,7 +647,7 @@ func DeleteAccount(c *cli.Context) error {
 
 	mlc := CreateHTTPCaller(c)
 
-	err := mlc.LoginWithCredentials(user, password)
+	err := mlc.LoginWithCredentials(c.Context, user, password)
 	if err != nil {
 		log.Err(err).Str("user", user).Msg("Authentication failed")
 		return cli.Exit(err, AuthenticationFailed)

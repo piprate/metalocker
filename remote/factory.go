@@ -126,7 +126,7 @@ func (rf *Factory) RegisterAccount(ctx context.Context, acctTemplate *account.Ac
 		return nil, nil, err
 	}
 
-	if err = httpCaller.LoginWithCredentials(resp.Account.Email, passwd); err != nil {
+	if err = httpCaller.LoginWithCredentials(ctx, resp.Account.Email, passwd); err != nil {
 		log.Err(err).Msg("Login failed")
 		return nil, recDetails, err
 	}
@@ -194,7 +194,7 @@ func (rf *Factory) GetWalletWithAccessKey(ctx context.Context, apiKey, apiSecret
 
 func (rf *Factory) GetWalletWithCredentials(ctx context.Context, userID, secret string) (wallet.DataWallet, error) {
 	dw, err := rf.loadRemoteWallet(ctx, func(mlc *caller.MetaLockerHTTPCaller) error {
-		return mlc.LoginWithCredentials(userID, secret)
+		return mlc.LoginWithCredentials(ctx, userID, secret)
 	})
 	if err != nil {
 		return nil, err

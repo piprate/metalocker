@@ -1069,7 +1069,7 @@ func (dw *LocalDataWallet) ChangePassphrase(ctx context.Context, oldPassphrase, 
 		return nil, err
 	}
 
-	newNodeClient, err := dw.nodeClient.NewInstance(acct.Email, newPassphrase, isHash)
+	newNodeClient, err := dw.nodeClient.NewInstance(ctx, acct.Email, newPassphrase, isHash)
 	if err != nil {
 		return nil, err
 	}

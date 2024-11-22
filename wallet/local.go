@@ -209,7 +209,7 @@ func (lnc *LocalNodeClient) NotificationService() (notification.Service, error) 
 	return lnc.notificationService, nil
 }
 
-func (lnc *LocalNodeClient) NewInstance(email, passphrase string, isHash bool) (NodeClient, error) {
+func (lnc *LocalNodeClient) NewInstance(ctx context.Context, email, passphrase string, isHash bool) (NodeClient, error) {
 	return lnc, nil
 }
 
