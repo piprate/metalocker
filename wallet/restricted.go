@@ -136,10 +136,6 @@ func (r *RestrictedNodeClient) ListLockers(ctx context.Context) ([]*account.Data
 	panic("operation not implemented")
 }
 
-func (r *RestrictedNodeClient) ListLockerHashes(ctx context.Context) ([]string, error) {
-	panic("operation not implemented")
-}
-
 func (r *RestrictedNodeClient) StoreProperty(ctx context.Context, prop *account.DataEnvelope) error {
 	panic("operation not implemented")
 }

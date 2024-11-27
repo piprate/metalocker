@@ -663,6 +663,30 @@ var (
 			Action: ImportAccounts,
 		},
 		{
+			Name:   "export-backend-data",
+			Usage:  "Export data from an identity backend to the given directory",
+			Action: ExportBackendData,
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:  "config",
+					Value: "",
+					Usage: "path to MetaLocker configuration file",
+				},
+			},
+		},
+		{
+			Name:   "import-backend-data",
+			Usage:  "import a full set of identity backend data from the given directory",
+			Action: ImportBackendData,
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:  "config",
+					Value: "",
+					Usage: "path to MetaLocker configuration file",
+				},
+			},
+		},
+		{
 			Name:   "account-state",
 			Usage:  "update account state for the given ID (email or DID)",
 			Action: UpdateAccountState,

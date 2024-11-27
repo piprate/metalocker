@@ -19,6 +19,7 @@ import (
 
 	"github.com/piprate/metalocker/cmd/metalo/operations"
 	"github.com/piprate/metalocker/model/account"
+	"github.com/piprate/metalocker/utils"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 )
@@ -58,6 +59,46 @@ func ImportAccounts(c *cli.Context) error {
 	err = operations.ImportAccounts(c.Context, mlc, c.Args().Get(0))
 	if err != nil {
 		log.Err(err).Msg("Accounts import failed")
+		return cli.Exit(err, OperationFailed)
+	}
+
+	return nil
+}
+
+func ExportBackendData(c *cli.Context) error {
+	if c.Args().Len() != 1 {
+		return cli.Exit("please specify the path to data folder", InvalidParameter)
+	}
+	folderPath := utils.AbsPathify(c.Args().Get(0))
+
+	configFilePath := c.String("config")
+	if configFilePath == "" {
+		return cli.Exit("please specify the path to MetaLocker configuration file using --config flag", InvalidParameter)
+	}
+
+	err := operations.ExportBackendData(c.Context, folderPath, configFilePath)
+	if err != nil {
+		log.Err(err).Msg("Backend Data export failed")
+		return cli.Exit(err, OperationFailed)
+	}
+
+	return nil
+}
+
+func ImportBackendData(c *cli.Context) error {
+	if c.Args().Len() != 1 {
+		return cli.Exit("please specify the path to data folder", InvalidParameter)
+	}
+	folderPath := utils.AbsPathify(c.Args().Get(0))
+
+	configFilePath := c.String("config")
+	if configFilePath == "" {
+		return cli.Exit("please specify the path to MetaLocker configuration file using --config flag", InvalidParameter)
+	}
+
+	err := operations.ImportBackendData(c.Context, folderPath, configFilePath)
+	if err != nil {
+		log.Err(err).Msg("Backend Data import failed")
 		return cli.Exit(err, OperationFailed)
 	}
 
