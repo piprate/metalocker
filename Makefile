@@ -36,6 +36,9 @@ lint:
 test-cov: $(GOACC_BIN)
 	$(GOACC_BIN) ./...
 
+show-cov:
+	go tool cover -html=coverage.txt
+
 install-depu:
 	go install github.com/kevwan/depu@latest
 

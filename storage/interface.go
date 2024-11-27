@@ -45,8 +45,6 @@ type (
 		DIDBackend
 		AccountBackend
 		RecoveryBackend
-
-		IsNew() bool
 	}
 
 	DIDBackend interface {
@@ -76,7 +74,6 @@ type (
 		StoreLocker(ctx context.Context, accountID string, l *account.DataEnvelope) error
 		GetLocker(ctx context.Context, accountID string, hash string) (*account.DataEnvelope, error)
 		ListLockers(ctx context.Context, accountID string, lvl model.AccessLevel) ([]*account.DataEnvelope, error)
-		ListLockerHashes(ctx context.Context, accountID string, lvl model.AccessLevel) ([]string, error)
 
 		StoreProperty(ctx context.Context, accountID string, prop *account.DataEnvelope) error
 		GetProperty(ctx context.Context, accountID string, hash string) (*account.DataEnvelope, error)

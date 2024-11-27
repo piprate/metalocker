@@ -101,3 +101,4 @@ run:
 issues:
   exclude-dirs:
     - contexts
+    - storage/rdb/ent

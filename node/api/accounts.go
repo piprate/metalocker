@@ -269,7 +269,7 @@ func (h *AccountHandler) DeleteAccountHandler(c *gin.Context) {
 		return
 	}
 
-	err = h.identityBackend.DeleteAccount(c, accountID)
+	err = h.identityBackend.DeleteAccount(c, acct.ID)
 	if err != nil {
 		apibase.AbortWithError(c, http.StatusInternalServerError, err.Error())
 		return

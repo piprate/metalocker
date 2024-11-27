@@ -19,6 +19,9 @@ import (
 	"github.com/piprate/metalocker/cmd/metalo/datatypes/directory"
 	"github.com/piprate/metalocker/cmd/metalo/datatypes/file"
 	"github.com/piprate/metalocker/cmd/metalo/datatypes/graph"
+
+	_ "github.com/piprate/metalocker/storage/memory"
+	_ "github.com/piprate/metalocker/storage/rdb"
 )
 
 func init() {

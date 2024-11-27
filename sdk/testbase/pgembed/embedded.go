@@ -29,6 +29,8 @@ const (
 	Database = "metalocker"
 	Username = "metalocker"
 	Password = "password"
+
+	databaseURLTemplate = "postgres://" + Username + ":" + Password + "@localhost:%d/" + Database + "?sslmode=disable"
 )
 
 type TestTearDownFunc func(t *testing.T)
@@ -38,7 +40,7 @@ type TestTearDownFunc func(t *testing.T)
 // 		lsof -nP -iTCP:9876 | grep LISTEN
 // to find the offending process and kill it.
 
-func NewEmbeddedDatabase(t *testing.T, connStringTemplate string) (string, *embeddedPostgres.EmbeddedPostgres, string) {
+func NewEmbeddedDatabase(t *testing.T) (string, *embeddedPostgres.EmbeddedPostgres, string) {
 	t.Helper()
 
 	dir, err := os.MkdirTemp(".", "tempdir_edb_")
@@ -53,9 +55,9 @@ func NewEmbeddedDatabase(t *testing.T, connStringTemplate string) (string, *embe
 			Version(embeddedPostgres.V13).
 			RuntimePath(dir).
 			Port(port).
-			StartTimeout(15 * time.Second))
+			StartTimeout(5 * time.Second))
 		if err = database.Start(); err == nil {
-			connString := fmt.Sprintf(connStringTemplate, port)
+			connString := fmt.Sprintf(databaseURLTemplate, port)
 			return connString, database, dir
 		}
 		log.Warn().Uint32("port", port).Msg("Postgres port is taken, trying the next one...")

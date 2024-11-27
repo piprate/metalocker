@@ -16,7 +16,6 @@ package caller
 
 import (
 	"context"
-	"errors"
 
 	"github.com/piprate/metalocker/model/account"
 	"github.com/piprate/metalocker/storage"
@@ -32,8 +31,4 @@ func (c *MetaLockerHTTPCaller) GetLocker(ctx context.Context, hash string) (*acc
 
 func (c *MetaLockerHTTPCaller) ListLockers(ctx context.Context) ([]*account.DataEnvelope, error) {
 	return c.listDataEnvelopes(ctx, "locker")
-}
-
-func (c *MetaLockerHTTPCaller) ListLockerHashes(ctx context.Context) ([]string, error) {
-	return nil, errors.New("operation ListLockerHashes not implemented")
 }

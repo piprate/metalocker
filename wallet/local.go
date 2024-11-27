@@ -169,10 +169,6 @@ func (lnc *LocalNodeClient) ListLockers(ctx context.Context) ([]*account.DataEnv
 	return lnc.identityBackend.ListLockers(ctx, lnc.accountID, 0)
 }
 
-func (lnc *LocalNodeClient) ListLockerHashes(ctx context.Context) ([]string, error) {
-	return lnc.identityBackend.ListLockerHashes(ctx, lnc.accountID, 0)
-}
-
 func (lnc *LocalNodeClient) StoreProperty(ctx context.Context, prop *account.DataEnvelope) error {
 	return lnc.identityBackend.StoreProperty(ctx, lnc.accountID, prop)
 }
