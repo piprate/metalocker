@@ -19,27 +19,6 @@ var (
 	}
 )
 
-//func InitAerospikeBackend(cfg *koanf.Koanf, resolver cmdbase.ParameterResolver) (*aerospike.Persister, error) {
-//	if cfg.Exists("accountStore") {
-//		var backendCfg storage.IdentityBackendConfig
-//		err := cfg.Unmarshal("accountStore", &backendCfg)
-//		if err != nil {
-//			log.Err(err).Msg("Failed to read account storage configuration")
-//			return nil, cli.Exit(err, 1)
-//		}
-//
-//		identityBackend, err := aerospike.CreateIdentityBackend(backendCfg.Params, resolver)
-//		if err != nil {
-//			log.Err(err).Msg("Failed to create storage backend")
-//			return nil, cli.Exit(err, 1)
-//		}
-//
-//		return identityBackend.(*aerospike.Persister), nil
-//	} else {
-//		return nil, cli.Exit("account store not defined", 1)
-//	}
-//}
-
 func ExportBackendData(ctx context.Context, exportFolderPath, configFilePath string) error {
 
 	// read configuration
