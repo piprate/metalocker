@@ -57,7 +57,6 @@ type (
 		StoreLocker(ctx context.Context, l *account.DataEnvelope) error
 		GetLocker(ctx context.Context, hash string) (*account.DataEnvelope, error)
 		ListLockers(ctx context.Context) ([]*account.DataEnvelope, error)
-		ListLockerHashes(ctx context.Context) ([]string, error)
 
 		StoreProperty(ctx context.Context, prop *account.DataEnvelope) error
 		GetProperty(ctx context.Context, hash string) (*account.DataEnvelope, error)

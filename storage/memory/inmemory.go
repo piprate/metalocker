@@ -222,20 +222,6 @@ func (be *InMemoryBackend) ListLockers(ctx context.Context, accountID string, lv
 	return res, nil
 }
 
-func (be *InMemoryBackend) ListLockerHashes(ctx context.Context, accountID string, lvl model.AccessLevel) ([]string, error) {
-	acctMap, found := be.lockers[accountID]
-	if !found {
-		return []string{}, nil
-	}
-	res := make([]string, 0, len(acctMap))
-	for _, locker := range acctMap {
-		if lvl == 0 || locker.AccessLevel == lvl {
-			res = append(res, locker.Hash)
-		}
-	}
-	return res, nil
-}
-
 func (be *InMemoryBackend) StoreProperty(ctx context.Context, accountID string, prop *account.DataEnvelope) error {
 	acctMap, found := be.properties[accountID]
 	if !found {
