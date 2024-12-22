@@ -58,7 +58,7 @@ type (
 	}
 
 	BlockNotification struct {
-		Block    int64                 `json:"b"`
+		Block    uint64                `json:"b"`
 		Datasets []DatasetNotification `json:"ds"`
 	}
 
@@ -68,7 +68,7 @@ type (
 		IndexID() string
 		LockerConfigs() []*LockerConfig
 		ConsumeBlock(ctx context.Context, n BlockNotification) error
-		NotifyScanCompleted(topBlock int64) error
+		NotifyScanCompleted(topBlock uint64) error
 		InactiveSince() int64
 		Status() int
 		SetStatus(status int)
@@ -80,7 +80,7 @@ type (
 
 	LockerConfig struct {
 		KeyID        int    `json:"key"`
-		LastBlock    int64  `json:"last"`
+		LastBlock    uint64 `json:"last"`
 		PublicKeyStr string `json:"pubk"`
 
 		Subscription Subscription `json:"-"`
@@ -108,7 +108,7 @@ func NewScanner(ledgerAPI model.Ledger) *Scanner {
 	}
 }
 
-func (isu *Scanner) scanLedger(ctx context.Context, scannerList []*LockerConfig, startBlockNumber int64, endBlockNumber int64, blockBatchSize int) (int64, bool, error) {
+func (isu *Scanner) scanLedger(ctx context.Context, scannerList []*LockerConfig, startBlockNumber uint64, endBlockNumber uint64, blockBatchSize int) (uint64, bool, error) {
 	currentBlockNumber := startBlockNumber
 	firstBlockIndex := 0
 	earlyExit := false
@@ -117,7 +117,7 @@ AllBlocks:
 	for {
 		blocks, err := isu.ledgerAPI.GetChain(ctx, currentBlockNumber, blockBatchSize)
 		if err != nil {
-			return -1, false, err
+			return 0, false, err
 		}
 
 		if len(blocks) == 0 {
@@ -127,13 +127,13 @@ AllBlocks:
 		for _, b := range blocks[firstBlockIndex:] {
 			currentBlockNumber = b.Number
 
-			log.Debug().Int64("number", currentBlockNumber).Msg("Processing block")
+			log.Debug().Uint64("number", currentBlockNumber).Msg("Processing block")
 
 			states := make(map[string]*subscriptionState)
 
 			records, err := isu.ledgerAPI.GetBlockRecords(ctx, currentBlockNumber)
 			if err != nil {
-				return -1, false, err
+				return 0, false, err
 			}
 
 			for _, v := range records {
@@ -141,7 +141,7 @@ AllBlocks:
 				routingKey := base58.Decode(v[1])
 				idx64, err := strconv.ParseUint(v[2], 10, 32)
 				if err != nil {
-					return -1, false, err
+					return 0, false, err
 				}
 				idx := uint32(idx64)
 
@@ -156,7 +156,7 @@ AllBlocks:
 
 					k, err := cfg.publicKey.Derive(idx)
 					if err != nil {
-						return -1, false, err
+						return 0, false, err
 					}
 					recordPubKey, _ := k.ECPubKey()
 					indexKey := recordPubKey.SerializeCompressed()
@@ -171,7 +171,7 @@ AllBlocks:
 						// lazy-read record
 						lr, err = isu.ledgerAPI.GetRecord(ctx, rid)
 						if err != nil {
-							return -1, false, err
+							return 0, false, err
 						}
 					}
 
@@ -313,8 +313,8 @@ func (isu *Scanner) scanOneRound(ctx context.Context) (bool, bool, error) {
 	blockBatchSize := 10
 
 	complete := true
-	blockSeqNoList := make([]int64, 0)
-	blockToLockerConfigs := make(map[int64][]*LockerConfig)
+	blockSeqNoList := make([]uint64, 0)
+	blockToLockerConfigs := make(map[uint64][]*LockerConfig)
 	for _, indexID := range isu.subscriptionList {
 		sub := isu.subscriptions[indexID]
 		if sub.Status() == ScanStatusActive {
@@ -339,7 +339,7 @@ func (isu *Scanner) scanOneRound(ctx context.Context) (bool, bool, error) {
 		return false, false, err
 	}
 
-	var topBlockNumber int64 = -1
+	var topBlockNumber uint64
 	exitedEarly := false
 	for idx, blockNumber := range blockSeqNoList {
 
@@ -350,7 +350,7 @@ func (isu *Scanner) scanOneRound(ctx context.Context) (bool, bool, error) {
 
 		// pick the first block after the last scanned block
 		startBlockNumber := blockNumber + 1
-		endBlockNumber := int64(-1)
+		var endBlockNumber uint64
 		if idx < len(blockSeqNoList)-1 {
 			endBlockNumber = blockSeqNoList[idx+1]
 		}
@@ -358,7 +358,7 @@ func (isu *Scanner) scanOneRound(ctx context.Context) (bool, bool, error) {
 		accumulatedLockers = append(blockToLockerConfigs[blockNumber], accumulatedLockers...)
 
 		if len(accumulatedLockers) == 0 {
-			log.Warn().Int("idx", idx).Int64("start", startBlockNumber).Int64("end", endBlockNumber).
+			log.Warn().Int("idx", idx).Uint64("start", startBlockNumber).Uint64("end", endBlockNumber).
 				Msg("No lockers to sync in current round")
 			continue
 		}
@@ -379,7 +379,7 @@ func (isu *Scanner) scanOneRound(ctx context.Context) (bool, bool, error) {
 			accumulatedLockers = reducedScannerList
 		}
 
-		log.Debug().Int("idx", idx).Int64("start", startBlockNumber).Int64("end", endBlockNumber).
+		log.Debug().Int("idx", idx).Uint64("start", startBlockNumber).Uint64("end", endBlockNumber).
 			Int("lockerCount", len(accumulatedLockers)).Msg("Initiating new scanning round")
 
 		topBlockNumber, exitedEarly, err = isu.scanLedger(ctx, accumulatedLockers, startBlockNumber, endBlockNumber, blockBatchSize)
@@ -393,7 +393,7 @@ func (isu *Scanner) scanOneRound(ctx context.Context) (bool, bool, error) {
 
 	restart := false
 
-	if topBlockNumber >= 0 {
+	if topBlockNumber > 0 {
 		for _, indexID := range isu.subscriptionList {
 			sub := isu.subscriptions[indexID]
 			if err = sub.NotifyScanCompleted(topBlockNumber); err != nil {

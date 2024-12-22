@@ -74,7 +74,7 @@ func (dwi *Index) indexBucket(tx *bbolt.Tx, bucketID string) *bbolt.Bucket {
 	return b
 }
 
-func (dwi *Index) AddLease(ctx context.Context, ds model.DataSet, effectiveBlockNumber int64) error {
+func (dwi *Index) AddLease(ctx context.Context, ds model.DataSet, effectiveBlockNumber uint64) error {
 	defer measure.ExecTime("index.AddLease")()
 
 	r := ds.Record()
@@ -397,7 +397,7 @@ func (dwi *Index) AddLeaseRevocation(ctx context.Context, ds model.DataSet) erro
 	return nil
 }
 
-func (dwi *Index) UpdateTopBlock(ctx context.Context, blockNumber int64) error {
+func (dwi *Index) UpdateTopBlock(ctx context.Context, blockNumber uint64) error {
 	if blockNumber <= 0 {
 		return errors.New("no block ID provided when updating locker stats " +
 			"(maybe there were no new blocks processed?)")
@@ -749,7 +749,7 @@ func (dwi *Index) LockerStates(ctx context.Context) ([]index.LockerState, error)
 	return states, nil
 }
 
-func (dwi *Index) AddLockerState(ctx context.Context, accountID, lockerID string, firstBlock int64) error {
+func (dwi *Index) AddLockerState(ctx context.Context, accountID, lockerID string, firstBlock uint64) error {
 	defer measure.ExecTime("index.AddLockerState")()
 
 	found := false

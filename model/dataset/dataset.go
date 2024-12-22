@@ -29,7 +29,7 @@ type (
 		blobManager   model.BlobManager
 		record        *model.Record
 		lease         *model.Lease
-		blockNumber   int64
+		blockNumber   uint64
 		lockerID      string
 		participantID string
 		accessToken   string
@@ -59,7 +59,7 @@ func WithLoadOptions(options LoadOptions) LoadOption {
 	}
 }
 
-func NewDataSetImpl(r *model.Record, lease *model.Lease, blockNumber int64, lockerID, participantID string, blobManager model.BlobManager) *DataSetImpl {
+func NewDataSetImpl(r *model.Record, lease *model.Lease, blockNumber uint64, lockerID, participantID string, blobManager model.BlobManager) *DataSetImpl {
 	return &DataSetImpl{
 		record:        r,
 		lease:         lease,
@@ -70,7 +70,7 @@ func NewDataSetImpl(r *model.Record, lease *model.Lease, blockNumber int64, lock
 	}
 }
 
-func NewRevokedDataSetImpl(r *model.Record, blockNumber int64, lockerID, participantID string) *DataSetImpl {
+func NewRevokedDataSetImpl(r *model.Record, blockNumber uint64, lockerID, participantID string) *DataSetImpl {
 	return &DataSetImpl{
 		record:        r,
 		blockNumber:   blockNumber,
@@ -186,7 +186,7 @@ func (d *DataSetImpl) Record() *model.Record {
 	return d.record
 }
 
-func (d *DataSetImpl) BlockNumber() int64 {
+func (d *DataSetImpl) BlockNumber() uint64 {
 	return d.blockNumber
 }
 

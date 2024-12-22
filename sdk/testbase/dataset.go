@@ -30,7 +30,7 @@ import (
 type MockDataSet struct {
 	record        *model.Record
 	lease         *model.Lease
-	blockNumber   int64
+	blockNumber   uint64
 	lockerID      string
 	participantID string
 	meta          []byte
@@ -38,7 +38,7 @@ type MockDataSet struct {
 
 var _ model.DataSet = (*MockDataSet)(nil)
 
-func NewMockDataSet(r *model.Record, lease *model.Lease, blockNumber int64, lockerID, participantID string, meta any) *MockDataSet {
+func NewMockDataSet(r *model.Record, lease *model.Lease, blockNumber uint64, lockerID, participantID string, meta any) *MockDataSet {
 	ds := &MockDataSet{
 		record:        r,
 		lease:         lease,
@@ -106,7 +106,7 @@ func (d *MockDataSet) Record() *model.Record {
 	return d.record
 }
 
-func (d *MockDataSet) BlockNumber() int64 {
+func (d *MockDataSet) BlockNumber() uint64 {
 	return d.blockNumber
 }
 

@@ -480,7 +480,7 @@ func (cc *CheckingConsumer) ConsumeBlock(ctx context.Context, indexID string, pa
 	return nil
 }
 
-func (cc *CheckingConsumer) NotifyScanCompleted(block int64) error {
+func (cc *CheckingConsumer) NotifyScanCompleted(block uint64) error {
 	return nil
 }
 

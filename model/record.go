@@ -127,7 +127,7 @@ const (
 
 type RecordState struct {
 	Status      RecordStatus `json:"status"`
-	BlockNumber int64        `json:"number"`
+	BlockNumber uint64       `json:"number"`
 }
 
 func (r *Record) Seal(pk *btcec.PrivateKey) error {

@@ -35,7 +35,7 @@ func ExportLedger(ctx context.Context, ledger model.Ledger, offChainStorage mode
 	if err != nil {
 		return err
 	}
-	log.Info().Int64("number", tb.Number).Msg("Top block")
+	log.Info().Uint64("number", tb.Number).Msg("Top block")
 
 	currentBlock := gb.Number
 	blockBatchSize := 10
@@ -83,9 +83,9 @@ func ExportLedger(ctx context.Context, ledger model.Ledger, offChainStorage mode
 }
 
 func SaveBlock(ctx context.Context, ledger model.Ledger, offChainStorage model.OffChainStorage, basePath string, b *model.Block) error {
-	log.Info().Int64("number", b.Number).Msg("Saving block")
+	log.Info().Uint64("number", b.Number).Msg("Saving block")
 
-	dest := path.Join(basePath, utils.Int64ToString(b.Number))
+	dest := path.Join(basePath, utils.Uint64ToString(b.Number))
 	err := os.MkdirAll(dest, 0o700)
 	if err != nil {
 		return err

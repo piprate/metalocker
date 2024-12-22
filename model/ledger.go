@@ -73,12 +73,12 @@ type (
 		// behind the record was revoked.
 		GetRecordState(ctx context.Context, rid string) (*RecordState, error)
 		// GetBlock returns a block definition for the given block number.
-		GetBlock(ctx context.Context, bn int64) (*Block, error)
+		GetBlock(ctx context.Context, bn uint64) (*Block, error)
 		// GetBlockRecords returns a list of all ledger records included
 		// in the block as an array of arrays of strings:
 		//     [record_id, routing_key, key_index]*
 		// Returns ErrBlockNotFound error if block was not found.
-		GetBlockRecords(ctx context.Context, bn int64) ([][]string, error)
+		GetBlockRecords(ctx context.Context, bn uint64) ([][]string, error)
 		// GetGenesisBlock returns the definition of the genesis block.
 		// If there is no genesis block yet, it will return nil as a block.
 		GetGenesisBlock(ctx context.Context) (*Block, error)
@@ -87,7 +87,7 @@ type (
 		GetTopBlock(ctx context.Context) (*Block, error)
 		// GetChain returns a sequence of block definitions of
 		// the given length (depth), starting from the given block id
-		GetChain(ctx context.Context, startNumber int64, depth int) ([]*Block, error)
+		GetChain(ctx context.Context, startNumber uint64, depth int) ([]*Block, error)
 		// GetDataAssetState returns the state of the given data asset. Returns
 		// ErrDataAssetNotFound error if data asset not found.
 		GetDataAssetState(ctx context.Context, id string) (DataAssetState, error)
@@ -104,5 +104,5 @@ const (
 
 type NewBlockMessage struct {
 	Type   string `json:"type"`
-	Number int64  `json:"number"`
+	Number uint64 `json:"number"`
 }

@@ -404,7 +404,7 @@ var (
 	managedLevels = []model.AccessLevel{model.AccessLevelManaged}
 )
 
-func (c *consumer) NotifyScanCompleted(topBlock int64) error {
+func (c *consumer) NotifyScanCompleted(topBlock uint64) error {
 	ctx := context.Background()
 
 	if topBlock > 0 {

@@ -40,7 +40,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func createPersona(name, idType string, firstBlock int64) (*account.Identity, error) {
+func createPersona(name, idType string, firstBlock uint64) (*account.Identity, error) {
 	did, err := model.GenerateDID()
 	if err != nil {
 		return nil, err

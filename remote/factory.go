@@ -87,7 +87,7 @@ func NewWalletFactory(url string, indexClientSourceFn IndexClientSourceFn, accou
 	return rf, nil
 }
 
-func (rf *Factory) GetTopBlock() (int64, error) {
+func (rf *Factory) GetTopBlock() (uint64, error) {
 	controls, err := rf.httpCaller.GetServerControls(context.Background())
 	if err != nil {
 		return 0, err

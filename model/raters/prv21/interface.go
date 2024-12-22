@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	NoBlockNumber int64 = -1
+	NoBlockNumber uint64 = 0
 )
 
 type (
@@ -30,17 +30,17 @@ type (
 	// to algorithmically identify the "current" revision of the given variant, as well
 	// as its current revision at a given block height.
 	Rater interface {
-		AddRevision(ctx context.Context, ds model.DataSet, effectiveBlockNumber int64) (bool, error)
+		AddRevision(ctx context.Context, ds model.DataSet, effectiveBlockNumber uint64) (bool, error)
 		AddRevocation(ctx context.Context, rid string) error
 		Head(ctx context.Context) string
-		HeadAt(ctx context.Context, blockID int64) string
+		HeadAt(ctx context.Context, blockID uint64) string
 	}
 
 	Revision interface {
 		RecordID() string
 		Status() model.RecordStatus
-		Block() int64
-		EffectiveBlock() int64
+		Block() uint64
+		EffectiveBlock() uint64
 		Locker() string
 		Participant() string
 		AssetID() string
@@ -48,20 +48,20 @@ type (
 		ImpressionID() string
 		RevisionNumber() int64
 		CreatedAt() time.Time
-		HeadFrom() int64
-		HeadTo() int64
+		HeadFrom() uint64
+		HeadTo() uint64
 	}
 
 	RevisionStore interface {
 		Head(ctx context.Context, variantID string) (Revision, error)
-		HeadAt(ctx context.Context, variantID string, blockNumber int64) (Revision, error)
+		HeadAt(ctx context.Context, variantID string, blockNumber uint64) (Revision, error)
 		Revision(ctx context.Context, rid string) (Revision, error)
-		CreateRevision(ctx context.Context, ds model.DataSet, effectiveBlockNumber int64,
-			headFrom, headTo int64) error
+		CreateRevision(ctx context.Context, ds model.DataSet, effectiveBlockNumber uint64,
+			headFrom, headTo uint64) error
 		UpdateRevision(ctx context.Context, rid string, status model.RecordStatus,
-			headFrom, headTo int64) error
+			headFrom, headTo uint64) error
 		RevokeRevision(ctx context.Context, rid string) error
-		SaveRevokedRevision(ctx context.Context, ds model.DataSet, effectiveBlockNumber int64) error
+		SaveRevokedRevision(ctx context.Context, ds model.DataSet, effectiveBlockNumber uint64) error
 		DataSet(ctx context.Context, rid string) (model.DataSet, error)
 	}
 )

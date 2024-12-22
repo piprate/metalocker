@@ -45,8 +45,8 @@ type (
 		ID         string `json:"id"`
 		IndexID    string `json:"indexID"`
 		AccountID  string `json:"accountID"`
-		FirstBlock int64  `json:"firstBlock,omitempty"`
-		TopBlock   int64  `json:"topBlock,omitempty"`
+		FirstBlock uint64 `json:"firstBlock,omitempty"`
+		TopBlock   uint64 `json:"topBlock,omitempty"`
 	}
 
 	Properties struct {
@@ -81,10 +81,10 @@ type (
 		ID() string
 
 		LockerStates(ctx context.Context) ([]LockerState, error)
-		AddLockerState(ctx context.Context, accountID, lockerID string, firstBlock int64) error
-		AddLease(ctx context.Context, ds model.DataSet, effectiveBlockNumber int64) error
+		AddLockerState(ctx context.Context, accountID, lockerID string, firstBlock uint64) error
+		AddLease(ctx context.Context, ds model.DataSet, effectiveBlockNumber uint64) error
 		AddLeaseRevocation(ctx context.Context, ds model.DataSet) error
-		UpdateTopBlock(ctx context.Context, blockNumber int64) error
+		UpdateTopBlock(ctx context.Context, blockNumber uint64) error
 	}
 
 	StoreProperties struct {

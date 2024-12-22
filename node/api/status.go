@@ -27,7 +27,7 @@ type ServerControls struct {
 	MaintenanceMode  bool   `json:"maintenanceMode"`
 	JWTPublicKey     string `json:"jwtPublicKey"`
 	GenesisBlockHash string `json:"genesis"`
-	TopBlock         int64  `json:"top"`
+	TopBlock         uint64 `json:"top"`
 }
 
 func GetStatusHandler(controls *ServerControls, ledger model.Ledger) func(c *gin.Context) {

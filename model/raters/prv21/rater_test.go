@@ -30,8 +30,8 @@ type (
 	MockRevision struct {
 		recordID       string
 		status         model.RecordStatus
-		block          int64
-		effectiveBlock int64
+		block          uint64
+		effectiveBlock uint64
 		locker         string
 		participant    string
 		assetID        string
@@ -39,8 +39,8 @@ type (
 		impressionID   string
 		revisionNumber int64
 		createdAt      time.Time
-		headFrom       int64
-		headTo         int64
+		headFrom       uint64
+		headTo         uint64
 	}
 
 	MockRevisionStore struct {
@@ -59,11 +59,11 @@ func (r *MockRevision) Status() model.RecordStatus {
 	return r.status
 }
 
-func (r *MockRevision) Block() int64 {
+func (r *MockRevision) Block() uint64 {
 	return r.block
 }
 
-func (r *MockRevision) EffectiveBlock() int64 {
+func (r *MockRevision) EffectiveBlock() uint64 {
 	return r.effectiveBlock
 }
 
@@ -95,15 +95,15 @@ func (r *MockRevision) CreatedAt() time.Time {
 	return r.createdAt
 }
 
-func (r *MockRevision) HeadFrom() int64 {
+func (r *MockRevision) HeadFrom() uint64 {
 	return r.headFrom
 }
 
-func (r *MockRevision) HeadTo() int64 {
+func (r *MockRevision) HeadTo() uint64 {
 	return r.headTo
 }
 
-func (r *MockRevision) Update(status model.RecordStatus, headFrom, headTo int64) {
+func (r *MockRevision) Update(status model.RecordStatus, headFrom, headTo uint64) {
 	r.status = status
 	r.headFrom = headFrom
 	r.headTo = headTo
@@ -126,7 +126,7 @@ func (m *MockRevisionStore) Head(ctx context.Context, variantID string) (Revisio
 	return nil, model.ErrRecordNotFound
 }
 
-func (m *MockRevisionStore) HeadAt(ctx context.Context, variantID string, blockNumber int64) (Revision, error) {
+func (m *MockRevisionStore) HeadAt(ctx context.Context, variantID string, blockNumber uint64) (Revision, error) {
 	for _, rev := range m.revisions {
 		if rev.VariantID() == variantID &&
 			rev.HeadFrom() <= blockNumber &&
@@ -145,7 +145,7 @@ func (m *MockRevisionStore) Revision(ctx context.Context, rid string) (Revision,
 	return rev, nil
 }
 
-func (m *MockRevisionStore) CreateRevision(ctx context.Context, ds model.DataSet, effectiveBlockNumber int64, headFrom, headTo int64) error {
+func (m *MockRevisionStore) CreateRevision(ctx context.Context, ds model.DataSet, effectiveBlockNumber uint64, headFrom, headTo uint64) error {
 	imp := ds.Impression()
 	varID := imp.GetVariantID()
 	revNum := imp.Revision()
@@ -170,7 +170,7 @@ func (m *MockRevisionStore) CreateRevision(ctx context.Context, ds model.DataSet
 	return nil
 }
 
-func (m *MockRevisionStore) UpdateRevision(ctx context.Context, rid string, status model.RecordStatus, headFrom, headTo int64) error {
+func (m *MockRevisionStore) UpdateRevision(ctx context.Context, rid string, status model.RecordStatus, headFrom, headTo uint64) error {
 	rev, found := m.revisions[rid]
 	if !found {
 		return model.ErrRecordNotFound
@@ -192,7 +192,7 @@ func (m *MockRevisionStore) RevokeRevision(ctx context.Context, rid string) erro
 	return nil
 }
 
-func (m *MockRevisionStore) SaveRevokedRevision(ctx context.Context, ds model.DataSet, effectiveBlockNumber int64) error {
+func (m *MockRevisionStore) SaveRevokedRevision(ctx context.Context, ds model.DataSet, effectiveBlockNumber uint64) error {
 	panic("not implemented")
 }
 

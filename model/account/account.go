@@ -403,7 +403,7 @@ type accountOptions struct {
 	masterNode             slip10.Node
 	didMethod              string
 	rootIdentity           *model.DID
-	firstBlock             int64
+	firstBlock             uint64
 	entropyFunc            EntropyFunction
 	secondLevelRecoveryKey []byte
 	log                    *zerolog.Logger
@@ -476,7 +476,7 @@ func WithRootIdentity(rootIdentity *model.DID) Option {
 	}
 }
 
-func WithFirstBlock(firstBlock int64) Option {
+func WithFirstBlock(firstBlock uint64) Option {
 	return func(opts *accountOptions) error {
 		opts.firstBlock = firstBlock
 		return nil

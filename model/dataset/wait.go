@@ -25,7 +25,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func WaitForConfirmation(ctx context.Context, ledger model.Ledger, ns notification.Service, interval, timeout time.Duration, recordID ...string) (int64, error) {
+func WaitForConfirmation(ctx context.Context, ledger model.Ledger, ns notification.Service, interval, timeout time.Duration, recordID ...string) (uint64, error) {
 
 	if len(recordID) == 0 {
 		// fast exit if there's nothing to wait for
@@ -41,7 +41,7 @@ func WaitForConfirmation(ctx context.Context, ledger model.Ledger, ns notificati
 
 	// check if all the previous record got published
 	if len(recordID) > 1 {
-		blockNumber = 0
+		var blockNumber uint64 = 0
 		for _, rid := range recordID[0 : len(recordID)-1] {
 			currentState, err := ledger.GetRecordState(ctx, rid)
 			if err != nil {
@@ -65,7 +65,7 @@ func WaitForConfirmation(ctx context.Context, ledger model.Ledger, ns notificati
 	return blockNumber, nil
 }
 
-func waitForOneRecord(ctx context.Context, ledger model.Ledger, ns notification.Service, interval, timeout time.Duration, recordID string) (int64, error) {
+func waitForOneRecord(ctx context.Context, ledger model.Ledger, ns notification.Service, interval, timeout time.Duration, recordID string) (uint64, error) {
 
 	var blockCh chan any
 

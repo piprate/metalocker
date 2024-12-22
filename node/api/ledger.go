@@ -104,7 +104,7 @@ func (h *LedgerHandler) GetLedgerChainHandler(c *gin.Context) {
 		return
 	}
 
-	startBlockNumber, err := strconv.ParseInt(startBlockNumberStr, 10, 0)
+	startBlockNumber, err := strconv.ParseUint(startBlockNumberStr, 10, 0)
 	if err != nil {
 		log.Err(err).Str("number", startBlockNumberStr).Msg("Error when parsing start block number")
 		_ = c.AbortWithError(http.StatusBadRequest, err)
@@ -143,7 +143,7 @@ func (h *LedgerHandler) GetLedgerBlockHandler(c *gin.Context) {
 		return
 	}
 
-	blockNumber, err := strconv.ParseInt(blockNumberStr, 10, 0)
+	blockNumber, err := strconv.ParseUint(blockNumberStr, 10, 0)
 	if err != nil {
 		log.Err(err).Str("number", blockNumberStr).Msg("Error when parsing block number")
 		_ = c.AbortWithError(http.StatusBadRequest, err)
@@ -170,7 +170,7 @@ func (h *LedgerHandler) GetLedgerBlockRecordsHandler(c *gin.Context) {
 		return
 	}
 
-	blockNumber, err := strconv.ParseInt(blockNumberStr, 10, 0)
+	blockNumber, err := strconv.ParseUint(blockNumberStr, 10, 0)
 	if err != nil {
 		log.Err(err).Str("number", blockNumberStr).Msg("Error when parsing block number")
 		_ = c.AbortWithError(http.StatusBadRequest, err)
