@@ -42,9 +42,9 @@ func ImportLedger(ctx context.Context, ledger model.Ledger, offChainStorage mode
 		return err
 	}
 
-	var i int64
+	var i uint64
 	for i = 0; i <= tb.Number; i++ {
-		blockPath := path.Join(dest, utils.Int64ToString(i))
+		blockPath := path.Join(dest, utils.Uint64ToString(i))
 
 		if importOperations {
 			if err := filepath.Walk(path.Join(blockPath, "operations"), func(filePath string, f os.FileInfo, err error) error {

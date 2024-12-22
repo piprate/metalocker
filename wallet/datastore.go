@@ -84,7 +84,7 @@ func (c *localStoreImpl) getRootIndexRecord(ctx context.Context, id string) (*in
 	return rec, nil
 }
 
-type recordProcessor func(blockNumber int64, lockerID, participantID string, symKey *model.AESKey) error
+type recordProcessor func(blockNumber uint64, lockerID, participantID string, symKey *model.AESKey) error
 
 func (c *localStoreImpl) processRecord(ctx context.Context, lr *model.Record, suggestedLockerID string, fn recordProcessor) error {
 	rec, err := c.getRootIndexRecord(ctx, lr.ID)
@@ -93,7 +93,7 @@ func (c *localStoreImpl) processRecord(ctx context.Context, lr *model.Record, su
 	}
 
 	var (
-		blockNumber   int64
+		blockNumber   uint64
 		lockerID      string
 		participantID string
 		publicKey     *btcec.PublicKey
@@ -206,7 +206,7 @@ func (c *localStoreImpl) Load(ctx context.Context, recordID string, opts ...data
 	}
 
 	var ds model.DataSet
-	err = c.processRecord(ctx, rec, options.LockerID, func(blockNumber int64, lockerID, participantID string, symKey *model.AESKey) error {
+	err = c.processRecord(ctx, rec, options.LockerID, func(blockNumber uint64, lockerID, participantID string, symKey *model.AESKey) error {
 		opRecBytes, err := c.offChainStorage.GetOperation(ctx, rec.OperationAddress)
 		if err != nil {
 			if rec.Status == model.StatusRevoked {
@@ -593,7 +593,7 @@ func (c *localStoreImpl) AssetHead(ctx context.Context, headID string, opts ...d
 	}
 
 	var recordID string
-	err = c.processRecord(ctx, headRec, options.LockerID, func(blockNumber int64, lockerID, participantID string, symKey *model.AESKey) error {
+	err = c.processRecord(ctx, headRec, options.LockerID, func(blockNumber uint64, lockerID, participantID string, symKey *model.AESKey) error {
 		headBodyBytes, err := base64.StdEncoding.DecodeString(headRec.HeadBody)
 		if err != nil {
 			return err

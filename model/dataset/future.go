@@ -69,7 +69,7 @@ func (f *recordFutureImpl) Wait(timeout time.Duration) error {
 		return f.err
 	}
 
-	var blockNumber int64
+	var blockNumber uint64
 	blockNumber, f.err = WaitForConfirmation(f.ctx, f.ledger, f.ns, time.Second, timeout, f.waitList...)
 	f.ready = true
 

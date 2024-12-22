@@ -84,7 +84,7 @@ func TestGenerateLocker(t *testing.T) {
 	assert.Equal(t, "Test Locker", locker.Name)
 	assert.Equal(t, AccessLevelHosted, locker.AccessLevel)
 	assert.Equal(t, &expiryTime, locker.Expires)
-	assert.Equal(t, int64(123), locker.FirstBlock)
+	assert.Equal(t, uint64(123), locker.FirstBlock)
 	assert.NotNil(t, locker.Participants)
 	assert.Equal(t, 2, len(locker.Participants))
 	assert.Equal(t, did1.ID, locker.Participants[0].ID)

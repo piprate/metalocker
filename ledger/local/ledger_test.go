@@ -100,5 +100,5 @@ func TestBoltLedger_SaveRecord(t *testing.T) {
 	rs, err := bl.GetRecordState(ctx, "xx")
 	require.NoError(t, err)
 	assert.Equal(t, model.StatusPending, rs.Status)
-	assert.Equal(t, int64(0), rs.BlockNumber)
+	assert.Equal(t, uint64(0), rs.BlockNumber)
 }

@@ -54,7 +54,7 @@ type (
 		RootPrivateKeyEnc string `json:"encryptedRootPrivateKey,omitempty"`
 		// AcceptedAtBlock is the number of the block when the locker was accepted by the party
 		// and registered in its root locker.
-		AcceptedAtBlock int64 `json:"acceptedAtBlock,omitempty"`
+		AcceptedAtBlock uint64 `json:"acceptedAtBlock,omitempty"`
 
 		rootKeyPriv       *hdkeychain.ExtendedKey
 		rootKeyPub        *hdkeychain.ExtendedKey
@@ -82,14 +82,14 @@ type (
 		Sealed *time.Time `json:"sealed,omitempty"`
 		// FirstBlock is the block number that was the height of the chain when the locker was created.
 		// It is guaranteed that all records for this locker will be in blocks AFTER this block.
-		FirstBlock int64 `json:"firstBlock"`
+		FirstBlock uint64 `json:"firstBlock"`
 		// LastBlock is the block number that was the height of the chain when the locker was sealed.
 		// It is guaranteed that all records for this locker will be in blocks BEFORE this block.
 		// NOT SUPPORTED.
-		LastBlock int64 `json:"lastBlock,omitempty"`
+		LastBlock uint64 `json:"lastBlock,omitempty"`
 		// ThirdPartyAcceptedAtBlock is the number of the block when the locker was accepted by the owner
 		// when the owner acts as a third party (is not a participant on the locker)
-		ThirdPartyAcceptedAtBlock int64 `json:"acceptedAtBlock,omitempty"`
+		ThirdPartyAcceptedAtBlock uint64 `json:"acceptedAtBlock,omitempty"`
 	}
 )
 
@@ -257,7 +257,7 @@ func (l *Locker) GetParticipant(participantID string) *LockerParticipant {
 	return nil
 }
 
-func (l *Locker) AcceptedAtBlock() int64 {
+func (l *Locker) AcceptedAtBlock() uint64 {
 	us := l.Us()
 	if us != nil && us.AcceptedAtBlock != 0 {
 		return us.AcceptedAtBlock
@@ -266,7 +266,7 @@ func (l *Locker) AcceptedAtBlock() int64 {
 	}
 }
 
-func (l *Locker) SetAcceptedAtBlock(block int64) {
+func (l *Locker) SetAcceptedAtBlock(block uint64) {
 	us := l.Us()
 	if us != nil {
 		us.AcceptedAtBlock = block
@@ -522,7 +522,7 @@ func Them(did *DID, seed []byte) PartyOption {
 	return withParty(did, seed, false)
 }
 
-func GenerateLocker(accessLevel AccessLevel, name string, expires *time.Time, firstBlock int64,
+func GenerateLocker(accessLevel AccessLevel, name string, expires *time.Time, firstBlock uint64,
 	parties ...PartyOption) (*Locker, error) {
 
 	participants := make([]*LockerParticipant, len(parties))

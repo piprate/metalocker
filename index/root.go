@@ -34,7 +34,7 @@ type (
 		Status        model.RecordStatus `json:"status"`
 		LockerID      string             `json:"locker"`
 		ParticipantID string             `json:"participant"`
-		BlockNumber   int64              `json:"blockNumber"`
+		BlockNumber   uint64             `json:"blockNumber"`
 		Index         uint32             `json:"index"`
 		ImpressionID  string             `json:"impression,omitempty"`
 		ContentType   string             `json:"contentType,omitempty"`
@@ -55,7 +55,7 @@ type (
 		Status         model.RecordStatus `json:"status"`
 		LockerID       string             `json:"locker"`
 		ParticipantID  string             `json:"participant"`
-		BlockNumber    int64              `json:"block"`
+		BlockNumber    uint64             `json:"block"`
 		Index          uint32             `json:"index"`
 		AssetID        string             `json:"asset"`
 		ImpressionID   string             `json:"imp"`

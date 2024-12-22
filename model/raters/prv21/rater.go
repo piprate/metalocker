@@ -38,12 +38,12 @@ func NewRater(variantID string, store RevisionStore) Rater {
 	return r
 }
 
-func (r *RaterImpl) AddRevision(ctx context.Context, ds model.DataSet, effectiveBlockNumber int64) (bool, error) {
+func (r *RaterImpl) AddRevision(ctx context.Context, ds model.DataSet, effectiveBlockNumber uint64) (bool, error) {
 	imp := ds.Impression()
 	varID := imp.GetVariantID()
 	revNum := imp.Revision()
 
-	var headFrom int64
+	var headFrom uint64
 
 	var currentHead Revision
 	var err error
@@ -129,7 +129,7 @@ func (r *RaterImpl) AddRevocation(ctx context.Context, rid string) error {
 	return nil
 }
 
-func (r *RaterImpl) HeadAt(ctx context.Context, blockID int64) string {
+func (r *RaterImpl) HeadAt(ctx context.Context, blockID uint64) string {
 	head, err := r.store.HeadAt(ctx, r.variantID, blockID)
 	if err != nil {
 		return ""

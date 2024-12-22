@@ -62,7 +62,7 @@ type BoltLedger struct {
 var _ model.Ledger = (*BoltLedger)(nil)
 
 type LocalBlock struct {
-	Number     int64  `json:"number"`
+	Number     uint64 `json:"number"`
 	Hash       string `json:"hash"`
 	ParentHash string `json:"parentHash,omitempty"`
 	Nonce      string `json:"nonce,omitempty"`
@@ -226,8 +226,8 @@ func (bl *BoltLedger) GetRecordState(ctx context.Context, rid string) (*model.Re
 	}
 }
 
-func (bl *BoltLedger) GetBlock(ctx context.Context, bn int64) (*model.Block, error) {
-	blockKey := utils.Int64ToString(bn)
+func (bl *BoltLedger) GetBlock(ctx context.Context, bn uint64) (*model.Block, error) {
+	blockKey := utils.Uint64ToString(bn)
 	b, err := bl.client.FetchBytes(BlocksKey, blockKey)
 	if err != nil {
 		return nil, err
@@ -245,8 +245,8 @@ func (bl *BoltLedger) GetBlock(ctx context.Context, bn int64) (*model.Block, err
 	return &bb, nil
 }
 
-func (bl *BoltLedger) GetBlockRecords(ctx context.Context, bn int64) ([][]string, error) {
-	blockKey := utils.Int64ToString(bn)
+func (bl *BoltLedger) GetBlockRecords(ctx context.Context, bn uint64) ([][]string, error) {
+	blockKey := utils.Uint64ToString(bn)
 	resMap := make(map[int][]string)
 	err := bl.client.DB.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(BlockCompositionsKey))
@@ -255,7 +255,7 @@ func (bl *BoltLedger) GetBlockRecords(ctx context.Context, bn int64) ([][]string
 		}
 		b = b.Bucket([]byte(blockKey))
 		if b == nil {
-			log.Warn().Int64("number", bn).Msg("Block composition not found")
+			log.Warn().Uint64("number", bn).Msg("Block composition not found")
 			return nil
 		}
 
@@ -326,18 +326,18 @@ func (bl *BoltLedger) GetTopBlock(ctx context.Context) (*model.Block, error) {
 	return &bb, nil
 }
 
-func (bl *BoltLedger) GetChain(ctx context.Context, startNumber int64, depth int) ([]*model.Block, error) {
+func (bl *BoltLedger) GetChain(ctx context.Context, startNumber uint64, depth int) ([]*model.Block, error) {
 	result := make([]*model.Block, 0)
-	var i int64 = 0
+	var i uint64 = 0
 	err := bl.client.DB.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(BlocksKey))
 		if b == nil {
 			return fmt.Errorf("bucket %s not found", BlocksKey)
 		}
 
-		for ; i < int64(depth); i++ {
+		for ; i < uint64(depth); i++ {
 
-			val := b.Get([]byte(utils.Int64ToString(startNumber + i)))
+			val := b.Get([]byte(utils.Uint64ToString(startNumber + i)))
 
 			if val == nil {
 				break
@@ -502,7 +502,7 @@ func (bl *BoltLedger) OpenNewBlockSession() (string, error) {
 	return curSessionID, nil
 }
 
-func (bl *BoltLedger) updateRecordState(tx *bbolt.Tx, rid string, status model.RecordStatus, blockNumber int64) error {
+func (bl *BoltLedger) updateRecordState(tx *bbolt.Tx, rid string, status model.RecordStatus, blockNumber uint64) error {
 	b := tx.Bucket([]byte(RecordStatesKey))
 	if b == nil {
 		return fmt.Errorf("bucket %s not found", RecordStatesKey)
@@ -525,7 +525,7 @@ func (bl *BoltLedger) updateRecordState(tx *bbolt.Tx, rid string, status model.R
 	}
 
 	rs.Status = status
-	if blockNumber != -1 {
+	if blockNumber != 0 {
 		rs.BlockNumber = blockNumber
 	}
 
@@ -606,9 +606,9 @@ func (bl *BoltLedger) SubmitNewBlock(block *model.Block, records []*model.Record
 		return err
 	}
 
-	log.Info().Int64("number", block.Number).Msg("----==== NEW BLOCK ====----")
+	log.Info().Uint64("number", block.Number).Msg("----==== NEW BLOCK ====----")
 
-	blockKey := utils.Int64ToString(block.Number)
+	blockKey := utils.Uint64ToString(block.Number)
 
 	if err := bl.client.DB.Update(func(tx *bbolt.Tx) error {
 		if err = bl.client.UpdateInline(tx, BlocksKey, blockKey, bb); err != nil {
@@ -663,8 +663,8 @@ func (bl *BoltLedger) SubmitNewBlock(block *model.Block, records []*model.Record
 				}
 
 				// apply revocations
-				if err = bl.updateRecordState(tx, rec.SubjectRecord, model.StatusRevoked, -1); err != nil {
-					if err := bl.updateRecordState(tx, rec.ID, model.StatusFailed, -1); err != nil {
+				if err = bl.updateRecordState(tx, rec.SubjectRecord, model.StatusRevoked, 0); err != nil {
+					if err := bl.updateRecordState(tx, rec.ID, model.StatusFailed, 0); err != nil {
 						log.Err(err).Str("rid", rec.ID).Msg("Error when setting record status as failed")
 					}
 					continue
@@ -703,7 +703,7 @@ func (bl *BoltLedger) SubmitNewBlock(block *model.Block, records []*model.Record
 				}
 
 				if prevHeadRecordID != "" {
-					if err = bl.updateRecordState(tx, prevHeadRecordID, model.StatusRevoked, -1); err != nil {
+					if err = bl.updateRecordState(tx, prevHeadRecordID, model.StatusRevoked, 0); err != nil {
 						return err
 					}
 				}
@@ -885,7 +885,7 @@ func generateNewBlock(ctx context.Context, bl *BoltLedger, seed string) error {
 
 	// generate new block
 
-	var number int64 = 0
+	var number uint64 = 0
 	if prevBlock != nil {
 		prevBlockHash = prevBlock.Hash
 		number = prevBlock.Number + 1

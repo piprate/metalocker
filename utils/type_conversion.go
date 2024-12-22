@@ -50,6 +50,15 @@ func StringToInt64(v string) int64 {
 	return i
 }
 
+func Uint64ToString(v uint64) string {
+	return strconv.FormatUint(v, 10)
+}
+
+func StringToUint64(v string) uint64 {
+	i, _ := strconv.ParseUint(v, 10, 0)
+	return i
+}
+
 func Float64ToString(v float64) string {
 	return fmt.Sprintf("%1.15E", v)
 }

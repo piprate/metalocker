@@ -24,12 +24,12 @@ import (
 )
 
 type (
-	PartyLookup func(keyID int) (string, string, string, int64)
+	PartyLookup func(keyID int) (string, string, string, uint64)
 
 	IndexBlockConsumer interface {
 		SetSubscription(sub Subscription)
 		ConsumeBlock(ctx context.Context, indexID string, partyLookup PartyLookup, n BlockNotification) error
-		NotifyScanCompleted(block int64) error
+		NotifyScanCompleted(block uint64) error
 	}
 
 	IndexSubscription struct {
@@ -48,12 +48,12 @@ type (
 		ParticipantID   string
 		SharedSecret    string
 		PublicKeyStr    string
-		AcceptedAtBlock int64
+		AcceptedAtBlock uint64
 	}
 
 	LockerEntry struct {
 		Locker    *model.Locker
-		LastBlock int64
+		LastBlock uint64
 	}
 )
 
@@ -92,7 +92,7 @@ func (w *IndexSubscription) ConsumeBlock(ctx context.Context, n BlockNotificatio
 	return w.consumer.ConsumeBlock(ctx, w.indexID, w.partyLookup, n)
 }
 
-func (w *IndexSubscription) partyLookup(keyID int) (string, string, string, int64) {
+func (w *IndexSubscription) partyLookup(keyID int) (string, string, string, uint64) {
 	p, found := w.keys[keyID]
 	if !found {
 		log.Warn().Int("KeyID", keyID).Msg("Invalid key ID")
@@ -101,7 +101,7 @@ func (w *IndexSubscription) partyLookup(keyID int) (string, string, string, int6
 	return p.LockerID, p.ParticipantID, p.SharedSecret, p.AcceptedAtBlock
 }
 
-func (w *IndexSubscription) NotifyScanCompleted(topBlock int64) error {
+func (w *IndexSubscription) NotifyScanCompleted(topBlock uint64) error {
 	return w.consumer.NotifyScanCompleted(topBlock)
 }
 

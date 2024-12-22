@@ -547,7 +547,7 @@ func (dw *LocalDataWallet) getRootLockerID(level model.AccessLevel) string {
 	}
 }
 
-func (dw *LocalDataWallet) sendAccountUpdate(ctx context.Context, au *AccountUpdate, wait bool) (int64, error) {
+func (dw *LocalDataWallet) sendAccountUpdate(ctx context.Context, au *AccountUpdate, wait bool) (uint64, error) {
 	rootLockerID := dw.getRootLockerID(au.AccessLevel)
 	lb, err := dw.DataStore().NewDataSetBuilder(ctx, rootLockerID,
 		dataset.WithVault(dw.acct.DefaultVault))

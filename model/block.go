@@ -19,7 +19,7 @@ package model
 // Hash and ParentHash fields allow connecting a specific block
 // with the underlying block implementation.
 type Block struct {
-	Number     int64  `json:"number"`
+	Number     uint64 `json:"number"`
 	Hash       string `json:"hash"`
 	ParentHash string `json:"parentHash,omitempty"`
 }

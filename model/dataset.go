@@ -49,7 +49,7 @@ type DataSet interface {
 	// Record returns the dataset's record structure
 	Record() *Record
 	// BlockNumber returns the number (ID) of the block where the dataset's record appeared.
-	BlockNumber() int64
+	BlockNumber() uint64
 	// LockerID returns the ID of the locker that contains the dataset.
 	LockerID() string
 	// ParticipantID returns the ID (the corresponding identity's DID) of the locker participant
