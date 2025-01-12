@@ -20,8 +20,8 @@ import (
 	"github.com/btcsuite/btcd/btcutil/base58"
 )
 
-func HeadID(assetID string, lockerID string, sender *LockerParticipant, headName string) string {
-	data := strings.Join([]string{assetID, lockerID, sender.SharedSecret}, "|")
+func HeadID(assetID string, lockerID string, sharedSecret string, headName string) string {
+	data := strings.Join([]string{assetID, lockerID, sharedSecret}, "|")
 	return base58.Encode(Hash(headName, []byte(data)))
 }
 

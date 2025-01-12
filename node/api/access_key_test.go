@@ -139,7 +139,7 @@ func TestAccountHandler_PostAccessKeyHandler(t *testing.T) {
 	rec = invoke(acct.ID, acct.ID, bytes.NewReader(bodyBytes))
 
 	require.Equal(t, http.StatusCreated, rec.Code)
-	assert.Equal(t, "/test-url/"+ak.ID, rec.Result().Header.Get("Location")) //nolint:bodyclose
+	assert.Equal(t, "/test-url/"+ak.ID, rec.Result().Header.Get("Location"))
 
 	var rsp map[string]any
 	readBody(t, rec, &rsp)

@@ -126,7 +126,7 @@ func TestAccountHandler_PostPropertyHandler(t *testing.T) {
 	rec = invoke(acct.ID, acct.ID, bytes.NewReader(bodyBytes))
 
 	require.Equal(t, http.StatusCreated, rec.Code)
-	assert.Equal(t, "/test-url/abc", rec.Result().Header.Get("Location")) //nolint:bodyclose
+	assert.Equal(t, "/test-url/abc", rec.Result().Header.Get("Location"))
 
 	var rsp map[string]string
 	readBody(t, rec, &rsp)

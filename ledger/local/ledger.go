@@ -646,7 +646,7 @@ func (bl *BoltLedger) SubmitNewBlock(block *model.Block, records []*model.Record
 				}
 			case model.OpTypeLeaseRevocation:
 				rb := tx.Bucket([]byte(RecordsKey))
-				if blockCompBucket == nil {
+				if rb == nil {
 					return fmt.Errorf("bucket %s not found", RecordsKey)
 				}
 

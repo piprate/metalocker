@@ -18,8 +18,18 @@ package model
 // Blocks are identified by their sequential numbers, starting with 0.
 // Hash and ParentHash fields allow connecting a specific block
 // with the underlying block implementation.
+
+type BlockStatus uint8
+
+const (
+	BlockStatusOK        BlockStatus = 0
+	BlockStatusOpen      BlockStatus = 1
+	BlockStatusConfirmed BlockStatus = 2
+)
+
 type Block struct {
-	Number     uint64 `json:"number"`
-	Hash       string `json:"hash"`
-	ParentHash string `json:"parentHash,omitempty"`
+	Number     uint64      `json:"number"`
+	Hash       string      `json:"hash,omitempty"`
+	ParentHash string      `json:"parentHash,omitempty"`
+	Status     BlockStatus `json:"status,omitempty"`
 }

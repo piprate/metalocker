@@ -39,9 +39,8 @@ func WaitForConfirmation(ctx context.Context, ledger model.Ledger, ns notificati
 		return 0, err
 	}
 
-	// check if all the previous record got published
+	// check if all the previous records got published
 	if len(recordID) > 1 {
-		var blockNumber uint64 = 0
 		for _, rid := range recordID[0 : len(recordID)-1] {
 			currentState, err := ledger.GetRecordState(ctx, rid)
 			if err != nil {
