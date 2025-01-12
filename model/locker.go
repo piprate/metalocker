@@ -170,8 +170,8 @@ func (lp *LockerParticipant) GetRecordPrivateKey(idx uint32) (*hdkeychain.Extend
 	return lp.rootKeyPriv.Derive(idx)
 }
 
-func (lp *LockerParticipant) GetRootPrivateKey() string {
-	return lp.rootKeyPriv.String()
+func (lp *LockerParticipant) GetRootPrivateKey() *hdkeychain.ExtendedKey {
+	return lp.rootKeyPriv
 }
 
 func (lp *LockerParticipant) IsRecordOwner(routingKey string, idx uint32) (*btcec.PublicKey, *AESKey, error) {

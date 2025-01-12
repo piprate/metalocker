@@ -35,7 +35,7 @@ import (
 
 func TestScanner_Scan(t *testing.T) {
 	env := testbase.SetUpTestEnvironment(t)
-	defer env.Close()
+	defer func() { _ = env.Close() }()
 
 	// set up Data Wallet 1
 
@@ -149,7 +149,7 @@ func TestScanner_Scan(t *testing.T) {
 
 func TestScanner_Scan_TwoIterations(t *testing.T) {
 	env := testbase.SetUpTestEnvironment(t)
-	defer env.Close()
+	defer func() { _ = env.Close() }()
 
 	// set up Data Wallet 1
 
@@ -309,7 +309,7 @@ func TestScanner_Scan_TwoIterations(t *testing.T) {
 
 func TestScanner_RemoveSubscription(t *testing.T) {
 	env := testbase.SetUpTestEnvironment(t)
-	defer env.Close()
+	defer func() { _ = env.Close() }()
 
 	// set up Data Wallet 1
 

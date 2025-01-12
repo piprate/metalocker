@@ -254,7 +254,7 @@ func (c *localStoreImpl) Submit(ctx context.Context, lease *model.Lease, clearte
 
 	assetID := lease.Impression.Asset
 	for _, name := range headName {
-		headID := model.HeadID(assetID, lockerID, sender, name)
+		headID := model.HeadID(assetID, lockerID, sender.SharedSecret, name)
 		headRecID, err := c.submitHead(ctx, assetID, lockerID, sender, name, rec.ID)
 		if err != nil {
 			return dataset.RecordFutureWithError(err)
@@ -271,11 +271,11 @@ func (c *localStoreImpl) Submit(ctx context.Context, lease *model.Lease, clearte
 func (c *localStoreImpl) submitLease(ctx context.Context, lease *model.Lease, cleartext bool, p *model.LockerParticipant) (*model.Record, error) {
 	keyIndex := model.RandomKeyIndex()
 
-	recordPrivKey, err := p.GetRecordPrivateKey(keyIndex)
+	recPrivKey, err := p.GetRootPrivateKey().Derive(keyIndex)
 	if err != nil {
 		return nil, err
 	}
-	recordPubKey, err := recordPrivKey.ECPubKey()
+	recordPubKey, err := recPrivKey.ECPubKey()
 	if err != nil {
 		return nil, err
 	}
@@ -307,48 +307,7 @@ func (c *localStoreImpl) submitLease(ctx context.Context, lease *model.Lease, cl
 		return nil, err
 	}
 
-	// generate authorising commitment
-
-	ac := sha256.Sum256(
-		model.BuildAuthorisingCommitmentInput(recordPrivKey, leaseAddress),
-	)
-
-	// generate requesting commitment
-
-	rc := sha256.Sum256(
-		model.BuildRequestingCommitmentInput(
-			lease.ID,
-			lease.ExpiresAt,
-		),
-	)
-
-	// generate new record routing key
-
-	routingKey, _ := model.BuildRoutingKey(recordPubKey)
-
-	rec := &model.Record{
-		RoutingKey:                routingKey,
-		KeyIndex:                  keyIndex,
-		Operation:                 model.OpTypeLease,
-		OperationAddress:          leaseAddress,
-		AuthorisingCommitment:     base64.StdEncoding.EncodeToString(ac[:]),
-		AuthorisingCommitmentType: 0,
-		RequestingCommitment:      base64.StdEncoding.EncodeToString(rc[:]),
-		RequestingCommitmentType:  model.RcTypeAlgo1,
-		DataAssets:                lease.GetResourceIDs(),
-	}
-
-	if cleartext {
-		rec.Flags |= model.RecordFlagPublic
-	}
-
-	// seal the record
-
-	pk, err := recordPrivKey.ECPrivKey()
-	if err != nil {
-		return nil, err
-	}
-	err = rec.Seal(pk)
+	rec, err := model.BuildLeaseRecord(keyIndex, recPrivKey, lease, leaseAddress, cleartext)
 	if err != nil {
 		return nil, err
 	}
@@ -642,101 +601,14 @@ func (c *localStoreImpl) SetAssetHead(ctx context.Context, assetID string, locke
 
 func (c *localStoreImpl) submitHead(ctx context.Context, assetID, lockerID string, sender *model.LockerParticipant, headName, recordID string) (string, error) {
 
-	headID := model.HeadID(assetID, lockerID, sender, headName)
+	headID := model.HeadID(assetID, lockerID, sender.SharedSecret, headName)
 
 	prevHead, err := c.ledger.GetAssetHead(ctx, headID)
 	if err != nil && !errors.Is(err, model.ErrAssetHeadNotFound) {
 		return "", err
 	}
 
-	var prevHeadRecordID string
-	var prevHeadRevocationProof []string
-	if prevHead != nil {
-		if prevHead.Status == model.StatusRevoked {
-			// Timing issues...
-			return "", fmt.Errorf("asset head record already revoked: %s", prevHead.ID)
-		}
-
-		prevHeadPrivKey, err := sender.GetRecordPrivateKey(prevHead.KeyIndex)
-		if err != nil {
-			return "", err
-		}
-
-		acInput := model.BuildAuthorisingCommitmentInput(prevHeadPrivKey, prevHead.OperationAddress)
-		subjAC := sha256.Sum256(acInput)
-
-		if prevHead.AuthorisingCommitment != base64.StdEncoding.EncodeToString(subjAC[:]) {
-			return "", errors.New(
-				"authorising commitment check failed. You are not authorised to update the asset head")
-		}
-
-		prevHeadRecordID = prevHead.ID
-		prevHeadRevocationProof = []string{
-			base64.StdEncoding.EncodeToString(acInput),
-		}
-	}
-
-	keyIndex := model.RandomKeyIndex()
-
-	recordPrivKey, err := sender.GetRecordPrivateKey(keyIndex)
-	if err != nil {
-		return "", err
-	}
-	recordPubKey, err := recordPrivKey.ECPubKey()
-	if err != nil {
-		return "", err
-	}
-
-	// assetID, lockerID, participantID, name, recordID string
-	headBodyBytes := model.PackHeadBody(assetID, lockerID, sender.ID, headName, recordID)
-
-	// derive symmetrical key
-
-	sharedSecretBytes, err := base64.StdEncoding.DecodeString(sender.SharedSecret)
-	if err != nil {
-		return "", err
-	}
-	symKey := model.DeriveSymmetricalKey(sharedSecretBytes, recordPubKey)
-
-	// encrypt head body
-
-	encryptedHeadBody, err := model.EncryptAESCGM(headBodyBytes, symKey)
-	if err != nil {
-		return "", err
-	}
-
-	// generate authorising commitment
-
-	ac := sha256.Sum256(
-		model.BuildAuthorisingCommitmentInput(recordPrivKey, ""),
-	)
-
-	// generate new record routing key
-
-	routingKey, _ := model.BuildRoutingKey(recordPubKey)
-
-	rec := &model.Record{
-		RoutingKey: routingKey,
-		KeyIndex:   keyIndex,
-		Operation:  model.OpTypeAssetHead,
-
-		AuthorisingCommitment:     base64.StdEncoding.EncodeToString(ac[:]),
-		AuthorisingCommitmentType: 0,
-
-		SubjectRecord:   prevHeadRecordID,
-		RevocationProof: prevHeadRevocationProof,
-
-		HeadID:   headID,
-		HeadBody: base64.StdEncoding.EncodeToString(encryptedHeadBody),
-	}
-
-	// seal the record
-
-	pk, err := recordPrivKey.ECPrivKey()
-	if err != nil {
-		return "", err
-	}
-	err = rec.Seal(pk)
+	rec, err := model.BuildAssetHeadRecord(sender.ID, sender.GetRootPrivateKey(), lockerID, sender.SharedSecret, assetID, headName, recordID, prevHead)
 	if err != nil {
 		return "", err
 	}

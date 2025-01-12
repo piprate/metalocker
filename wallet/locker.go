@@ -155,7 +155,7 @@ func (lw *lockerWrapper) Share(ctx context.Context, id, vaultName string, expiry
 }
 
 func (lw *lockerWrapper) HeadID(ctx context.Context, assetID string, headName string) string {
-	return model.HeadID(assetID, lw.raw.ID, lw.raw.Us(), headName)
+	return model.HeadID(assetID, lw.raw.ID, lw.raw.Us().SharedSecret, headName)
 }
 
 func (lw *lockerWrapper) SetAssetHead(ctx context.Context, assetID, headName, recordID string) dataset.RecordFuture {

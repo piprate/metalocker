@@ -84,6 +84,18 @@ func (bc *BoltClient) FetchInt(bucket, key string) (int, error) {
 	}
 }
 
+func (bc *BoltClient) FetchUint64(bucket, key string) (uint64, error) {
+	v, err := bc.FetchString(bucket, key)
+	if err != nil {
+		return 0, err
+	}
+	if v == "" {
+		return 0, nil
+	} else {
+		return strconv.ParseUint(v, 10, 64)
+	}
+}
+
 func (bc *BoltClient) Update(bucket, key string, value []byte) error {
 	return bc.DB.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
@@ -114,4 +126,8 @@ func (bc *BoltClient) UpdateInline(tx *bbolt.Tx, bucket, key string, value []byt
 
 func (bc *BoltClient) UpdateInt64(bucket, key string, value int64) error {
 	return bc.Update(bucket, key, []byte(strconv.FormatInt(value, 10)))
+}
+
+func (bc *BoltClient) UpdateUint64(bucket, key string, value uint64) error {
+	return bc.Update(bucket, key, []byte(strconv.FormatUint(value, 10)))
 }

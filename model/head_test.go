@@ -44,7 +44,7 @@ func TestHeadID(t *testing.T) {
 
 	assetID := "did:piprate:Fw4CEkwm3n3gMcRGtC9r2aDR7iuTLkciJkkmMPi6b7Km"
 
-	headID := HeadID(assetID, locker.ID, locker.Us(), "main")
+	headID := HeadID(assetID, locker.ID, locker.Us().SharedSecret, "main")
 	assert.Equal(t, "2BfG8PvqKFSKpGWLyQfnmsqE3m3YAfQaDacCMw58t41n", headID)
 }
 

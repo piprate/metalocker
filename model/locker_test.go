@@ -99,7 +99,7 @@ func TestGenerateLocker(t *testing.T) {
 	signKey := did1.SignKeyValue()
 	keyBytes, err := AnonDecrypt(b, signKey)
 	require.NoError(t, err)
-	assert.Equal(t, locker.Participants[0].GetRootPrivateKey(), string(keyBytes))
+	assert.Equal(t, locker.Participants[0].GetRootPrivateKey().String(), string(keyBytes))
 
 	assert.Equal(t, did2.ID, locker.Participants[1].ID)
 	assert.False(t, locker.Participants[1].Self)

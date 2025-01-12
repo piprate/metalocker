@@ -394,7 +394,7 @@ func createTestAccount(t *testing.T, email string, accessLevel model.AccessLevel
 func readBody(t *testing.T, rec *httptest.ResponseRecorder, dest any) {
 	t.Helper()
 
-	rspBytes, err := io.ReadAll(rec.Result().Body) //nolint:bodyclose
+	rspBytes, err := io.ReadAll(rec.Result().Body)
 	require.NoError(t, err)
 
 	require.NoError(t, jsonw.Unmarshal(rspBytes, &dest))

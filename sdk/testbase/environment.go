@@ -20,12 +20,15 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/piprate/metalocker/contexts"
 	"github.com/piprate/metalocker/index"
 	"github.com/piprate/metalocker/index/bolt"
 	"github.com/piprate/metalocker/ledger/local"
+	"github.com/piprate/metalocker/ledger/onflow"
+	"github.com/piprate/metalocker/ledger/onflow/emulator"
 	"github.com/piprate/metalocker/model"
 	"github.com/piprate/metalocker/model/account"
 	"github.com/piprate/metalocker/node"
@@ -194,12 +197,52 @@ func SetUpTestEnvironment(t *testing.T) *TestMetaLockerEnvironment {
 
 	env.IdentityBackend, _ = memory.CreateIdentityBackend(nil, nil)
 
-	dbFilepath := filepath.Join(dir, "ledger.bolt")
-
 	env.NS = notification.NewLocalNotificationService(100)
 
-	ledgerAPI, err := local.NewBoltLedger(env.Ctx, dbFilepath, env.NS, 10, 0)
-	require.NoError(t, err)
+	var ledgerAPI model.Ledger
+	ledgerType := os.Getenv("LEDGER_TYPE")
+	if ledgerType == "" {
+		ledgerType = "local"
+	}
+	switch ledgerType {
+	case "onflow":
+		flowConnector, err := onflow.NewInMemoryConnectorEmbedded(true)
+		require.NoError(t, err)
+		flowConnector.DoNotPrependNetworkToAccountNames()
+
+		emulator.ConfigureInMemoryEmulator(t, flowConnector, "emulator-metalocker-admin", "1000.0")
+
+		dbFilepath := filepath.Join(dir, "db.bolt")
+
+		se, err := onflow.NewTemplateEngine(flowConnector)
+		require.NoError(t, err)
+
+		nodeAcct := flowConnector.Account("emulator-metalocker-platform")
+		emulator.FundAccountWithFlow(t, se, nodeAcct.Address, "10.0")
+
+		workerCount := 1
+		emulator.AddLedgerPoolKeys(t, flowConnector, "emulator-metalocker-platform", 0, workerCount)
+
+		keyIndexes := make([]uint32, workerCount)
+		for i := 0; i < workerCount; i++ {
+			keyIndexes[i] = uint32(i + 1)
+		}
+
+		ledger, err := onflow.NewLedger(context.Background(), flowConnector, "emulator", nodeAcct, keyIndexes, dbFilepath, env.NS)
+		require.NoError(t, err)
+
+		require.NoError(t, ledger.StartLedgerEvents(env.Ctx, true, time.Second))
+
+		//require.NoError(t, ledger.Sync(env.Ctx))
+
+		ledgerAPI = ledger
+	case "local":
+		dbFilepath := filepath.Join(dir, "ledger.bolt")
+		ledgerAPI, err = local.NewBoltLedger(env.Ctx, dbFilepath, env.NS, 10, 0)
+		require.NoError(t, err)
+	default:
+		t.Fatalf("unknown ledger type: %s", ledgerType)
+	}
 
 	env.BlobManager = TestBlobManager(t, false, ledgerAPI)
 

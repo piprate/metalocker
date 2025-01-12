@@ -17,6 +17,7 @@ package model
 import (
 	"bytes"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/csv"
 	"errors"
@@ -27,6 +28,7 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/btcsuite/btcd/btcutil/base58"
+	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/piprate/metalocker/utils"
 	"github.com/piprate/metalocker/utils/jsonw"
 	"github.com/rs/zerolog/log"
@@ -254,6 +256,7 @@ func (r *Record) Validate() error {
 	switch r.Operation {
 	case OpTypeLease:
 	case OpTypeLeaseRevocation:
+		// FIXME
 	case OpTypeAssetHead:
 		if r.SubjectRecord != "" {
 			if len(r.RevocationProof) != 1 {
@@ -297,4 +300,155 @@ func RandomKeyIndex() uint32 {
 	idx := utils.BytesToUint32(randBuffer)
 
 	return idx & 0x7fffffff // should be less than 0x80000000 to generate a non-hardened key
+}
+
+func BuildLeaseRecord(keyIndex uint32, recPrivKey *hdkeychain.ExtendedKey, lease *Lease, leaseAddress string, cleartext bool) (*Record, error) {
+	recordPubKey, err := recPrivKey.ECPubKey()
+	if err != nil {
+		return nil, err
+	}
+
+	// generate authorising commitment
+
+	ac := sha256.Sum256(
+		BuildAuthorisingCommitmentInput(recPrivKey, leaseAddress),
+	)
+
+	// generate requesting commitment
+
+	rc := sha256.Sum256(
+		BuildRequestingCommitmentInput(lease.ID, lease.ExpiresAt),
+	)
+
+	// generate new record routing key
+
+	routingKey, _ := BuildRoutingKey(recordPubKey)
+
+	rec := &Record{
+		RoutingKey:                routingKey,
+		KeyIndex:                  keyIndex,
+		Operation:                 OpTypeLease,
+		OperationAddress:          leaseAddress,
+		AuthorisingCommitment:     base64.StdEncoding.EncodeToString(ac[:]),
+		AuthorisingCommitmentType: 0,
+		RequestingCommitment:      base64.StdEncoding.EncodeToString(rc[:]),
+		RequestingCommitmentType:  RcTypeAlgo1,
+		DataAssets:                lease.GetResourceIDs(),
+	}
+
+	if cleartext {
+		rec.Flags |= RecordFlagPublic
+	}
+
+	// seal the record
+
+	pk, err := recPrivKey.ECPrivKey()
+	if err != nil {
+		return nil, err
+	}
+	err = rec.Seal(pk)
+	if err != nil {
+		return nil, err
+	}
+
+	return rec, nil
+}
+
+func BuildAssetHeadRecord(senderID string, privateHDKey *hdkeychain.ExtendedKey, lockerID, sharedSecret, assetID, headName, recordID string, previousHeadRecord *Record) (*Record, error) {
+
+	headID := HeadID(assetID, lockerID, sharedSecret, headName)
+
+	var prevHeadRecordID string
+	var prevHeadRevocationProof []string
+	if previousHeadRecord != nil {
+		if previousHeadRecord.Status == StatusRevoked {
+			// Timing issues...
+			return nil, fmt.Errorf("asset head record already revoked: %s", previousHeadRecord.ID)
+		}
+
+		prevHeadPrivKey, err := privateHDKey.Derive(previousHeadRecord.KeyIndex)
+		if err != nil {
+			return nil, err
+		}
+
+		acInput := BuildAuthorisingCommitmentInput(prevHeadPrivKey, previousHeadRecord.OperationAddress)
+		subjAC := sha256.Sum256(acInput)
+
+		if previousHeadRecord.AuthorisingCommitment != base64.StdEncoding.EncodeToString(subjAC[:]) {
+			return nil, errors.New(
+				"authorising commitment check failed. You are not authorised to update the asset head")
+		}
+
+		prevHeadRecordID = previousHeadRecord.ID
+		prevHeadRevocationProof = []string{
+			base64.StdEncoding.EncodeToString(acInput),
+		}
+	}
+
+	keyIndex := RandomKeyIndex()
+
+	recordPrivKey, err := privateHDKey.Derive(keyIndex)
+	if err != nil {
+		return nil, err
+	}
+	recordPubKey, err := recordPrivKey.ECPubKey()
+	if err != nil {
+		return nil, err
+	}
+
+	// assetID, lockerID, participantID, name, recordID string
+	headBodyBytes := PackHeadBody(assetID, lockerID, senderID, headName, recordID)
+
+	// derive symmetrical key
+
+	sharedSecretBytes, err := base64.StdEncoding.DecodeString(sharedSecret)
+	if err != nil {
+		return nil, err
+	}
+	symKey := DeriveSymmetricalKey(sharedSecretBytes, recordPubKey)
+
+	// encrypt head body
+
+	encryptedHeadBody, err := EncryptAESCGM(headBodyBytes, symKey)
+	if err != nil {
+		return nil, err
+	}
+
+	// generate authorising commitment
+
+	ac := sha256.Sum256(
+		BuildAuthorisingCommitmentInput(recordPrivKey, ""),
+	)
+
+	// generate new record routing key
+
+	routingKey, _ := BuildRoutingKey(recordPubKey)
+
+	rec := &Record{
+		RoutingKey: routingKey,
+		KeyIndex:   keyIndex,
+		Operation:  OpTypeAssetHead,
+
+		AuthorisingCommitment:     base64.StdEncoding.EncodeToString(ac[:]),
+		AuthorisingCommitmentType: 0,
+
+		SubjectRecord:   prevHeadRecordID,
+		RevocationProof: prevHeadRevocationProof,
+
+		HeadID:   headID,
+		HeadBody: base64.StdEncoding.EncodeToString(encryptedHeadBody),
+	}
+
+	// seal the record
+
+	pk, err := recordPrivKey.ECPrivKey()
+	if err != nil {
+		return nil, err
+	}
+	err = rec.Seal(pk)
+	if err != nil {
+		return nil, err
+	}
+
+	return rec, nil
 }
