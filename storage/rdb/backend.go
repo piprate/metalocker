@@ -371,7 +371,7 @@ func (rbe *RelationalBackend) ListIdentities(ctx context.Context, accountID stri
 	for i, row := range rows {
 		result[i] = &account.DataEnvelope{
 			Hash:          row.Hash,
-			AccessLevel:   lvl,
+			AccessLevel:   model.AccessLevel(row.Level),
 			EncryptedID:   row.EncryptedID,
 			EncryptedBody: row.EncryptedBody,
 		}
@@ -443,7 +443,7 @@ func (rbe *RelationalBackend) ListLockers(ctx context.Context, accountID string,
 	for i, row := range rows {
 		result[i] = &account.DataEnvelope{
 			Hash:          row.Hash,
-			AccessLevel:   lvl,
+			AccessLevel:   model.AccessLevel(row.Level),
 			EncryptedID:   row.EncryptedID,
 			EncryptedBody: row.EncryptedBody,
 		}
@@ -515,7 +515,7 @@ func (rbe *RelationalBackend) ListProperties(ctx context.Context, accountID stri
 	for i, row := range rows {
 		result[i] = &account.DataEnvelope{
 			Hash:          row.Hash,
-			AccessLevel:   lvl,
+			AccessLevel:   model.AccessLevel(row.Level),
 			EncryptedID:   row.EncryptedID,
 			EncryptedBody: row.EncryptedBody,
 		}
