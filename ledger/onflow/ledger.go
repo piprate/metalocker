@@ -696,24 +696,6 @@ func (l *Ledger) GetRecord(ctx context.Context, rid string) (*model.Record, erro
 			return nil, model.ErrRecordNotFound
 		}
 	}
-
-	//val, err := l.scriptsEngine.NewScript("metalocker_get_record").
-	//	Argument(cadence.String(rid)).
-	//	RunReturns(ctx)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//rec, err := RecordFromCadence(val)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//if rec != nil {
-	//	return rec, nil
-	//} else {
-	//	return nil, model.ErrRecordNotFound
-	//}
 }
 
 func (l *Ledger) GetRecordState(ctx context.Context, rid string) (*model.RecordState, error) {
