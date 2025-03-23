@@ -399,5 +399,80 @@ func TestLedger_GetRecordState(t *testing.T) {
 }
 
 func TestLedger_GetAssetHead(t *testing.T) {
+	// TODO
+}
 
+func TestLedger_GetDataAssetState(t *testing.T) {
+	fl, _, dir := NewTestLedger(t, 1)
+	defer func() {
+		_ = fl.Close()
+		_ = os.RemoveAll(dir)
+	}()
+
+	state, err := fl.GetDataAssetState(context.Background(), "non-existent-asset")
+	require.NoError(t, err)
+
+	assert.Equal(t, model.DataAssetStateNotFound, state)
+}
+
+func TestLedger_ImportBlock(t *testing.T) {
+	fl, _, dir := NewTestLedger(t, 1)
+	defer func() {
+		_ = fl.Close()
+		_ = os.RemoveAll(dir)
+	}()
+
+	var template *model.Record
+	require.NoError(t, jsonw.Decode(strings.NewReader(testRecordTemplate), &template))
+
+	ctx := context.Background()
+
+	err := fl.ImportBlock(ctx, 1, nil)
+	require.Error(t, err)
+	assert.Equal(t, "block number 1 is out of range. Top block number = 1", err.Error())
+
+	recList := make([]*model.Record, 3)
+	for i := 0; i < 3; i++ {
+		rec := template.Copy()
+		rec.ID = fmt.Sprintf("record-%d", i+1)
+		recList[i] = rec
+	}
+	err = fl.ImportBlock(ctx, 2, recList)
+	require.NoError(t, err)
+
+	require.NoError(t, fl.Sync(ctx))
+
+	for i := 0; i < 3; i++ {
+		recID := fmt.Sprintf("record-%d", i+1)
+
+		state, err := fl.GetRecordState(ctx, recID)
+		require.NoError(t, err)
+		assert.Equal(t, model.StatusPublished, state.Status)
+		assert.Equal(t, uint64(2), state.BlockNumber)
+	}
+}
+
+func TestLedger_ImportBlock_Empty(t *testing.T) {
+	fl, _, dir := NewTestLedger(t, 1)
+	defer func() {
+		_ = fl.Close()
+		_ = os.RemoveAll(dir)
+	}()
+
+	var template *model.Record
+	require.NoError(t, jsonw.Decode(strings.NewReader(testRecordTemplate), &template))
+
+	ctx := context.Background()
+
+	err := fl.ImportBlock(ctx, 2, nil)
+	require.NoError(t, err)
+
+	topBlock, err := fl.GetTopBlock(ctx)
+	require.NoError(t, err)
+
+	require.Equal(t, uint64(2), topBlock.Number)
+
+	rec, err := fl.GetBlockRecords(ctx, 2)
+	require.NoError(t, err)
+	assert.Equal(t, 0, len(rec))
 }

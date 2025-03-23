@@ -22,6 +22,7 @@ import (
 	_ "github.com/piprate/metalocker/index/bolt"
 
 	_ "github.com/piprate/metalocker/ledger/local"
+	_ "github.com/piprate/metalocker/ledger/onflow"
 
 	_ "github.com/piprate/metalocker/storage/memory"
 

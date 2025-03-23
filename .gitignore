@@ -33,3 +33,6 @@ vendor
 /coverage.txt
 
 dist/
+
+# local Flow emulator files
+/ledger/onflow/flowdb

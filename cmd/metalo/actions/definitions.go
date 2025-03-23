@@ -642,9 +642,18 @@ var (
 			Usage:  "import MetaLocker ledger data from the given directory",
 			Action: ImportLedger,
 			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:  "config",
+					Value: "",
+					Usage: "path to MetaLocker configuration file",
+				},
 				&cli.BoolFlag{
 					Name:  "import-operations",
 					Usage: "import operations (be careful if swapping ledgers!)",
+				},
+				&cli.BoolFlag{
+					Name:  "preserve-blocks",
+					Usage: "import blocks while preserving their composition and numbering (if possible)",
 				},
 				&cli.BoolFlag{
 					Name:  "wait",

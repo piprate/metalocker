@@ -124,7 +124,7 @@ func SaveBlock(ctx context.Context, ledger model.Ledger, offChainStorage model.O
 
 		recs = append(recs, rec)
 
-		if rec.Operation == model.OpTypeLease {
+		if rec.Operation == model.OpTypeLease && rec.Status == model.StatusPublished {
 			opRecBytes, err := offChainStorage.GetOperation(ctx, rec.OperationAddress)
 			if err != nil {
 				return err

@@ -64,6 +64,10 @@ type (
 		// SubmitRecord adds a ledger records into the queue to be
 		// included into the next block.
 		SubmitRecord(ctx context.Context, r *Record) error
+		// ImportBlock attempts importing  list of record as a whole block with the given number.
+		// This operation may not be supported by some ledgers. It's used
+		// for transferring chains of blocks between ledgers while preserving its structure.
+		ImportBlock(ctx context.Context, blockNumber uint64, records []*Record) error
 		// GetRecord returns a ledger record by its ID. Returns ErrRecordNotFound error
 		// if record was not found.
 		GetRecord(ctx context.Context, rid string) (*Record, error)

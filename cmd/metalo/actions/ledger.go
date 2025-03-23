@@ -40,30 +40,3 @@ func ExportLedger(c *cli.Context) error {
 	}
 	return err
 }
-
-func ImportLedger(c *cli.Context) error {
-	if c.Args().Len() != 1 {
-		fmt.Print("Please specify the path to file or folder.\n\n")
-		return cli.Exit("please specify the path to file or folder", InvalidParameter)
-	}
-
-	importOperations := c.Bool("import-operations")
-	waitForConfirmation := c.Bool("wait")
-
-	dw, err := LoadRemoteDataWallet(c, false)
-	if err != nil {
-		return err
-	}
-
-	ns, err := dw.Services().NotificationService()
-	if err != nil {
-		return err
-	}
-
-	err = operations.ImportLedger(c.Context, dw.Services().Ledger(), dw.Services().OffChainStorage(), ns, c.Args().Get(0), importOperations, waitForConfirmation)
-	if err != nil {
-		log.Err(err).Msg("Ledger import failed")
-		return cli.Exit(err, OperationFailed)
-	}
-	return nil
-}

@@ -22,6 +22,9 @@ import (
 
 	_ "github.com/piprate/metalocker/storage/memory"
 	_ "github.com/piprate/metalocker/storage/rdb"
+
+	_ "github.com/piprate/metalocker/ledger/local"
+	_ "github.com/piprate/metalocker/ledger/onflow"
 )
 
 func init() {

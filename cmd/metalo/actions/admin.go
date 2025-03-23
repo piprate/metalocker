@@ -105,6 +105,29 @@ func ImportBackendData(c *cli.Context) error {
 	return nil
 }
 
+func ImportLedger(c *cli.Context) error {
+	if c.Args().Len() != 1 {
+		return cli.Exit("please specify the path to data folder", InvalidParameter)
+	}
+	folderPath := utils.AbsPathify(c.Args().Get(0))
+
+	configFilePath := c.String("config")
+	if configFilePath == "" {
+		return cli.Exit("please specify the path to MetaLocker configuration file using --config flag", InvalidParameter)
+	}
+
+	importOperations := c.Bool("import-operations")
+	preserveBlocks := c.Bool("preserve-blocks")
+	waitForConfirmation := c.Bool("wait")
+
+	err := operations.ImportLedger(c.Context, folderPath, configFilePath, importOperations, preserveBlocks, waitForConfirmation)
+	if err != nil {
+		log.Err(err).Msg("Ledger import failed")
+		return cli.Exit(err, OperationFailed)
+	}
+	return nil
+}
+
 func UpdateAccountState(c *cli.Context) error {
 	if c.Args().Len() != 1 {
 		fmt.Print("Please specify the account ID (email or DID) to block.\n\n")
