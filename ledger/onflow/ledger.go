@@ -574,15 +574,21 @@ func (l *Ledger) SubmitRecord(ctx context.Context, r *model.Record) error {
 		l.dequeMutex.Unlock()
 		defer l.keyDeque.PushBack(keyIndex)
 
-		acct := &accounts.Account{
-			Name:    "pool",
-			Address: l.nodeAccount.Address,
-			Key:     accounts.NewHexKeyFromPrivateKey(keyIndex, crypto.SHA3_256, l.privateKey),
+		var acct *accounts.Account
+		if keyIndex != l.nodeAccount.Key.Index() {
+			acct = &accounts.Account{
+				Name:    "pool",
+				Address: l.nodeAccount.Address,
+				Key:     accounts.NewHexKeyFromPrivateKey(keyIndex, crypto.SHA3_256, l.privateKey),
+			}
+		} else {
+			acct = l.nodeAccount
 		}
 
+		cadenceRecord := RecordToCadence(r, l.scriptsEngine.ContractAddress("MetaLocker"))
+
 		for {
-			txBuilder := l.scriptsEngine.NewTransaction("metalocker_submit_record").
-				Argument(RecordToCadence(r, l.scriptsEngine.ContractAddress("MetaLocker")))
+			txBuilder := l.scriptsEngine.NewTransaction("metalocker_submit_record").Argument(cadenceRecord)
 			txBuilder.Proposer = acct
 			txBuilder.Payer = acct
 			txBuilder.MainSigner = l.nodeAccount
@@ -603,6 +609,62 @@ func (l *Ledger) SubmitRecord(ctx context.Context, r *model.Record) error {
 	}).Wait()
 
 	return err
+}
+
+func (l *Ledger) ImportBlock(ctx context.Context, blockNumber uint64, records []*model.Record) error {
+	// check the imported block has a correct number
+
+	prevBlock, err := l.GetTopBlock(ctx)
+	if err != nil && !errors.Is(err, model.ErrBlockNotFound) {
+		return err
+	}
+	if prevBlock != nil && blockNumber != prevBlock.Number+1 {
+		return fmt.Errorf("block number %d is out of range. Top block number = %d", blockNumber, prevBlock.Number)
+	}
+
+	l.dequeMutex.Lock()
+	keyIndex := l.keyDeque.PopFront()
+	l.dequeMutex.Unlock()
+	defer l.keyDeque.PushBack(keyIndex)
+
+	var acct *accounts.Account
+	if keyIndex != l.nodeAccount.Key.Index() {
+		acct = &accounts.Account{
+			Name:    "pool",
+			Address: l.nodeAccount.Address,
+			Key:     accounts.NewHexKeyFromPrivateKey(keyIndex, crypto.SHA3_256, l.privateKey),
+		}
+	} else {
+		acct = l.nodeAccount
+	}
+
+	mlAddress := l.scriptsEngine.ContractAddress("MetaLocker")
+	cadenceRecordList := make([]cadence.Value, len(records))
+	for i, r := range records {
+		cadenceRecordList[i] = RecordToCadence(r, mlAddress)
+	}
+	cadenceRecords := cadence.NewArray(cadenceRecordList)
+
+	for {
+		txBuilder := l.scriptsEngine.NewTransaction("metalocker_import_block").
+			UInt64Argument(blockNumber).Argument(cadenceRecords)
+		txBuilder.Proposer = acct
+		txBuilder.Payer = acct
+		txBuilder.MainSigner = l.nodeAccount
+
+		err = l.runTx(ctx, &txBuilder)
+		if err != nil {
+			if strings.HasPrefix(err.Error(), "transaction is expired") {
+				log.Warn().Err(err).Uint64("importedBlockNumber", blockNumber).Msg("EXPIRED")
+				continue
+			}
+			return err
+		} else {
+			break
+		}
+	}
+
+	return nil
 }
 
 func (l *Ledger) GetRecord(ctx context.Context, rid string) (*model.Record, error) {
@@ -750,7 +812,7 @@ func (l *Ledger) GetTopBlock(ctx context.Context) (*model.Block, error) {
 
 	return &model.Block{
 		Number:     topBlockNumber,
-		Hash:       "",
+		Hash:       "", // FIXME
 		ParentHash: "",
 		Status:     0,
 	}, nil
@@ -787,17 +849,23 @@ func (l *Ledger) GetChain(ctx context.Context, startNumber uint64, depth int) ([
 }
 
 func (l *Ledger) GetDataAssetState(ctx context.Context, id string) (model.DataAssetState, error) {
-	val, err := l.scriptsEngine.NewScript("metalocker_get_data_asset_counter").
+	optVal, err := l.scriptsEngine.NewScript("metalocker_get_data_asset_counter").
 		Argument(cadence.String(id)).
 		RunReturns(ctx)
 	if err != nil {
 		return model.DataAssetStateNotFound, err
 	}
-	counter := uint64(val.(cadence.UInt64))
-	if counter > 0 {
-		return model.DataAssetStateKeep, nil
+
+	val, _ := optVal.(cadence.Optional)
+	if val.Value == nil {
+		return model.DataAssetStateNotFound, nil
 	} else {
-		return model.DataAssetStateRemove, nil
+		counter := uint64(val.Value.(cadence.UInt64))
+		if counter > 0 {
+			return model.DataAssetStateKeep, nil
+		} else {
+			return model.DataAssetStateRemove, nil
+		}
 	}
 }
 
@@ -958,12 +1026,20 @@ func CreateLedgerConnector(ctx context.Context, params ledger.Parameters, ns not
 		return nil, err
 	}
 
+	if nodeAddress == "" {
+		return nil, errors.New("node address is required (use 'nodeAddress' connector property)")
+	}
+
 	nodeKey, err := resolver.ResolveString(params["nodeKey"])
 	if err != nil {
 		return nil, err
 	}
 
-	keyIndexStr, err := resolver.ResolveString(params["keyIndex"])
+	if nodeKey == "" {
+		return nil, errors.New("node key is required (use 'nodeKey' connector property)")
+	}
+
+	keyIndexStr, err := resolver.ResolveString(params["nodeKeyIndex"])
 	if err != nil {
 		return nil, err
 	}
@@ -981,5 +1057,14 @@ func CreateLedgerConnector(ctx context.Context, params ledger.Parameters, ns not
 	}
 
 	bl, err := NewLedger(ctx, flowConnector, network, nodeAcct, []uint32{0}, utils.AbsPathify(dbFilePath), ns)
-	return bl, err
+	if err != nil {
+		return nil, err
+	}
+
+	err = bl.StartLedgerEvents(ctx, true, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	return bl, nil
 }

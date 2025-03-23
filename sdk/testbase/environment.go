@@ -228,12 +228,10 @@ func SetUpTestEnvironment(t *testing.T) *TestMetaLockerEnvironment {
 			keyIndexes[i] = uint32(i + 1)
 		}
 
-		ledger, err := onflow.NewLedger(context.Background(), flowConnector, "emulator", nodeAcct, keyIndexes, dbFilepath, env.NS)
+		ledger, err := onflow.NewLedger(env.Ctx, flowConnector, "emulator", nodeAcct, keyIndexes, dbFilepath, env.NS)
 		require.NoError(t, err)
 
 		require.NoError(t, ledger.StartLedgerEvents(env.Ctx, true, time.Second))
-
-		//require.NoError(t, ledger.Sync(env.Ctx))
 
 		ledgerAPI = ledger
 	case "local":

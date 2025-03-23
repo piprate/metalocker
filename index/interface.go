@@ -99,6 +99,7 @@ type (
 		Name           string         `koanf:"name" json:"name"`
 		Type           string         `koanf:"type" json:"type"`
 		EncryptionMode EncryptionMode `koanf:"encryptionMode" json:"encryptionMode"`
+		Rebind         bool           `koanf:"rebind" json:"rebind"`
 		Params         map[string]any `koanf:"params" json:"params,omitempty"`
 	}
 

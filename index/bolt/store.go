@@ -205,9 +205,16 @@ func (s *IndexStore) Bind(ctx context.Context, gbHash string) error {
 			return err
 		}
 	} else if walletBlockHash != gbHash {
-		return fmt.Errorf(
-			"genesis block hash mismatch between MetaLocker and local data wallet index: %s != %s",
-			gbHash, walletBlockHash)
+		if s.cfg.Rebind {
+			log.Warn().Str("old_hash", walletBlockHash).Str("new_hash", gbHash).Msg("Binding Bolt index to new genesis block")
+			if err = s.storeGenesisBlock(gbHash); err != nil {
+				return err
+			}
+		} else {
+			return fmt.Errorf(
+				"genesis block hash mismatch between MetaLocker and local data wallet index: %s != %s",
+				gbHash, walletBlockHash)
+		}
 	}
 
 	s.genesisBlockHash = gbHash

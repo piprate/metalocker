@@ -2,6 +2,7 @@ package onflow_test
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -117,7 +118,12 @@ func AssertDataAssetCounter(t *testing.T, se *splash.TemplateEngine, id string, 
 		RunReturns(context.Background())
 	require.NoError(t, err)
 
-	assert.Equal(t, counter, uint64(val.(cadence.UInt64)))
+	opt, _ := val.(cadence.Optional)
+	if opt.Value == nil {
+		assert.Fail(t, fmt.Sprintf("data asset counter is nil"))
+	} else {
+		assert.Equal(t, counter, uint64(opt.Value.(cadence.UInt64)))
+	}
 }
 
 func GetAssetHead(t *testing.T, se *splash.TemplateEngine, headID string) *model.Record {

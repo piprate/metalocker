@@ -221,7 +221,7 @@ contract MetaLocker {
     access(contract)
     fun rollBlock(blockHeight: UInt64) {
         let nonce = revertibleRandom<UInt32>().toBigEndianBytes()
-        let currentRecordCount = UInt32(self.records.length)
+        let currentRecordCount = UInt32(self.records.length)  // FIXME
         let base = self.prevBlockHash
             .concat(nonce)
             .concat(currentRecordCount.toBigEndianBytes())
@@ -335,7 +335,7 @@ contract MetaLocker {
 
         let decrementCounter = fun (dataAssetID: String) {
             var counter = self.dataAssetCounters[dataAssetID]
-            if counter != nil {
+            if counter != nil && counter! > 0 {
                 self.dataAssetCounters[dataAssetID] = counter! - 1
             }
         }
@@ -399,17 +399,28 @@ contract MetaLocker {
     }
 
     access(all)
+    fun importBlock(number: UInt64, records: [Record]) {
+        pre {
+            self.currentBlockNumber == number-1 : "unexpected current block number"
+        }
+        self.rollBlock(blockHeight: getCurrentBlock().height)
+        for rec in records {
+            self.submitRecord(record: rec)
+        }
+    }
+
+    access(all)
     fun getRecord(id: String): Record? {
         return self.records[id]
     }
 
     access(all)
-    fun getDataAssetCounter(id: String): UInt64 {
+    fun getDataAssetCounter(id: String): UInt64? {
         let counter = self.dataAssetCounters[id]
         if counter != nil {
             return counter!
         } else {
-            return 0
+            return nil
         }
     }
 

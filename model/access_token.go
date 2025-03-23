@@ -61,6 +61,10 @@ func VerifyAccessToken(ctx context.Context, at, dataAssetID string, now, maxDist
 			log.Info().Str("daid", dataAssetID).
 				Msg("Data asset isn't attached to any leases yet. Allow access.")
 			return true
+		} else {
+			log.Error().Str("daid", dataAssetID).Int("state", int(state)).
+				Msg("Unexpected data asset state. Access denied.")
+			return false
 		}
 	}
 	s := strings.Split(at, ".")

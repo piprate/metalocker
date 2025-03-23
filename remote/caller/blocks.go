@@ -18,11 +18,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/piprate/metalocker/model"
 )
+
+func (c *MetaLockerHTTPCaller) ImportBlock(ctx context.Context, blockNumber uint64, records []*model.Record) error {
+	return errors.New("remote operation not supported: ImportBlock")
+}
 
 func (c *MetaLockerHTTPCaller) GetGenesisBlock(ctx context.Context) (*model.Block, error) {
 	var b model.Block

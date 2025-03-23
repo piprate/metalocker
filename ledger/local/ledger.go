@@ -152,7 +152,48 @@ func (bl *BoltLedger) SubmitRecord(ctx context.Context, r *model.Record) error {
 		return err
 	}
 
-	bl.records <- *r
+	rCopy := r.Copy()
+
+	bl.records <- *rCopy
+
+	return nil
+}
+
+func (bl *BoltLedger) ImportBlock(ctx context.Context, blockNumber uint64, records []*model.Record) error {
+	if len(records) > bl.maxRecordsPerBlock {
+		return fmt.Errorf("too many records: trying to import more than %d records (%d)", bl.maxRecordsPerBlock, len(records))
+	}
+
+	// check the imported block has a correct number
+
+	prevBlock, err := bl.GetTopBlock(ctx)
+	if err != nil && !errors.Is(err, model.ErrBlockNotFound) {
+		return err
+	}
+	if (prevBlock == nil && blockNumber != 0) || (prevBlock != nil && blockNumber != prevBlock.Number+1) {
+		var prevNumber uint64
+		if prevBlock != nil {
+			prevNumber = prevBlock.Number
+		}
+		return fmt.Errorf("block number %d is out of range. Top block number = %d", blockNumber, prevNumber)
+	}
+
+	errorCount := 0
+	for _, r := range records {
+		if err = bl.SaveRecord(r); err != nil {
+			log.Err(err).Str("rid", r.ID).Msg("Failed to save ledger record")
+			errorCount++
+		}
+	}
+
+	if errorCount > 0 {
+		return fmt.Errorf("failed to import %d record(s)", errorCount)
+	}
+
+	if err = generateNewBlock(ctx, bl, ""); err != nil {
+		log.Err(err).Msg("Failed to generate new block on import")
+		return err
+	}
 
 	return nil
 }
@@ -474,6 +515,28 @@ func (bl *BoltLedger) CurrentBlockSession() string {
 	return v
 }
 
+func (bl *BoltLedger) ClearPendingRecordsIfExist() error {
+	curSessionID, err := bl.client.FetchString(ControlsKey, CurrentSessionIDKey)
+	if err != nil {
+		return err
+	}
+	if curSessionID != "" {
+		return bl.client.DB.Update(func(tx *bbolt.Tx) error {
+			urBucket := tx.Bucket([]byte(UnconfirmedRecordsKey))
+
+			csb := urBucket.Bucket([]byte(curSessionID))
+			if csb != nil {
+				return urBucket.DeleteBucket([]byte(curSessionID))
+			} else {
+				// empty session
+				return nil
+			}
+		})
+	} else {
+		return nil
+	}
+}
+
 func (bl *BoltLedger) OpenNewBlockSession() (string, error) {
 	curSessionID := fmt.Sprintf("block%d", time.Now().Unix())
 
@@ -610,7 +673,7 @@ func (bl *BoltLedger) SubmitNewBlock(block *model.Block, records []*model.Record
 
 	blockKey := utils.Uint64ToString(block.Number)
 
-	if err := bl.client.DB.Update(func(tx *bbolt.Tx) error {
+	if err = bl.client.DB.Update(func(tx *bbolt.Tx) error {
 		if err = bl.client.UpdateInline(tx, BlocksKey, blockKey, bb); err != nil {
 			return err
 		}
@@ -667,6 +730,7 @@ func (bl *BoltLedger) SubmitNewBlock(block *model.Block, records []*model.Record
 					if err := bl.updateRecordState(tx, rec.ID, model.StatusFailed, 0); err != nil {
 						log.Err(err).Str("rid", rec.ID).Msg("Error when setting record status as failed")
 					}
+					log.Warn().AnErr("err", err).Str("rid", rec.ID).Msg("Error when applying revocations")
 					continue
 				}
 
@@ -727,7 +791,7 @@ func (bl *BoltLedger) SubmitNewBlock(block *model.Block, records []*model.Record
 
 		// Consider this block published
 
-		if err := bl.client.UpdateInline(tx, ControlsKey, TopBlockNumberKey, []byte(blockKey)); err != nil {
+		if err = bl.client.UpdateInline(tx, ControlsKey, TopBlockNumberKey, []byte(blockKey)); err != nil {
 			return err
 		}
 
@@ -902,7 +966,7 @@ func generateNewBlock(ctx context.Context, bl *BoltLedger, seed string) error {
 		Nonce:      base64.StdEncoding.EncodeToString(nonce),
 	}
 
-	if err := newLocalBlock.Seal(); err != nil {
+	if err = newLocalBlock.Seal(); err != nil {
 		return err
 	}
 
@@ -915,6 +979,10 @@ func generateNewBlock(ctx context.Context, bl *BoltLedger, seed string) error {
 	err = bl.SubmitNewBlock(newBlock, records)
 	if err != nil {
 		return err
+	}
+
+	if err := bl.ClearPendingRecordsIfExist(); err != nil {
+		log.Err(err).Msg("Failed to clear pending records")
 	}
 
 	if _, err := bl.OpenNewBlockSession(); err != nil {
