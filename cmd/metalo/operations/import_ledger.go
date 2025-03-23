@@ -36,7 +36,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func ImportLedger(ctx context.Context, importDirPath, configFilePath string, importOperations, preserveBlocks, waitForConfirmation bool) error {
+func ImportLedger(ctx context.Context, importDirPath, configFilePath string, importOperations, preserveBlocks, waitForConfirmation bool) error { //nolint:gocyclo
 	// read configuration
 	cfg, err := readConfigFile(configFilePath)
 	if err != nil {
@@ -48,7 +48,7 @@ func ImportLedger(ctx context.Context, importDirPath, configFilePath string, imp
 		return err
 	}
 
-	destLedger, err := initLedgerInstance(cfg, resolver)
+	destLedger, err := initLedgerInstance(ctx, cfg, resolver)
 	if err != nil {
 		return err
 	}
@@ -201,7 +201,7 @@ func ImportLedger(ctx context.Context, importDirPath, configFilePath string, imp
 	return nil
 }
 
-func initLedgerInstance(cfg *koanf.Koanf, resolver cmdbase.ParameterResolver) (model.Ledger, error) {
+func initLedgerInstance(ctx context.Context, cfg *koanf.Koanf, resolver cmdbase.ParameterResolver) (model.Ledger, error) {
 	if cfg.Exists("ledger") {
 		var ledgerCfg *ledger.Config
 
@@ -211,7 +211,7 @@ func initLedgerInstance(cfg *koanf.Koanf, resolver cmdbase.ParameterResolver) (m
 			return nil, cli.Exit(err, 1)
 		}
 
-		identityBackend, err := ledger.CreateLedgerConnector(context.Background(), ledgerCfg, nil, resolver)
+		identityBackend, err := ledger.CreateLedgerConnector(ctx, ledgerCfg, nil, resolver)
 		if err != nil {
 			log.Err(err).Msg("Failed to create ledger instance")
 			return nil, cli.Exit(err, 1)
