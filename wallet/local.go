@@ -153,8 +153,8 @@ func (lnc *LocalNodeClient) GetIdentity(ctx context.Context, hash string) (*acco
 	return lnc.identityBackend.GetIdentity(ctx, lnc.accountID, hash)
 }
 
-func (lnc *LocalNodeClient) ListIdentities(ctx context.Context) ([]*account.DataEnvelope, error) {
-	return lnc.identityBackend.ListIdentities(ctx, lnc.accountID, 0)
+func (lnc *LocalNodeClient) ListIdentities(ctx context.Context, lvl model.AccessLevel) ([]*account.DataEnvelope, error) {
+	return lnc.identityBackend.ListIdentities(ctx, lnc.accountID, lvl)
 }
 
 func (lnc *LocalNodeClient) StoreLocker(ctx context.Context, l *account.DataEnvelope) error {
@@ -165,8 +165,8 @@ func (lnc *LocalNodeClient) GetLocker(ctx context.Context, hash string) (*accoun
 	return lnc.identityBackend.GetLocker(ctx, lnc.accountID, hash)
 }
 
-func (lnc *LocalNodeClient) ListLockers(ctx context.Context) ([]*account.DataEnvelope, error) {
-	return lnc.identityBackend.ListLockers(ctx, lnc.accountID, 0)
+func (lnc *LocalNodeClient) ListLockers(ctx context.Context, lvl model.AccessLevel) ([]*account.DataEnvelope, error) {
+	return lnc.identityBackend.ListLockers(ctx, lnc.accountID, lvl)
 }
 
 func (lnc *LocalNodeClient) StoreProperty(ctx context.Context, prop *account.DataEnvelope) error {
@@ -177,8 +177,8 @@ func (lnc *LocalNodeClient) GetProperty(ctx context.Context, hash string) (*acco
 	return lnc.identityBackend.GetProperty(ctx, lnc.accountID, hash)
 }
 
-func (lnc *LocalNodeClient) ListProperties(ctx context.Context) ([]*account.DataEnvelope, error) {
-	return lnc.identityBackend.ListProperties(ctx, lnc.accountID, 0)
+func (lnc *LocalNodeClient) ListProperties(ctx context.Context, lvl model.AccessLevel) ([]*account.DataEnvelope, error) {
+	return lnc.identityBackend.ListProperties(ctx, lnc.accountID, lvl)
 }
 
 func (lnc *LocalNodeClient) DeleteProperty(ctx context.Context, hash string) error {

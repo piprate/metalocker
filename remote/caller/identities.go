@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/piprate/metalocker/model"
 	"github.com/piprate/metalocker/model/account"
 	"github.com/piprate/metalocker/sdk/httpsecure"
 	"github.com/piprate/metalocker/storage"
@@ -33,8 +34,8 @@ func (c *MetaLockerHTTPCaller) GetIdentity(ctx context.Context, hash string) (*a
 	return c.getDataEnvelope(ctx, "identity", hash, storage.ErrIdentityNotFound)
 }
 
-func (c *MetaLockerHTTPCaller) ListIdentities(ctx context.Context) ([]*account.DataEnvelope, error) {
-	return c.listDataEnvelopes(ctx, "identity")
+func (c *MetaLockerHTTPCaller) ListIdentities(ctx context.Context, lvl model.AccessLevel) ([]*account.DataEnvelope, error) {
+	return c.listDataEnvelopes(ctx, "identity", lvl)
 }
 
 func (c *MetaLockerHTTPCaller) storeDataEnvelope(ctx context.Context, entityType string, env *account.DataEnvelope) error {
@@ -79,13 +80,16 @@ func (c *MetaLockerHTTPCaller) getDataEnvelope(ctx context.Context, entityType, 
 	}
 }
 
-func (c *MetaLockerHTTPCaller) listDataEnvelopes(ctx context.Context, entityType string) ([]*account.DataEnvelope, error) {
+func (c *MetaLockerHTTPCaller) listDataEnvelopes(ctx context.Context, entityType string, lvl model.AccessLevel) ([]*account.DataEnvelope, error) {
 	if !c.client.IsAuthenticated() {
 		return nil, errors.New("you need to log in before performing any operations")
 	}
 
 	var envList []*account.DataEnvelope
 	url := "/v1/account/" + c.currentAccountID + "/" + entityType
+	if lvl != model.AccessLevelNone {
+		url += fmt.Sprintf("?level=%d", lvl)
+	}
 	err := c.client.LoadContents(ctx, http.MethodGet, url, nil, &envList)
 	if err != nil {
 		return nil, err

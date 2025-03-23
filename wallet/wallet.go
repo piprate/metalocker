@@ -790,7 +790,7 @@ func (dw *LocalDataWallet) GetIdentities(ctx context.Context) (map[string]Identi
 		return dw.identities, nil
 	}
 
-	idyEnvList, err := dw.nodeClient.ListIdentities(ctx)
+	idyEnvList, err := dw.nodeClient.ListIdentities(ctx, dw.lockLevel)
 	if err != nil {
 		return nil, err
 	}
@@ -866,7 +866,7 @@ func (dw *LocalDataWallet) GetLockers(ctx context.Context) ([]*model.Locker, err
 		return nil, ErrWalletLocked
 	}
 
-	lockerEnvList, err := dw.nodeClient.ListLockers(ctx)
+	lockerEnvList, err := dw.nodeClient.ListLockers(ctx, dw.lockLevel)
 	if err != nil {
 		return nil, err
 	}
@@ -970,7 +970,7 @@ func (dw *LocalDataWallet) GetProperties(ctx context.Context) (map[string]string
 		return nil, ErrWalletLocked
 	}
 
-	envList, err := dw.nodeClient.ListProperties(ctx)
+	envList, err := dw.nodeClient.ListProperties(ctx, dw.lockLevel)
 	if err != nil {
 		return nil, err
 	}
