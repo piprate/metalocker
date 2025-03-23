@@ -375,13 +375,21 @@ func Test_RelationalBackend_ListIdentities(t *testing.T) {
 
 	// happy paths
 
-	list, err := be.ListIdentities(ctx, resp.Account.ID, model.AccessLevelManaged)
+	list, err := be.ListIdentities(ctx, resp.Account.ID, model.AccessLevelNone)
+	require.NoError(t, err)
+	assert.Equal(t, 0, len(list))
+
+	list, err = be.ListIdentities(ctx, resp.Account.ID, model.AccessLevelRestricted)
+	require.NoError(t, err)
+	assert.Equal(t, 0, len(list))
+
+	list, err = be.ListIdentities(ctx, resp.Account.ID, model.AccessLevelManaged)
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(list))
 
 	list, err = be.ListIdentities(ctx, resp.Account.ID, model.AccessLevelHosted)
 	require.NoError(t, err)
-	assert.Equal(t, 0, len(list))
+	assert.Equal(t, 1, len(list))
 
 	_ = client.Close()
 	_, err = be.ListIdentities(ctx, resp.Account.ID, model.AccessLevelHosted)
@@ -637,13 +645,21 @@ func Test_RelationalBackend_ListLockers(t *testing.T) {
 
 	// happy paths
 
-	list, err := be.ListLockers(ctx, resp.Account.ID, model.AccessLevelManaged)
+	list, err := be.ListLockers(ctx, resp.Account.ID, model.AccessLevelNone)
+	require.NoError(t, err)
+	assert.Equal(t, 0, len(list))
+
+	list, err = be.ListLockers(ctx, resp.Account.ID, model.AccessLevelRestricted)
+	require.NoError(t, err)
+	assert.Equal(t, 0, len(list))
+
+	list, err = be.ListLockers(ctx, resp.Account.ID, model.AccessLevelManaged)
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(list))
 
 	list, err = be.ListLockers(ctx, resp.Account.ID, model.AccessLevelHosted)
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(list))
+	assert.Equal(t, 2, len(list))
 
 	_ = client.Close()
 	_, err = be.ListLockers(ctx, resp.Account.ID, model.AccessLevelHosted)
