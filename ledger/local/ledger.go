@@ -908,7 +908,7 @@ func generateNonce(seed string, size int) ([]byte, error) {
 	return nonce, nil
 }
 
-func generateNewBlock(ctx context.Context, bl *BoltLedger, seed string) error {
+func generateNewBlock(ctx context.Context, bl *BoltLedger, seed string) error { //nolint:unparam
 
 	records := make([]*model.Record, 0)
 	for _, id := range bl.pendingRecords {

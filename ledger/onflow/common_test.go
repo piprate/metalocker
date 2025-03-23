@@ -2,7 +2,6 @@ package onflow_test
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -120,7 +119,7 @@ func AssertDataAssetCounter(t *testing.T, se *splash.TemplateEngine, id string, 
 
 	opt, _ := val.(cadence.Optional)
 	if opt.Value == nil {
-		assert.Fail(t, fmt.Sprintf("data asset counter is nil"))
+		assert.Fail(t, "data asset counter is nil")
 	} else {
 		assert.Equal(t, counter, uint64(opt.Value.(cadence.UInt64)))
 	}
