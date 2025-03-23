@@ -359,7 +359,7 @@ func (rbe *RelationalBackend) ListIdentities(ctx context.Context, accountID stri
 	rows, err := rbe.client.Identity.Query().
 		Where(
 			identity.HasAccountWith(entAccount.Did(accountID)),
-			identity.Level(int32(lvl)),
+			identity.LevelLTE(int32(lvl)),
 		).
 		All(ctx)
 	if err != nil {
@@ -431,7 +431,7 @@ func (rbe *RelationalBackend) ListLockers(ctx context.Context, accountID string,
 	rows, err := rbe.client.Locker.Query().
 		Where(
 			locker.HasAccountWith(entAccount.Did(accountID)),
-			locker.Level(int32(lvl)),
+			locker.LevelLTE(int32(lvl)),
 		).
 		All(ctx)
 	if err != nil {
@@ -503,7 +503,7 @@ func (rbe *RelationalBackend) ListProperties(ctx context.Context, accountID stri
 	rows, err := rbe.client.Property.Query().
 		Where(
 			property.HasAccountWith(entAccount.Did(accountID)),
-			property.Level(int32(lvl)),
+			property.LevelLTE(int32(lvl)),
 		).
 		All(ctx)
 	if err != nil {

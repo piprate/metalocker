@@ -17,6 +17,7 @@ package caller
 import (
 	"context"
 
+	"github.com/piprate/metalocker/model"
 	"github.com/piprate/metalocker/model/account"
 	"github.com/piprate/metalocker/storage"
 )
@@ -29,8 +30,8 @@ func (c *MetaLockerHTTPCaller) GetProperty(ctx context.Context, hash string) (*a
 	return c.getDataEnvelope(ctx, "property", hash, storage.ErrPropertyNotFound)
 }
 
-func (c *MetaLockerHTTPCaller) ListProperties(ctx context.Context) ([]*account.DataEnvelope, error) {
-	return c.listDataEnvelopes(ctx, "property")
+func (c *MetaLockerHTTPCaller) ListProperties(ctx context.Context, lvl model.AccessLevel) ([]*account.DataEnvelope, error) {
+	return c.listDataEnvelopes(ctx, "property", lvl)
 }
 
 func (c *MetaLockerHTTPCaller) DeleteProperty(ctx context.Context, hash string) error {

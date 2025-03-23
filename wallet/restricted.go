@@ -114,7 +114,7 @@ func (r *RestrictedNodeClient) GetIdentity(ctx context.Context, hash string) (*a
 	panic("operation not implemented")
 }
 
-func (r *RestrictedNodeClient) ListIdentities(ctx context.Context) ([]*account.DataEnvelope, error) {
+func (r *RestrictedNodeClient) ListIdentities(ctx context.Context, lvl model.AccessLevel) ([]*account.DataEnvelope, error) {
 	//idyList, err := r.nodeClient.ListIdentities()
 	//if err != nil {
 	//	return nil, err
@@ -132,7 +132,7 @@ func (r *RestrictedNodeClient) GetLocker(ctx context.Context, hash string) (*acc
 	panic("operation not implemented")
 }
 
-func (r *RestrictedNodeClient) ListLockers(ctx context.Context) ([]*account.DataEnvelope, error) {
+func (r *RestrictedNodeClient) ListLockers(ctx context.Context, lvl model.AccessLevel) ([]*account.DataEnvelope, error) {
 	panic("operation not implemented")
 }
 
@@ -144,7 +144,7 @@ func (r *RestrictedNodeClient) GetProperty(ctx context.Context, hash string) (*a
 	panic("operation not implemented")
 }
 
-func (r *RestrictedNodeClient) ListProperties(ctx context.Context) ([]*account.DataEnvelope, error) {
+func (r *RestrictedNodeClient) ListProperties(ctx context.Context, lvl model.AccessLevel) ([]*account.DataEnvelope, error) {
 	panic("operation not implemented")
 }
 

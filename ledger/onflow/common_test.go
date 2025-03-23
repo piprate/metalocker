@@ -126,6 +126,18 @@ func AssertDataAssetCounter(t *testing.T, se *splash.TemplateEngine, id string, 
 	}
 }
 
+func AssertNoDataAssetCounter(t *testing.T, se *splash.TemplateEngine, id string) {
+	t.Helper()
+
+	val, err := se.NewScript("metalocker_get_data_asset_counter").
+		Argument(cadence.String(id)).
+		RunReturns(context.Background())
+	require.NoError(t, err)
+
+	opt, _ := val.(cadence.Optional)
+	assert.Nil(t, opt.Value)
+}
+
 func GetAssetHead(t *testing.T, se *splash.TemplateEngine, headID string) *model.Record {
 	t.Helper()
 

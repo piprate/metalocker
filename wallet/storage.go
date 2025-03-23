@@ -52,15 +52,15 @@ type (
 
 		StoreIdentity(ctx context.Context, idy *account.DataEnvelope) error
 		GetIdentity(ctx context.Context, hash string) (*account.DataEnvelope, error)
-		ListIdentities(ctx context.Context) ([]*account.DataEnvelope, error)
+		ListIdentities(ctx context.Context, lvl model.AccessLevel) ([]*account.DataEnvelope, error)
 
 		StoreLocker(ctx context.Context, l *account.DataEnvelope) error
 		GetLocker(ctx context.Context, hash string) (*account.DataEnvelope, error)
-		ListLockers(ctx context.Context) ([]*account.DataEnvelope, error)
+		ListLockers(ctx context.Context, lvl model.AccessLevel) ([]*account.DataEnvelope, error)
 
 		StoreProperty(ctx context.Context, prop *account.DataEnvelope) error
 		GetProperty(ctx context.Context, hash string) (*account.DataEnvelope, error)
-		ListProperties(ctx context.Context) ([]*account.DataEnvelope, error)
+		ListProperties(ctx context.Context, lvl model.AccessLevel) ([]*account.DataEnvelope, error)
 		DeleteProperty(ctx context.Context, hash string) error
 	}
 )

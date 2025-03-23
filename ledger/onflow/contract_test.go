@@ -77,7 +77,7 @@ func TestMetaLocker_submitRecord_SequentialRecords(t *testing.T) {
 
 	AssertDataAssetCounter(t, se, rec.DataAssets[0], 1)
 	AssertDataAssetCounter(t, se, rec.OperationAddress, 1)
-	AssertDataAssetCounter(t, se, "non-existent-asset-id", 0)
+	AssertNoDataAssetCounter(t, se, "non-existent-asset-id")
 
 	rec2 := rec.Copy()
 	rec2.ID = "second-record"

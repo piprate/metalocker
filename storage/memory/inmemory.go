@@ -180,7 +180,7 @@ func (be *InMemoryBackend) ListIdentities(ctx context.Context, accountID string,
 	}
 	res := make([]*account.DataEnvelope, 0, len(acctMap))
 	for _, idy := range acctMap {
-		if lvl == 0 || idy.AccessLevel == lvl {
+		if lvl == 0 || idy.AccessLevel <= lvl {
 			res = append(res, idy)
 		}
 	}
@@ -215,7 +215,7 @@ func (be *InMemoryBackend) ListLockers(ctx context.Context, accountID string, lv
 	}
 	res := make([]*account.DataEnvelope, 0, len(acctMap))
 	for _, locker := range acctMap {
-		if lvl == 0 || locker.AccessLevel == lvl {
+		if lvl == 0 || locker.AccessLevel <= lvl {
 			res = append(res, locker)
 		}
 	}
@@ -250,7 +250,7 @@ func (be *InMemoryBackend) ListProperties(ctx context.Context, accountID string,
 	}
 	res := make([]*account.DataEnvelope, 0, len(acctMap))
 	for _, prop := range acctMap {
-		if lvl == 0 || prop.AccessLevel == lvl {
+		if lvl == 0 || prop.AccessLevel <= lvl {
 			res = append(res, prop)
 		}
 	}
