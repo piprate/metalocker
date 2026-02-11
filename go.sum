@@ -1047,8 +1047,8 @@ github.com/piprate/json-gold v0.7.0 h1:bEMirgA5y8Z2loTQfxyIFfY+EflxH1CTP6r/KIlcJ
 github.com/piprate/json-gold v0.7.0/go.mod h1:RVhE35veDX19r5gfUAR+IYHkAUuPwJO8Ie/qVeFaIzw=
 github.com/piprate/restgate v0.0.0-20190903092639-61855bc1bc5f h1:hviG4TlBNxG6FlseJEFuAOtWupUuXk5XXKBb2OrW0Pw=
 github.com/piprate/restgate v0.0.0-20190903092639-61855bc1bc5f/go.mod h1:HXYlY4epePEyfl2jXu+OoNfD6oA4PG135D2GDSwGR5A=
-github.com/piprate/splash v0.0.0-20260210235623-811b15ea2aad h1:O3Bkixk8w7MlQKD7tPmgxNGQiJqaSuWMFsCEa8IZF0s=
-github.com/piprate/splash v0.0.0-20260210235623-811b15ea2aad/go.mod h1:luOZaKaOa0l9bPogbZ30nQ6TEb0RigNHljg4UD2GYxA=
+github.com/piprate/splash v0.0.0-20260211213712-c84665d709a3 h1:JMctET0Irb153gOO6fcAY3ctVq7Yci7CHkqcMEJpcWw=
+github.com/piprate/splash v0.0.0-20260211213712-c84665d709a3/go.mod h1:luOZaKaOa0l9bPogbZ30nQ6TEb0RigNHljg4UD2GYxA=
 github.com/pjebs/jsonerror v0.0.0-20190614034432-63ef9a8df848 h1:XowRe4lNFAvUyqrGWsw5iXgSIAB88dvwkhG6Y358Mpk=
 github.com/pjebs/jsonerror v0.0.0-20190614034432-63ef9a8df848/go.mod h1:aTxn8DgzMXFgHW45SD0fKjhF3+vSL5Adh0+vhWmVH4g=
 github.com/pkg/diff v0.0.0-20210226163009-20ebb0f2a09e/go.mod h1:pJLUxLENpZxwdsKMEsNbx1VGcRFpLqf3715MtcvvzbA=

@@ -167,6 +167,9 @@ func main() {
 		table.Append([]string{r.ID, r.ContentType, string(r.Status)})
 		return nil
 	}, 0)
+	if err != nil {
+		panic(err)
+	}
 
 	table.Render()
 }

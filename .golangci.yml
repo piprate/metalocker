@@ -1,65 +1,17 @@
-linters-settings:
-  dogsled:
-    max-blank-identifiers: 3
-  errcheck:
-    check-type-assertions: false
-  exhaustive:
-    default-signifies-exhaustive: true
-  goconst:
-    min-len: 2
-    min-occurrences: 4
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-    disabled-checks:
-      - appendAssign
-      - commentFormatting
-      - commentedOutCode
-      - deferInLoop
-      - emptyStringTest
-      - ifElseChain
-      - nestingReduce
-      - paramTypeCombine
-      - sloppyReassign
-      - todoCommentWithoutDetail
-      - unnamedResult
-      - unnecessaryBlock
-      - whyNoLint
-  gosec:
-    excludes:
-      - G115  # Potential integer overflow when converting between integer types
-  govet:
-    enable:
-      # report about shadowed variables
-      - shadowing
-  nolintlint:
-    require-explanation: false
-    require-specific: true
-  funlen:
-    lines: 100
-    statements: 40
-  revive:
-    rules:
-      - name: indent-error-flow
-        severity: warning
-        disabled: true
+version: "2"
+run:
+  go: "1.24"
+  issues-exit-code: 1
 linters:
-  disable-all: true
+  default: none
   enable:
     - asasalint
     - asciicheck
     - bidichk
     - bodyclose
-#    - containedctx
     - contextcheck
     - copyloopvar
-#   - depguard
     - dogsled
-#   - dupl
     - durationcheck
     - errcheck
     - errname
@@ -68,12 +20,7 @@ linters:
     - goconst
     - gocritic
     - gocyclo
-#    - godox
-    - gofmt
-    - goimports
-#   - gomnd
     - gosec
-    - gosimple
     - govet
     - importas
     - ineffassign
@@ -85,20 +32,80 @@ linters:
     - predeclared
     - revive
     - staticcheck
-    - stylecheck
     - testpackage
     - thelper
-    - typecheck
     - unconvert
     - unparam
     - unused
     - usestdlibvars
     - wastedassign
-
-run:
-  issues-exit-code: 1
-  go: '1.22'
-issues:
-  exclude-dirs:
-    - contexts
-    - storage/rdb/ent
+  settings:
+    dogsled:
+      max-blank-identifiers: 3
+    errcheck:
+      check-type-assertions: false
+    exhaustive:
+      default-signifies-exhaustive: true
+    funlen:
+      lines: 100
+      statements: 40
+    goconst:
+      min-len: 2
+      min-occurrences: 4
+    gocritic:
+      disabled-checks:
+        - appendAssign
+        - commentFormatting
+        - commentedOutCode
+        - deferInLoop
+        - emptyStringTest
+        - ifElseChain
+        - nestingReduce
+        - paramTypeCombine
+        - sloppyReassign
+        - todoCommentWithoutDetail
+        - unnamedResult
+        - unnecessaryBlock
+        - whyNoLint
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+    gosec:
+      excludes:
+        - G115  # Potential integer overflow when converting between integer types
+    nolintlint:
+      require-explanation: false
+      require-specific: true
+    revive:
+      rules:
+        - name: indent-error-flow
+          severity: warning
+          disabled: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - contexts
+      - storage/rdb/ent
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - contexts
+      - storage/rdb/ent
+      - third_party$
+      - builtin$
+      - examples$

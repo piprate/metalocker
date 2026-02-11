@@ -8,97 +8,44 @@ on:
     branches:
       - main
 
-env:
-  CODECOV_TOKEN: 9640dcb9-e7ac-4292-94a0-47cc03dca390
-
 jobs:
   lint:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: .
     steps:
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v6
         with:
-          go-version: 1.23
-
-      - name: Update packages list
-        run: sudo apt-get update
-
-      - name: Install dependencies
-        run: sudo apt-get install -y openssl libsodium-dev
+          go-version: '1.25'
 
       - name: Checkout code
-        uses: actions/checkout@v2
-
-      - id: go-cache-paths
-        run: |
-          echo "::set-output name=go-build::$(go env GOCACHE)"
-          echo "::set-output name=go-mod::$(go env GOMODCACHE)"
-
-      - name: Go Build Cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ steps.go-cache-paths.outputs.go-build }}
-          key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
-
-      - name: Go Mod Cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ steps.go-cache-paths.outputs.go-mod }}
-          key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
+        uses: actions/checkout@v5
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3.3.0
+        uses: golangci/golangci-lint-action@v8
         with:
-          args: "--out-${NO_FUTURE}format colored-line-number --timeout 5m"
-          working-directory: .
-          skip-pkg-cache: true
-          skip-build-cache: true
+          version: v2.8
+#          working-directory: .
 
   tidy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+        uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
-          go-version: 1.23
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          go-version: '1.25'
       - uses: zencargo/github-action-go-mod-tidy@v1
         with:
-          path: .
-          go-version: 1.23
+          go-version: '1.25'
 
   test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Update packages list
-        run: sudo apt-get update
-      - name: Install dependencies
-        run: sudo apt-get install -y openssl libsodium-dev
+        uses: actions/checkout@v5
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v6
         with:
-          go-version: 1.23
-      - name: Set up Cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          go-version: '1.25'
       - name: Test
         run: make test-cov
         env:

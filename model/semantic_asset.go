@@ -79,7 +79,7 @@ func GenerateNewSemanticAsset(serial, isIdentity bool, didMethod, nonce string) 
 }
 
 func GenerateValueAsset(functionID string, entityArgs, valueArgs map[string]any, didMethod string) (*SemanticAsset, error) {
-	qualifiedUsageList := make([]map[string]any, 0)
+	qualifiedUsageList := make([]map[string]any, 0, len(entityArgs)+len(valueArgs))
 	for argID, val := range entityArgs {
 		qualifiedUsageList = append(qualifiedUsageList, map[string]any{
 			"type": "Usage",
