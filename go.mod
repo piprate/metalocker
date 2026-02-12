@@ -14,7 +14,7 @@ require (
 	github.com/cskr/pubsub v1.0.2
 	github.com/fergusstrange/embedded-postgres v1.33.0
 	github.com/gabriel-vasile/mimetype v1.4.13
-	github.com/gammazero/deque v1.2.0
+	github.com/gammazero/deque v1.2.1
 	github.com/gin-contrib/cors v1.7.6
 	github.com/gin-gonic/gin v1.11.0
 	github.com/gobuffalo/packr/v2 v2.8.3
@@ -24,7 +24,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/hashicorp/vault/api v1.1.0
 	github.com/jackc/pgx/v5 v5.8.0
-	github.com/jamesruan/sodium v0.0.0-20181216154042-9620b83ffeae
+	github.com/jamesruan/sodium v1.0.14
 	github.com/knadh/koanf v1.5.0
 	github.com/mattn/go-sqlite3 v1.14.34
 	github.com/muesli/cache2go v0.0.0-20221011235721-518229cd8021

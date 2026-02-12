@@ -1,4 +1,4 @@
-FROM golang:1.25.7-alpine3.22 as build-stage
+FROM golang:1.25.7-alpine3.22 AS build-stage
 RUN apk add --no-cache musl-dev gcc make git openssh-client libsodium-dev
 
 RUN mkdir -p "$GOPATH/pkg/mod"
@@ -20,7 +20,7 @@ RUN --mount=type=cache,target=$GOPATH/pkg/mod \
 
 #-----------
 
-FROM alpine:3.22.3 as run-stage
+FROM alpine:3.22.3 AS run-stage
 RUN apk add --no-cache libsodium-dev
 
 WORKDIR /app
