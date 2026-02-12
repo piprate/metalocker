@@ -89,14 +89,17 @@ func RegisterHandler(registrationCodes []string, defaultVault string, secondLeve
 
 		log.Info().Str("userID", acct.Email).Msg("New account registration requested")
 
-		if acct.AccessLevel == model.AccessLevelNone {
+		switch acct.AccessLevel {
+		case model.AccessLevelNone:
 			log.Error().Str("body", string(buf)).Msg("Account access level not provided")
 			apibase.AbortWithError(c, http.StatusBadRequest, "account access level not provided")
 			return
-		} else if acct.AccessLevel == model.AccessLevelRestricted {
+		case model.AccessLevelRestricted:
 			log.Error().Str("body", string(buf)).Msg("Can't register a restricted account")
 			apibase.AbortWithError(c, http.StatusBadRequest, "restricted account registration not supported")
 			return
+		default:
+			// continue
 		}
 
 		acct.State = account.StateActive

@@ -72,7 +72,7 @@ func FromDateErr(base time.Time, s string) (time.Time, error) { //nolint:gocyclo
 		var err error
 
 		// The next character must be [0-9.]
-		if !(s[0] == '.' || '0' <= s[0] && s[0] <= '9') {
+		if !(s[0] == '.' || '0' <= s[0] && s[0] <= '9') { //nolint:staticcheck
 			return BadTime, errors.New("invalid offset " + quote(orig))
 		}
 		// Consume [0-9]*

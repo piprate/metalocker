@@ -302,9 +302,10 @@ func (c *consumer) ConsumeBlock(ctx context.Context, indexID string, partyLookup
 		key := dsn.Key
 		iw := c.index
 
-		if r.Operation == model.OpTypeLease {
-			if r.Status == model.StatusPublished {
-
+		switch r.Operation {
+		case model.OpTypeLease:
+			switch r.Status {
+			case model.StatusPublished:
 				opRecBytes, err := c.offChainStorage.GetOperation(ctx, r.OperationAddress)
 				if err != nil {
 					log.Error().Str("rid", r.ID).Err(err).Msg("Failed to read ledger operation")
@@ -348,14 +349,16 @@ func (c *consumer) ConsumeBlock(ctx context.Context, indexID string, partyLookup
 				if err = iw.AddLease(ctx, ds, effectiveBlock); err != nil {
 					return err
 				}
-			} else if r.Status == model.StatusRevoked {
+			case model.StatusRevoked:
 				// we want to add revoked leases for the record
 				ds := dataset.NewRevokedDataSetImpl(r, n.Block, lockerID, participantID)
 				if err := iw.AddLease(ctx, ds, effectiveBlock); err != nil {
 					return err
 				}
+			default:
+				// continue
 			}
-		} else if r.Operation == model.OpTypeLeaseRevocation {
+		case model.OpTypeLeaseRevocation:
 			ds := dataset.NewRevokedDataSetImpl(r, n.Block, lockerID, participantID)
 			if err := iw.AddLeaseRevocation(ctx, ds); err != nil {
 				return err

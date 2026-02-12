@@ -323,16 +323,16 @@ func (l *Locker) Copy() *Locker {
 		ThirdPartyAcceptedAtBlock: l.ThirdPartyAcceptedAtBlock,
 	}
 
-	parties := make([]*LockerParticipant, 0)
-	for _, party := range l.Participants {
-		parties = append(parties, &LockerParticipant{
+	parties := make([]*LockerParticipant, len(l.Participants))
+	for i, party := range l.Participants {
+		parties[i] = &LockerParticipant{
 			ID:                party.ID,
 			SharedSecret:      party.SharedSecret,
 			Self:              party.Self,
 			AcceptedAtBlock:   party.AcceptedAtBlock,
 			RootPublicKey:     party.RootPublicKey,
 			RootPrivateKeyEnc: party.RootPrivateKeyEnc,
-		})
+		}
 	}
 
 	newLocker.Participants = parties

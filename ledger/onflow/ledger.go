@@ -287,7 +287,7 @@ func sortEvents(events []flow.BlockEvents) []flow.Event {
 	res := make([]flow.Event, 0)
 
 	var prevHeight uint64 = 0
-	var buf []flow.Event
+	var buf []flow.Event //nolint:prealloc
 	sortEventsFn := func(i, j int) bool {
 		if buf[i].TransactionIndex != buf[j].TransactionIndex {
 			return buf[i].TransactionIndex < buf[j].TransactionIndex
