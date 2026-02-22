@@ -30,8 +30,8 @@ require (
 	github.com/muesli/cache2go v0.0.0-20221011235721-518229cd8021
 	github.com/multiformats/go-multihash v0.2.3
 	github.com/olekukonko/tablewriter v0.0.5
-	github.com/onflow/cadence v1.9.8
-	github.com/onflow/flow-go-sdk v1.9.14
+	github.com/onflow/cadence v1.9.9
+	github.com/onflow/flow-go-sdk v1.9.15
 	github.com/onflow/flowkit/v2 v2.10.2
 	github.com/piprate/json-gold v0.7.0
 	github.com/piprate/restgate v0.0.0-20190903092639-61855bc1bc5f
