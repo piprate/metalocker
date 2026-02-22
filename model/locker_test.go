@@ -61,12 +61,23 @@ func TestAnonEncrypt(t *testing.T) {
 
 	cypherText := AnonEncrypt([]byte(msg), testPublicKey)
 
-	decryptedMsg, err := AnonDecrypt(cypherText, testPrivateKey)
-	require.NoError(t, err)
-	assert.Equal(t, msg, string(decryptedMsg))
+	t.Run("success", func(t *testing.T) {
+		decryptedMsg, err := AnonDecrypt(cypherText, testPrivateKey)
+		require.NoError(t, err)
+		assert.Equal(t, msg, string(decryptedMsg))
+	})
 
-	_, err = AnonDecrypt([]byte(strings.Repeat("x", len(cypherText))), testPrivateKey)
-	require.Error(t, err)
+	t.Run("invalid ciphertext", func(t *testing.T) {
+		_, err := AnonDecrypt([]byte(strings.Repeat("x", len(cypherText))), testPrivateKey)
+		require.Error(t, err)
+	})
+
+	t.Run("invalid private key length", func(t *testing.T) {
+		decryptedMsg, err := AnonDecrypt(cypherText, nil)
+		require.Error(t, err)
+		assert.Equal(t, "private key should be 64 bytes long", err.Error())
+		assert.Nil(t, decryptedMsg)
+	})
 }
 
 func TestGenerateLocker(t *testing.T) {
