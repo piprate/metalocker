@@ -454,12 +454,17 @@ func AnonEncrypt(msg, publicKey []byte) []byte {
 	return sodium.Bytes(msg).SealedBox(boxPublicKey)
 }
 
-func AnonDecrypt(cypherText, privateKey []byte) ([]byte, error) {
+func AnonDecrypt(cypherText, privateKey []byte) (rtnMessage []byte, rtnErr error) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Warn().Str("reason", fmt.Sprintf("%s", r)).Msg("Recovered in model.AnonDecrypt")
+			rtnErr = errors.New("failed to decrypt message")
 		}
 	}()
+
+	if len(privateKey) != 64 {
+		return nil, errors.New("private key should be 64 bytes long")
+	}
 
 	publicKey := privateKey[32:]
 
@@ -475,7 +480,7 @@ func AnonDecrypt(cypherText, privateKey []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	} else {
-		return []byte(decryptedMsg), nil
+		return decryptedMsg, nil
 	}
 }
 

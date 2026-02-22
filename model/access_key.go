@@ -243,7 +243,7 @@ func ExtractSignature(hdr http.Header) (string, string, error) {
 
 	// extract Key ID
 
-	if !secureCompare(authValue[:5], "Meta ") {
+	if len(authValue) < 5 || !secureCompare(authValue[:5], "Meta ") {
 		return "", "", ErrAuthorizationNotFound
 	}
 
